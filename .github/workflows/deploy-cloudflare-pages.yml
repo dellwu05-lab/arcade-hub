@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 
 on:
   push:
@@ -23,17 +23,17 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Cloudflare secrets not configured yet. Skipping Actions deploy (use Cloudflare Pages Git integration or add CLOUDFLARE_API_TOKEN & CLOUDFLARE_ACCOUNT_ID secrets)."
+            echo "Cloudflare secrets not configured yet. Using Cloudflare native Git integration."
           fi
 
       - name: Checkout repository
         if: steps.check.outputs.ready == 'true'
         uses: actions/checkout@v4
 
-      - name: Deploy static site to Cloudflare Pages
+      - name: Deploy static assets to Cloudflare Workers
         if: steps.check.outputs.ready == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy . --project-name=arcade-hub
+          command: deploy
