@@ -306,6 +306,120 @@
     .gstat-val.cyan { color: #38bdf8; }
     .gstat-val.green { color: #34d399; }
 
+    /* Arcade Rank XP Bar & Daily Spin Button */
+    .btn-spin-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(251, 191, 36, 0.55);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.24), rgba(236, 72, 153, 0.24));
+      color: #fde68a;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+    .btn-spin-nav:hover { filter: brightness(1.15); }
+    .btn-spin-nav:active { transform: scale(0.96); }
+    .spin-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 8px #34d399;
+      display: inline-block;
+    }
+    .spin-dot.used { display: none; }
+
+    .rank-strip {
+      grid-column: span 2;
+      padding: 12px 15px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(168, 85, 247, 0.14));
+      border: 1px solid rgba(125, 211, 252, 0.28);
+    }
+    .rank-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+    .rank-badge { color: #fde047; }
+    .rank-xp-txt { font-size: 11px; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+    .rank-bar-track {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+    .rank-bar-fill {
+      height: 100%;
+      width: 15%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8, #a855f7, #f59e0b);
+      transition: width 0.35s ease;
+    }
+
+    /* Spin Wheel Modal */
+    .wheel-stage {
+      position: relative;
+      width: 264px;
+      height: 264px;
+      margin: 12px auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 22px solid #fde047;
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.65));
+      z-index: 4;
+    }
+    .spin-targets {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin: 8px 0 12px;
+    }
+    .starget-btn {
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .starget-btn.active {
+      border-color: #fbbf24;
+      background: rgba(245, 158, 11, 0.22);
+      color: #fde68a;
+    }
+    .spin-result-banner {
+      min-height: 24px;
+      font-size: 14px;
+      font-weight: 900;
+      color: #fde047;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
     /* Section Header */
     .sec-head {
       margin-top: 28px;
@@ -867,6 +981,10 @@
       </div>
 
       <div class="nav-right">
+        <button class="btn-spin-nav" id="btnNavSpin" type="button" title="每日免費幸運轉盤抽全站金幣">
+          <span>🎡 幸運轉盤</span>
+          <span class="spin-dot" id="navSpinDot"></span>
+        </button>
         <button class="btn-google-nav" id="btnNavGoogle" type="button">
           <svg viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -897,26 +1015,34 @@
         </p>
         <div class="hero-actions">
           <button class="btn-primary" id="btnHeroPlayFirst" type="button">▶ 立即遊玩第 1 款：無盡峽谷 3D</button>
+          <button class="btn-secondary" id="btnHeroSpin" type="button">🎡 每日幸運轉盤</button>
           <button class="btn-secondary" id="btnHeroAccount" type="button">🔐 登入 / 管理全站帳號</button>
         </div>
       </div>
 
       <div class="global-stats">
+        <div class="rank-strip">
+          <div class="rank-top">
+            <span class="rank-badge" id="rankBadge">🏅 Lv.1 · 🌱 峽谷見習生</span>
+            <span class="rank-xp-txt" id="rankXpTxt">0 / 300 XP</span>
+          </div>
+          <div class="rank-bar-track"><div class="rank-bar-fill" id="rankBarFill"></div></div>
+        </div>
         <div class="gstat-box">
           <div class="gstat-label">已收錄可玩遊戲</div>
-          <div class="gstat-val cyan" id="statLiveGames">1 款</div>
+          <div class="gstat-val cyan" id="statLiveGames">4 款</div>
         </div>
         <div class="gstat-box">
           <div class="gstat-label">全站累積金幣</div>
-          <div class="gstat-val gold" id="statTotalCoins">40</div>
+          <div class="gstat-val gold" id="statTotalCoins">160</div>
         </div>
         <div class="gstat-box">
           <div class="gstat-label">跨遊戲最高紀錄</div>
           <div class="gstat-val" id="statBestScore">0</div>
         </div>
         <div class="gstat-box">
-          <div class="gstat-label">總通關星數 / 角色</div>
-          <div class="gstat-val green" id="statStarsChars">0★ · 1角</div>
+          <div class="gstat-label">總通關星數 / 收藏</div>
+          <div class="gstat-val green" id="statStarsChars">0★ · 4收藏</div>
         </div>
       </div>
     </section>
@@ -1061,6 +1187,39 @@
     </div>
   </div>
 
+  <!-- ================= DAILY LUCKY SPIN MODAL ================= -->
+  <div class="modal-backdrop" id="spinModal">
+    <div class="auth-panel" style="max-width:440px;text-align:center;">
+      <div class="modal-head" style="text-align:left;">
+        <div>
+          <h2>🎡 每日幸運轉盤</h2>
+          <div class="modal-sub" id="spinSub">每天免費轉一次，直接送金幣到你的遊戲存檔！</div>
+        </div>
+        <button class="close-btn" id="btnCloseSpin" type="button" aria-label="關閉">✕</button>
+      </div>
+
+      <div class="wheel-stage">
+        <div class="wheel-pointer"></div>
+        <canvas id="spinCanvas" width="260" height="260" aria-label="幸運轉盤"></canvas>
+      </div>
+
+      <div class="spin-result-banner" id="spinResult">選擇金幣存入方式後，按下立即開轉！</div>
+
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">💰 中獎金幣匯入目標：</div>
+      <div class="spin-targets" id="spinTargets">
+        <button class="starget-btn active" data-target="all" type="button">🌐 4 款遊戲均分</button>
+        <button class="starget-btn" data-target="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
+        <button class="starget-btn" data-target="star_blaster_3d" type="button">🚀 射擊</button>
+        <button class="starget-btn" data-target="neon_blocks_3d" type="button">🧩 方塊</button>
+        <button class="starget-btn" data-target="canyon_drift_3d" type="button">🏎️ 漂移</button>
+      </div>
+
+      <button class="btn-primary" id="btnDoSpin" type="button" style="width:100%;justify-content:center;padding:13px 18px;font-size:15px;">
+        🎰 立即免費開轉！
+      </button>
+    </div>
+  </div>
+
   <div class="hub-toast" id="hubToast"></div>
 
   <script>
@@ -1102,9 +1261,9 @@
         url: './games/star-blaster-3d/index.html',
         coverClass: 'cover-space',
         itemLabel: '3D 戰機',
-        badges: ['Roguelike', '支援手機', 'BOSS 戰'],
-        desc: '駕駛 3D 星際戰機穿梭星雲與小行星帶！每波過關自由三選一強化模組（多向電漿、追蹤飛彈、超新星清屏），挑戰巨型星系母艦 BOSS！',
-        features: ['4 架可解鎖戰機', 'Roguelike 模組三選一', '超新星清屏大招', '星系母艦 BOSS']
+        badges: ['Roguelike', '擦彈 Graze', 'BOSS 戰'],
+        desc: '駕駛 3D 星際戰機穿梭星雲與小行星帶！支援驚險擦彈集氣、戰場過載/量子護盾/黑洞磁鐵掉落、連擊倍率與每波三選一強化，激戰巨型星系母艦 BOSS！',
+        features: ['4 架可解鎖戰機', '擦彈 Graze＋連擊', '過載/護盾/磁鐵掉落', 'Roguelike 三選一', '星系母艦 BOSS']
       },
       {
         id: 'neon_blocks_3d',
@@ -1118,9 +1277,9 @@
         url: './games/neon-blocks-3d/index.html',
         coverClass: 'cover-puzzle',
         itemLabel: '霓虹主題',
-        badges: ['3D 立體斜角', '支援手機', '雙模式'],
-        desc: '3D 立體斜角霓虹方塊搭配電子合成節奏！支援暫存 Hold、落點幽靈預覽、雷射瞬落、無盡馬拉松與 2 分鐘極速衝分模式，連消賺金幣解鎖多款霓虹主題。',
-        features: ['無盡馬拉松 / 2分極速', '4 款霓虹視覺主題', '連擊 Combo 特效', '完整觸控鍵盤操控']
+        badges: ['炸彈/金幣方塊', 'FEVER 2x', '雙模式'],
+        desc: '3D 立體斜角霓虹方塊搭配電子合成節奏！全新加入 💣 炸彈連鎖爆破方塊、⭐ 金幣方塊與連消觸發的 🌈 FEVER 彩虹雙倍狂熱模式，無盡馬拉松與 2 分極速衝分雙玩法！',
+        features: ['💣 炸彈＋⭐ 金幣方塊', '🌈 FEVER 2x 彩虹模式', '無盡馬拉松 / 2分極速', '4 款霓虹視覺主題']
       },
       {
         id: 'canyon_drift_3d',
@@ -1134,9 +1293,9 @@
         url: './games/canyon-drift-3d/index.html',
         coverClass: 'cover-drift',
         itemLabel: '3D 超跑',
-        badges: ['5 大峽谷賽道', '支援手機', '氮氣飄移'],
-        desc: '延續峽谷宇宙 5 大場景的 3D 街機甩尾競速！過彎飄移噴火花集滿氮氣、高速擦身超車累積連擊，衝破 1200m 檢查點延時狂飆！',
-        features: ['4 台可解鎖超跑', '飄移集氣＋氮氣爆發', '擦身超車連擊', '5 大峽谷無縫巡迴']
+        badges: ['甩尾小噴射', '⏩ 加速帶', '氮氣飄移'],
+        desc: '延續峽谷宇宙 5 大場景的 3D 街機甩尾競速！長按飄移累積 GOOD→LEGEND 評價，放開瞬間觸發甩尾小噴射，壓過公路發光加速帶與極限超車衝破 1200m 檢查點！',
+        features: ['4 台可解鎖超跑', 'LEGEND 甩尾小噴射', '⏩ 3D 公路加速帶', '擦身超車連擊']
       }
     ];
 
@@ -1405,10 +1564,11 @@
       }
 
       const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
-      let sumCoins = 0, topScore = 0, sumStars = 0, sumItems = 0;
+      let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0;
       liveGames.forEach((g) => {
         const st = readStatsForGame(g.id);
         sumCoins += st.coins;
+        sumBestScores += st.bestScore;
         if (st.bestScore > topScore) topScore = st.bestScore;
         sumStars += st.stars;
         sumItems += st.charsUnlocked;
@@ -1417,6 +1577,27 @@
       document.getElementById('statTotalCoins').textContent = sumCoins.toLocaleString();
       document.getElementById('statBestScore').textContent = topScore.toLocaleString();
       document.getElementById('statStarsChars').textContent = `${sumStars}★ · ${sumItems}收藏`;
+
+      // Arcade Rank & XP Bar
+      const spinMeta = getDailySpinState();
+      const totalXp = sumStars * 120 + Math.max(0, sumItems - 4) * 160 + Math.floor(sumBestScores / 100) + (spinMeta.totalSpins || 0) * 80;
+      const level = Math.min(20, 1 + Math.floor(totalXp / 300));
+      const curLevelXp = totalXp % 300;
+      const pct = level >= 20 ? 100 : Math.max(8, Math.round((curLevelXp / 300) * 100));
+      const title = level >= 15 ? '🌟 綜合區大滿貫王者'
+        : (level >= 12 ? '👑 綜合區超級大師'
+          : (level >= 9 ? '🏎️ 峽谷漂移傳說'
+            : (level >= 6 ? '🚀 星際王牌飛行員'
+              : (level >= 3 ? '⚡ 霓虹挑戰者' : '🌱 峽谷見習生'))));
+      const rb = document.getElementById('rankBadge');
+      const rx = document.getElementById('rankXpTxt');
+      const rf = document.getElementById('rankBarFill');
+      if (rb) rb.textContent = `🏅 Lv.${level} · ${title}`;
+      if (rx) rx.textContent = level >= 20 ? 'MAX RANK' : `${curLevelXp} / 300 XP`;
+      if (rf) rf.style.width = `${pct}%`;
+
+      const dot = document.getElementById('navSpinDot');
+      if (dot) dot.classList.toggle('used', !canSpinToday());
 
       renderGamesGrid();
     }
@@ -1770,9 +1951,231 @@
       renderGamesGrid();
     });
 
+    // =========================================================================
+    // DAILY LUCKY SPIN WHEEL
+    // =========================================================================
+    const SPIN_PRIZES = [
+      { label: '+60 🪙',  coins: 60,  col: '#0284c7', text: '#e0f2fe' },
+      { label: '+100 🪙', coins: 100, col: '#7c3aed', text: '#f3e8ff' },
+      { label: '+80 🪙',  coins: 80,  col: '#059669', text: '#d1fae5' },
+      { label: '+160 🪙', coins: 160, col: '#db2777', text: '#fce7f3' },
+      { label: '+120 🪙', coins: 120, col: '#d97706', text: '#fef3c7' },
+      { label: '👑 +300', coins: 300, col: '#ea580c', text: '#fef08a' }
+    ];
+    let spinAngle = 0;
+    let isSpinning = false;
+    let spinTarget = 'all';
+    let spinAudioCtx = null;
+
+    function playSpinTone(freq, dur, type, vol) {
+      try {
+        if (!spinAudioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          spinAudioCtx = new AC();
+        }
+        if (spinAudioCtx.state === 'suspended') spinAudioCtx.resume().catch(() => {});
+        const t = spinAudioCtx.currentTime;
+        const o = spinAudioCtx.createOscillator(), g = spinAudioCtx.createGain();
+        o.type = type || 'triangle';
+        o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(vol || 0.06, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(spinAudioCtx.destination);
+        o.start(t); o.stop(t + dur);
+      } catch (e) { /* ignore */ }
+    }
+
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function spinStorageKey() {
+      const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
+      return `arcade_daily_spin_v1_${uid}`;
+    }
+    function getDailySpinState() {
+      try {
+        const raw = localStorage.getItem(spinStorageKey());
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return { lastDate: '', totalSpins: 0 };
+    }
+    function saveDailySpinState(obj) {
+      try { localStorage.setItem(spinStorageKey(), JSON.stringify(obj)); } catch (e) {}
+    }
+    function canSpinToday() {
+      return getDailySpinState().lastDate !== todayKey();
+    }
+
+    function drawSpinWheel(angle) {
+      const c = document.getElementById('spinCanvas');
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      const cx = c.width / 2, cy = c.height / 2, r = c.width / 2 - 8;
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      // Outer glowing rim
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a'; ctx.fill();
+      ctx.lineWidth = 4; ctx.strokeStyle = '#fbbf24'; ctx.stroke();
+
+      const slice = (Math.PI * 2) / SPIN_PRIZES.length;
+      for (let i = 0; i < SPIN_PRIZES.length; i++) {
+        const start = angle + i * slice;
+        const end = start + slice;
+        const p = SPIN_PRIZES[i];
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, end);
+        ctx.closePath();
+        ctx.fillStyle = p.col;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Label
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(start + slice / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = p.text;
+        ctx.font = '900 15px system-ui, "Noto Sans TC", sans-serif';
+        ctx.fillText(p.label, r - 14, 5);
+        ctx.restore();
+      }
+
+      // Center hub cap
+      ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a'; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#fde047'; ctx.stroke();
+      ctx.fillStyle = '#fde047';
+      ctx.font = '900 15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('GO', cx, cy + 5);
+      ctx.restore();
+    }
+
+    function refreshSpinModalUI() {
+      const avail = canSpinToday();
+      const btn = document.getElementById('btnDoSpin');
+      const sub = document.getElementById('spinSub');
+      if (avail) {
+        btn.disabled = isSpinning;
+        btn.style.opacity = isSpinning ? '0.65' : '1';
+        btn.textContent = isSpinning ? '🌀 轉盤高速旋轉中…' : '🎰 立即免費開轉！（今日 1 次）';
+        sub.textContent = '每天免費轉一次，抽中的金幣將立刻匯入您的遊戲存檔！';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.textContent = '✅ 今日免費次數已領取（明天再來！）';
+        sub.textContent = '今天已經抽過幸運轉盤囉！切換 Google 帳號或明天再來領取免費金幣！';
+      }
+      drawSpinWheel(spinAngle);
+    }
+
+    function openSpinModal() {
+      document.getElementById('spinResult').textContent = canSpinToday()
+        ? '選擇金幣存入方式後，按下立即開轉！'
+        : '🎉 今日金幣獎勵已入帳，歡迎立即進入遊戲消費解鎖！';
+      refreshSpinModalUI();
+      document.getElementById('spinModal').classList.add('open');
+    }
+    function closeSpinModal() {
+      if (isSpinning) return;
+      document.getElementById('spinModal').classList.remove('open');
+    }
+
+    function awardSpinCoins(totalCoins) {
+      const liveIds = GAMES_REGISTRY.filter(g => g.status === 'live').map(g => g.id);
+      const targets = spinTarget === 'all' ? liveIds : [spinTarget];
+      const perGame = Math.max(1, Math.round(totalCoins / targets.length));
+      targets.forEach((gid) => {
+        const cur = SSO.readGameSave(gid, auth.currentUser) || {};
+        const prevCoins = typeof cur.coins === 'number' ? cur.coins : 40;
+        const updated = Object.assign({}, cur, { coins: prevCoins + perGame });
+        SSO.writeGameSave(gid, auth.currentUser, updated);
+      });
+      const meta = getDailySpinState();
+      meta.lastDate = todayKey();
+      meta.totalSpins = (meta.totalSpins || 0) + 1;
+      saveDailySpinState(meta);
+      pushSsoToActiveGame();
+      renderHubUI();
+      const targetName = spinTarget === 'all'
+        ? `全站 4 款遊戲（每款 +${perGame} 🪙）`
+        : (GAMES_REGISTRY.find(g => g.id === spinTarget)?.title || spinTarget);
+      document.getElementById('spinResult').textContent = `🎉 恭喜獲得 +${totalCoins} 🪙！已匯入 ${targetName}`;
+      showToast(`🎡 幸運轉盤中獎！+${totalCoins} 🪙 已存入存檔！`);
+    }
+
+    function startDailySpin() {
+      if (isSpinning || !canSpinToday()) return;
+      isSpinning = true;
+      refreshSpinModalUI();
+      document.getElementById('spinResult').textContent = '✨ 好運降臨中…';
+
+      const winIdx = Math.floor(Math.random() * SPIN_PRIZES.length);
+      const slice = (Math.PI * 2) / SPIN_PRIZES.length;
+      // Pointer sits at -Math.PI / 2 (12 o'clock)
+      const jitter = (Math.random() - 0.5) * slice * 0.55;
+      const targetMod = (-Math.PI / 2 - (winIdx + 0.5) * slice + jitter) % (Math.PI * 2);
+      const startAngle = spinAngle;
+      const curMod = startAngle % (Math.PI * 2);
+      let delta = targetMod - curMod;
+      if (delta < 0) delta += Math.PI * 2;
+      const totalDelta = Math.PI * 2 * (5 + Math.floor(Math.random() * 2)) + delta;
+      const duration = 3100;
+      const startTime = performance.now();
+      let lastTickIdx = -1;
+
+      function anim(now) {
+        const p = Math.min(1, (now - startTime) / duration);
+        const eased = 1 - Math.pow(1 - p, 3.3);
+        spinAngle = startAngle + totalDelta * eased;
+        drawSpinWheel(spinAngle);
+
+        const tickIdx = Math.floor(spinAngle / slice);
+        if (tickIdx !== lastTickIdx) {
+          lastTickIdx = tickIdx;
+          playSpinTone(520 + (tickIdx % 6) * 45, 0.045, 'triangle', 0.05);
+        }
+
+        if (p < 1) {
+          requestAnimationFrame(anim);
+        } else {
+          isSpinning = false;
+          const prize = SPIN_PRIZES[winIdx];
+          [523, 659, 784, 1046].forEach((f, idx) => {
+            setTimeout(() => playSpinTone(f, 0.2, 'sine', 0.085), idx * 75);
+          });
+          awardSpinCoins(prize.coins);
+          refreshSpinModalUI();
+        }
+      }
+      requestAnimationFrame(anim);
+    }
+
+    document.getElementById('btnNavSpin').addEventListener('click', openSpinModal);
+    document.getElementById('btnHeroSpin').addEventListener('click', openSpinModal);
+    document.getElementById('btnCloseSpin').addEventListener('click', closeSpinModal);
+    document.getElementById('spinModal').addEventListener('click', (e) => {
+      if (e.target.id === 'spinModal') closeSpinModal();
+    });
+    document.getElementById('spinTargets').addEventListener('click', (e) => {
+      const btn = e.target.closest('.starget-btn');
+      if (!btn || isSpinning) return;
+      spinTarget = btn.dataset.target || 'all';
+      document.querySelectorAll('.starget-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+    document.getElementById('btnDoSpin').addEventListener('click', startDailySpin);
+
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Escape' && document.getElementById('hubAuthModal').classList.contains('open')) {
-        closeAuthModal();
+      if (e.code === 'Escape') {
+        if (document.getElementById('hubAuthModal').classList.contains('open')) closeAuthModal();
+        if (document.getElementById('spinModal').classList.contains('open')) closeSpinModal();
       }
     });
 

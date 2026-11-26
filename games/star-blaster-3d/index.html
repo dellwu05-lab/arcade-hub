@@ -456,18 +456,24 @@
       mode: 'menu', // 'menu' | 'playing' | 'upgrade' | 'paused' | 'over'
       score: 0, runCoins: 0, wave: 1, waveKillGoal: 12, waveKills: 0,
       time: 0, shake: 0, novaCharge: 0, spawnTimer: 0,
+      combo: 0, comboTimer: 0, overdrive: 0, magnetBuff: 0,
       boss: null,
       keys: { l: false, r: false, u: false, d: false },
       pointer: { active: false, x: 0, y: 0 },
-      player: { x: 480, y: 500, vx: 0, bank: 0, hp: 100, maxHp: 100, fireCd: 0, missileCd: 0, invuln: 0, spread: 1, fireMult: 1, homing: 0, magnet: 110, novaRate: 1 },
-      bullets: [], eBullets: [], enemies: [], pickups: [], particles: [], shockwaves: []
+      player: { x: 480, y: 500, vx: 0, bank: 0, hp: 100, maxHp: 100, shield: false, fireCd: 0, missileCd: 0, invuln: 0, spread: 1, fireMult: 1, homing: 0, magnet: 110, novaRate: 1 },
+      bullets: [], eBullets: [], enemies: [], pickups: [], particles: [], shockwaves: [], floats: []
     };
+
+    function spawnFloat(x, y, text, col = '#fde047', size = 14) {
+      if (state.floats.length > 26) state.floats.shift();
+      state.floats.push({ x, y, text, col, size, life: 0.9, max: 0.9 });
+    }
 
     const UPGRADES = [
       { id: 'spread', icon: '🔫', title: '多向光束擴充', desc: '主砲額外增加 +1 道高能電漿散射（最高 5 向）', apply: p => { p.spread = Math.min(5, p.spread + 1); } },
       { id: 'rate',   icon: '⚡', title: '超頻射速核心', desc: '武器開火速度提升 22%，壓制敵艦彈幕', apply: p => { p.fireMult *= 0.80; } },
       { id: 'homing', icon: '🎯', title: '追蹤光束飛彈', desc: '自動發射鎖定敵艦與母艦的星際飛彈 +1', apply: p => { p.homing = Math.min(3, p.homing + 1); } },
-      { id: 'repair', icon: '🛡️', title: '奈米裝甲修復', desc: '立即回復 45% 裝甲並提升最大裝甲值 +20', apply: p => { p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * 0.45)); } },
+      { id: 'repair', icon: '🛡️', title: '奈米裝甲修復', desc: '回復 45% 裝甲＋最大裝甲 +20＋立即開啟能量護盾', apply: p => { p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * 0.45)); p.shield = true; } },
       { id: 'magnet', icon: '🧲', title: '星幣重力磁場', desc: '大幅擴大星幣吸附半徑，並立即獲得 +25 星幣', apply: p => { p.magnet += 95; state.runCoins += 25; } },
       { id: 'nova',   icon: '💥', title: '超新星反應爐', desc: '大招集氣效率 +40%，並立即充能 50%', apply: p => { p.novaRate += 0.4; state.novaCharge = Math.min(100, state.novaCharge + 50); } }
     ];
@@ -522,7 +528,6 @@
       state.shake = 0.45;
       SFX.nova();
       state.shockwaves.push({ x: state.player.x, y: state.player.y, r: 20, maxR: Math.max(W, H) * 0.9, alpha: 1 });
-      // Clear enemy bullets & deal heavy damage to all enemies/boss
       state.eBullets = [];
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const e = state.enemies[i];
@@ -541,17 +546,24 @@
     function killEnemy(idx) {
       const e = state.enemies[idx];
       state.enemies.splice(idx, 1);
-      state.score += e.score;
+      state.combo = Math.min(50, state.combo + 1);
+      state.comboTimer = 3.2;
+      const mult = Math.min(5, 1 + Math.floor(state.combo / 4) * 0.5);
+      const pts = Math.round(e.score * mult);
+      state.score += pts;
       state.waveKills++;
       state.novaCharge = Math.min(100, state.novaCharge + 7.5 * state.player.novaRate);
       SFX.explode(e.kind === 'cruiser');
       addParticles(e.x, e.y, e.kind === 'cruiser' ? '#fb7185' : '#f59e0b', 16, 210);
+      spawnFloat(e.x, e.y, state.combo >= 4 ? `+${pts} (x${mult.toFixed(1)})` : `+${pts}`, state.combo >= 8 ? '#fde047' : '#7dd3fc', state.combo >= 8 ? 16 : 13);
       for (let c = 0; c < e.coins; c++) {
         state.pickups.push({ x: e.x + (Math.random() - 0.5) * 20, y: e.y + (Math.random() - 0.5) * 16, vy: 75 + Math.random() * 45, kind: 'coin' });
       }
-      if (Math.random() < 0.08) {
-        state.pickups.push({ x: e.x, y: e.y, vy: 85, kind: 'heal' });
-      }
+      const dropRoll = Math.random();
+      if (dropRoll < 0.06) state.pickups.push({ x: e.x, y: e.y, vy: 82, kind: 'overdrive' });
+      else if (dropRoll < 0.11) state.pickups.push({ x: e.x, y: e.y, vy: 82, kind: 'shield' });
+      else if (dropRoll < 0.16) state.pickups.push({ x: e.x, y: e.y, vy: 82, kind: 'magnet' });
+      else if (dropRoll < 0.22) state.pickups.push({ x: e.x, y: e.y, vy: 85, kind: 'heal' });
     }
 
     function defeatBoss() {
@@ -567,6 +579,7 @@
       addParticles(b.x, b.y, '#fde047', 50, 340);
       addParticles(b.x, b.y, '#fb7185', 40, 290);
       state.shockwaves.push({ x: b.x, y: b.y, r: 30, maxR: 420, alpha: 1 });
+      spawnFloat(b.x, b.y, `🏆 BOSS 擊墜 +${1200 * b.tier}`, '#fde047', 20);
       showToast(`🏆 擊墜星系母艦！+${1200 * b.tier} 分 +${bonus} 星幣`);
       openUpgradeDraft();
     }
@@ -615,11 +628,12 @@
       state.waveKills = 0;
       state.waveKillGoal = 12;
       state.novaCharge = 25;
+      state.combo = 0; state.comboTimer = 0; state.overdrive = 0; state.magnetBuff = 0;
       state.boss = null;
-      state.bullets = []; state.eBullets = []; state.enemies = []; state.pickups = []; state.particles = []; state.shockwaves = [];
+      state.bullets = []; state.eBullets = []; state.enemies = []; state.pickups = []; state.particles = []; state.shockwaves = []; state.floats = [];
       state.player = {
         x: W / 2, y: H * 0.78, vx: 0, bank: 0,
-        hp: ship.hp, maxHp: ship.hp, fireCd: 0, missileCd: 0, invuln: 1.0,
+        hp: ship.hp, maxHp: ship.hp, shield: ship.id === 'solaris', fireCd: 0, missileCd: 0, invuln: 1.0,
         spread: ship.spread, fireMult: 1.0, homing: ship.homing, magnet: 115, novaRate: 1.0
       };
       document.getElementById('startOverlay').classList.add('hidden');
@@ -667,6 +681,9 @@
       const p = state.player;
       const ship = getShip();
       if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
+      if (state.comboTimer > 0) { state.comboTimer -= dt; if (state.comboTimer <= 0) state.combo = 0; }
+      if (state.overdrive > 0) state.overdrive = Math.max(0, state.overdrive - dt);
+      if (state.magnetBuff > 0) state.magnetBuff = Math.max(0, state.magnetBuff - dt);
 
       // Movement (Keyboard or Pointer drag)
       const prevX = p.x;
@@ -687,18 +704,19 @@
       p.bank += (((p.x - prevX) / Math.max(0.01, dt)) * 0.0014 - p.bank) * Math.min(1, dt * 10);
       p.bank = Math.max(-0.55, Math.min(0.55, p.bank));
 
-      // Auto-Fire Primary Plasma
+      // Auto-Fire Primary Plasma (Overdrive doubles fire rate + adds +2 spread!)
+      const isOd = state.overdrive > 0;
       p.fireCd -= dt;
       if (p.fireCd <= 0) {
-        p.fireCd = ship.fireRate * p.fireMult;
-        const cnt = p.spread;
+        p.fireCd = ship.fireRate * p.fireMult * (isOd ? 0.55 : 1.0);
+        const cnt = Math.min(7, p.spread + (isOd ? 2 : 0));
         for (let i = 0; i < cnt; i++) {
           const offset = cnt === 1 ? 0 : (i - (cnt - 1) / 2);
-          const angle = -Math.PI / 2 + offset * 0.14;
+          const angle = -Math.PI / 2 + offset * 0.13;
           state.bullets.push({
             x: p.x + offset * 9, y: p.y - 20,
-            vx: Math.cos(angle) * 720, vy: Math.sin(angle) * 720,
-            dmg: 14, col: ship.accent, homing: false
+            vx: Math.cos(angle) * 760, vy: Math.sin(angle) * 760,
+            dmg: isOd ? 18 : 14, col: isOd ? '#fde047' : ship.accent, homing: false
           });
         }
         SFX.laser();
@@ -789,10 +807,10 @@
             const spd = 240 + state.wave * 18;
             if (e.kind === 'cruiser') {
               for (let k = -1; k <= 1; k++) {
-                state.eBullets.push({ x: e.x, y: e.y + 18, vx: Math.cos(ang + k * 0.25) * spd, vy: Math.sin(ang + k * 0.25) * spd, r: 6, col: '#fb7185' });
+                state.eBullets.push({ x: e.x, y: e.y + 18, vx: Math.cos(ang + k * 0.25) * spd, vy: Math.sin(ang + k * 0.25) * spd, r: 6, col: '#fb7185', grazed: false });
               }
             } else {
-              state.eBullets.push({ x: e.x, y: e.y + 14, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 5.5, col: '#f59e0b' });
+              state.eBullets.push({ x: e.x, y: e.y + 14, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 5.5, col: '#f59e0b', grazed: false });
             }
           }
         }
@@ -816,7 +834,7 @@
           b.fireCd = 0.72;
           const ang = Math.atan2(p.y - b.y, p.x - b.x);
           for (let k = -1; k <= 1; k++) {
-            state.eBullets.push({ x: b.x + k * 28, y: b.y + 32, vx: Math.cos(ang + k * 0.18) * 285, vy: Math.sin(ang + k * 0.18) * 285, r: 6.5, col: '#fb7185' });
+            state.eBullets.push({ x: b.x + k * 28, y: b.y + 32, vx: Math.cos(ang + k * 0.18) * 285, vy: Math.sin(ang + k * 0.18) * 285, r: 6.5, col: '#fb7185', grazed: false });
           }
         }
         b.ringCd -= dt;
@@ -825,44 +843,69 @@
           const count = 12 + b.tier * 2;
           for (let k = 0; k < count; k++) {
             const a = (k / count) * Math.PI * 2 + state.time;
-            state.eBullets.push({ x: b.x, y: b.y + 10, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, r: 6, col: '#c084fc' });
+            state.eBullets.push({ x: b.x, y: b.y + 10, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, r: 6, col: '#c084fc', grazed: false });
           }
         }
       }
 
-      // Update Enemy Bullets
+      // Update Enemy Bullets + GRAZE (極限擦彈!)
       for (let i = state.eBullets.length - 1; i >= 0; i--) {
         const eb = state.eBullets[i];
         eb.x += eb.vx * dt; eb.y += eb.vy * dt;
-        if (Math.hypot(eb.x - p.x, eb.y - p.y) < eb.r + 12) {
+        const d = Math.hypot(eb.x - p.x, eb.y - p.y);
+        if (d < eb.r + 12) {
           state.eBullets.splice(i, 1);
           damagePlayer(14);
           continue;
         }
+        if (!eb.grazed && d < eb.r + 44) {
+          eb.grazed = true;
+          state.score += 50;
+          state.novaCharge = Math.min(100, state.novaCharge + 6 * p.novaRate);
+          SFX.tone('sine', 1240, 1860, 0.06, 0.05);
+          addParticles((p.x + eb.x) / 2, (p.y + eb.y) / 2, '#38bdf8', 5, 130);
+          spawnFloat(p.x, p.y - 26, '⚡ GRAZE +50', '#38bdf8', 12);
+        }
         if (eb.x < -30 || eb.x > W + 30 || eb.y < -30 || eb.y > H + 30) state.eBullets.splice(i, 1);
       }
 
-      // Pickups
+      // Pickups (Coin, Heal, Overdrive, Shield, Magnet)
+      const magRad = state.magnetBuff > 0 ? Math.max(W, H) : p.magnet;
       for (let i = state.pickups.length - 1; i >= 0; i--) {
         const pk = state.pickups[i];
         const d = Math.hypot(p.x - pk.x, p.y - pk.y);
-        if (d < p.magnet) {
-          pk.x += ((p.x - pk.x) / Math.max(1, d)) * 420 * dt;
-          pk.y += ((p.y - pk.y) / Math.max(1, d)) * 420 * dt;
+        if (pk.kind === 'coin' && d < magRad) {
+          pk.x += ((p.x - pk.x) / Math.max(1, d)) * (state.magnetBuff > 0 ? 640 : 420) * dt;
+          pk.y += ((p.y - pk.y) / Math.max(1, d)) * (state.magnetBuff > 0 ? 640 : 420) * dt;
         } else {
           pk.y += pk.vy * dt;
         }
-        if (d < 26) {
+        if (d < 28) {
           if (pk.kind === 'coin') {
             const val = Math.max(1, Math.round(1 * ship.coinMult));
             state.runCoins += val;
             state.score += 20;
             state.novaCharge = Math.min(100, state.novaCharge + 2.4 * p.novaRate);
             SFX.coin();
+          } else if (pk.kind === 'overdrive') {
+            state.overdrive = 6.5;
+            SFX.upgrade();
+            spawnFloat(p.x, p.y - 28, '⚡ 火力過載 OVERDRIVE!', '#fde047', 16);
+            showToast('⚡ 撿到火力過載！射速翻倍＋散射強化 6.5 秒');
+          } else if (pk.kind === 'shield') {
+            p.shield = true;
+            SFX.upgrade();
+            spawnFloat(p.x, p.y - 28, '🛡️ 量子護盾展開!', '#38bdf8', 15);
+            showToast('🛡️ 量子護盾展開！可抵擋一次致命撞擊');
+          } else if (pk.kind === 'magnet') {
+            state.magnetBuff = 8.0;
+            SFX.upgrade();
+            spawnFloat(p.x, p.y - 28, '🧲 全場星幣黑洞!', '#c084fc', 15);
+            showToast('🧲 全場星幣磁力吸取 8 秒！');
           } else {
             p.hp = Math.min(p.maxHp, p.hp + 25);
             SFX.upgrade();
-            showToast('💚 裝甲修復 +25');
+            spawnFloat(p.x, p.y - 28, '💚 裝甲 +25', '#34d399', 14);
           }
           state.pickups.splice(i, 1);
           continue;
@@ -870,7 +913,7 @@
         if (pk.y > H + 30) state.pickups.splice(i, 1);
       }
 
-      // Particles & Shockwaves
+      // Particles, Shockwaves & Floats
       for (let i = state.particles.length - 1; i >= 0; i--) {
         const pt = state.particles[i];
         pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
@@ -881,6 +924,11 @@
         sw.r += 950 * dt; sw.alpha = Math.max(0, 1 - sw.r / sw.maxR);
         if (sw.alpha <= 0) state.shockwaves.splice(i, 1);
       }
+      for (let i = state.floats.length - 1; i >= 0; i--) {
+        const fl = state.floats[i];
+        fl.y -= 48 * dt; fl.life -= dt;
+        if (fl.life <= 0) state.floats.splice(i, 1);
+      }
 
       updateHudUI();
     }
@@ -888,6 +936,17 @@
     function damagePlayer(amt) {
       const p = state.player;
       if (p.invuln > 0) return;
+      if (p.shield) {
+        p.shield = false;
+        p.invuln = 1.1;
+        state.shake = 0.25;
+        SFX.upgrade();
+        state.shockwaves.push({ x: p.x, y: p.y, r: 16, maxR: 150, alpha: 0.9 });
+        spawnFloat(p.x, p.y - 24, '🛡️ 護盾完美格擋!', '#38bdf8', 16);
+        showToast('🛡️ 量子護盾成功擋下攻擊！');
+        return;
+      }
+      state.combo = 0;
       p.hp = Math.max(0, p.hp - amt);
       p.invuln = 0.75;
       state.shake = 0.28;
@@ -915,20 +974,16 @@
       const lw = 24 * (1 - bank * 0.45);
       const rw = 24 * (1 + bank * 0.45);
 
-      // Left wing (shaded)
       ctx.fillStyle = bank > 0 ? col : accent;
       ctx.beginPath(); ctx.moveTo(-4, -8); ctx.lineTo(-lw, 14); ctx.lineTo(-6, 16); ctx.closePath(); ctx.fill();
-      // Right wing (shaded)
       ctx.fillStyle = bank < 0 ? col : accent;
       ctx.beginPath(); ctx.moveTo(4, -8); ctx.lineTo(rw, 14); ctx.lineTo(6, 16); ctx.closePath(); ctx.fill();
 
-      // Fuselage top ridge (3D facet illusion)
       ctx.fillStyle = '#e2e8f0';
       ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(-9, 14); ctx.lineTo(0, 20); ctx.closePath(); ctx.fill();
       ctx.fillStyle = col;
       ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(9, 14); ctx.lineTo(0, 20); ctx.closePath(); ctx.fill();
 
-      // Glowing Cockpit canopy
       ctx.fillStyle = '#0ea5e9';
       ctx.beginPath(); ctx.ellipse(bank * 3, -5, 4.2, 8.5, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#e0f2fe';
@@ -939,19 +994,16 @@
     function draw3DBoss(b) {
       ctx.save();
       ctx.translate(b.x, b.y);
-      // Outer rotating energy halo
       ctx.strokeStyle = 'rgba(251, 113, 133, 0.45)';
       ctx.lineWidth = 3;
       ctx.beginPath(); ctx.ellipse(0, 0, 74, 26, Math.sin(state.time * 2) * 0.08, 0, Math.PI * 2); ctx.stroke();
 
-      // Armored 3D Mothership Hull
       ctx.fillStyle = '#312e81';
       ctx.beginPath(); ctx.moveTo(0, 44); ctx.lineTo(-66, -12); ctx.lineTo(-34, -36); ctx.lineTo(34, -36); ctx.lineTo(66, -12); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#4c1d95';
       ctx.beginPath(); ctx.moveTo(0, 44); ctx.lineTo(66, -12); ctx.lineTo(34, -36); ctx.lineTo(0, -20); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = '#fb7185'; ctx.lineWidth = 2; ctx.stroke();
 
-      // Glowing Core Reactor
       const pulse = 14 + Math.sin(state.time * 10) * 3;
       const g = ctx.createRadialGradient(0, 4, 2, 0, 4, pulse * 1.9);
       g.addColorStop(0, '#fff'); g.addColorStop(0.4, '#fb7185'); g.addColorStop(1, 'transparent');
@@ -966,7 +1018,6 @@
         ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
       }
 
-      // Deep Space Nebula Background
       const bg = ctx.createLinearGradient(0, 0, 0, H);
       bg.addColorStop(0, '#030612');
       bg.addColorStop(0.55, '#0b1026');
@@ -974,7 +1025,6 @@
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // 3D Warp Starfield
       const cx = W / 2, cy = H * 0.38;
       for (const s of stars) {
         const px = cx + (s.x / s.z) * W * 0.45;
@@ -986,14 +1036,13 @@
       }
       ctx.globalAlpha = 1;
 
-      // Shockwaves
       for (const sw of state.shockwaves) {
         ctx.strokeStyle = `rgba(56, 189, 248, ${sw.alpha})`;
         ctx.lineWidth = 6 * sw.alpha + 1;
         ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2); ctx.stroke();
       }
 
-      // Pickups
+      // Pickups (with distinct neon power-up icons)
       for (const pk of state.pickups) {
         ctx.save();
         ctx.translate(pk.x, pk.y);
@@ -1005,14 +1054,17 @@
           ctx.fillStyle = '#fef08a';
           ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
         } else {
-          ctx.fillStyle = '#34d399';
-          ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#fff'; ctx.fillRect(-5, -2, 10, 4); ctx.fillRect(-2, -5, 4, 10);
+          const pCol = pk.kind === 'overdrive' ? '#f59e0b' : (pk.kind === 'shield' ? '#38bdf8' : (pk.kind === 'magnet' ? '#a855f7' : '#34d399'));
+          const pIco = pk.kind === 'overdrive' ? '⚡' : (pk.kind === 'shield' ? '🛡️' : (pk.kind === 'magnet' ? '🧲' : '+'));
+          ctx.fillStyle = pCol;
+          ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+          ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(pIco, 0, 1);
         }
         ctx.restore();
       }
 
-      // Enemies
       for (const e of state.enemies) {
         if (e.kind === 'asteroid') {
           ctx.save();
@@ -1035,16 +1087,28 @@
 
       if (state.boss) draw3DBoss(state.boss);
 
-      // Player Ship
       const ship = getShip();
       if (state.mode !== 'over') {
         const px = state.mode === 'menu' ? W / 2 : state.player.x;
         const py = state.mode === 'menu' ? H * 0.78 + Math.sin(state.time * 3) * 8 : state.player.y;
         const blink = state.player.invuln > 0 && Math.floor(state.time * 16) % 2 === 0;
+        if (state.overdrive > 0) {
+          ctx.strokeStyle = 'rgba(253, 224, 71, 0.65)'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(px, py, 32 + Math.sin(state.time * 24) * 4, 0, Math.PI * 2); ctx.stroke();
+        }
+        if (state.player.shield && state.mode === 'playing') {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)'; ctx.fillStyle = 'rgba(56, 189, 248, 0.14)'; ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          for (let k = 0; k < 6; k++) {
+            const a = (k / 6) * Math.PI * 2 + state.time * 1.6;
+            const sx = px + Math.cos(a) * 34, sy = py + Math.sin(a) * 34;
+            if (k === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+          }
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
         if (!blink) draw3DShip(px, py, state.mode === 'menu' ? Math.sin(state.time * 1.4) * 0.25 : state.player.bank, ship.color, ship.accent, 1.12, false);
       }
 
-      // Additive Plasma Bullets & Particles
       ctx.globalCompositeOperation = 'lighter';
       for (const b of state.bullets) {
         ctx.fillStyle = b.col;
@@ -1065,6 +1129,22 @@
         ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
+
+      // Floating Neon Popups & Active Combo Indicator
+      ctx.textAlign = 'center';
+      for (const fl of state.floats) {
+        ctx.globalAlpha = Math.max(0, fl.life / fl.max);
+        ctx.font = `900 ${fl.size}px sans-serif`;
+        ctx.fillStyle = fl.col;
+        ctx.fillText(fl.text, fl.x, fl.y);
+      }
+      if (state.mode === 'playing' && state.combo >= 3) {
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'left';
+        ctx.font = '900 18px sans-serif';
+        ctx.fillStyle = '#fde047';
+        ctx.fillText(`🔥 COMBO x${state.combo}`, 16, 116);
+      }
       ctx.globalAlpha = 1;
       ctx.restore();
     }

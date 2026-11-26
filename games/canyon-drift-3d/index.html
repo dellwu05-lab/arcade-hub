@@ -346,6 +346,8 @@
       crash() { this.tone('sawtooth', 140, 35, 0.28, 0.14); },
       checkpoint() { this.tone('triangle', 587, 1174, 0.24, 0.1); },
       overtake() { this.tone('sine', 660, 990, 0.11, 0.065); },
+      boostPad() { this.tone('sawtooth', 320, 980, 0.22, 0.09); this.tone('triangle', 640, 1320, 0.2, 0.06); },
+      miniTurbo() { this.tone('triangle', 420, 1080, 0.26, 0.095); },
       startBgm() {
         if (this.timer) return;
         const bass = [98, 98, 116.5, 130.8, 98, 98, 146.8, 130.8];
@@ -382,11 +384,20 @@
       mode: 'menu', // 'menu' | 'playing' | 'paused' | 'over'
       time: 0, dist: 0, nextCp: 1200, biomeIdx: 0,
       speed: 0, playerX: 0, steer: 0, driftAngle: 0,
+      driftTime: 0, miniTurbo: 0,
       nitro: 40, nitroTime: 0, timeLeft: 35,
       score: 0, runCoins: 0, combo: 0, comboTimer: 0, shake: 0,
       keys: { l: false, r: false, drift: false },
-      rivals: [], coins: [], sparks: []
+      rivals: [], coins: [], boostPads: [], sparks: [], floats: []
     };
+
+    function spawnFloat(text, color, yOffset) {
+      st.floats.push({
+        x: W / 2 + (Math.random() - 0.5) * 44,
+        y: H * 0.72 + (yOffset || 0),
+        text, color: color || '#fde047', life: 1.05, maxLife: 1.05
+      });
+    }
 
     function showToast(msg) {
       const el = document.getElementById('toast');
@@ -420,6 +431,11 @@
           st.coins.push({ z: startZ + k * 14, x: lane, got: false });
         }
       }
+      while (st.boostPads.length < 3) {
+        const lastZ = st.boostPads.length ? Math.max(...st.boostPads.map(b => b.z)) : st.dist + 140;
+        const lane = (Math.floor(Math.random() * 3) - 1) * 0.58;
+        st.boostPads.push({ z: Math.max(st.dist + 160, lastZ + 170 + Math.random() * 140), x: lane, hit: false });
+      }
     }
 
     function triggerNitro() {
@@ -428,6 +444,7 @@
       st.nitro = 0;
       st.shake = 0.22;
       SFX.nitro();
+      spawnFloat('🔥 氮氣極速爆發！', '#38bdf8', -18);
       showToast('🔥 氮氣極速爆發！');
     }
 
@@ -437,9 +454,10 @@
       st.mode = 'playing';
       st.dist = 0; st.nextCp = 1200; st.biomeIdx = 0;
       st.speed = 90; st.playerX = 0; st.steer = 0; st.driftAngle = 0;
+      st.driftTime = 0; st.miniTurbo = 0;
       st.nitro = 45; st.nitroTime = 0; st.timeLeft = 36;
       st.score = 0; st.runCoins = 0; st.combo = 0; st.comboTimer = 0; st.shake = 0;
-      st.rivals = []; st.coins = []; st.sparks = [];
+      st.rivals = []; st.coins = []; st.boostPads = []; st.sparks = []; st.floats = [];
       spawnWorldEntities();
 
       document.getElementById('startOverlay').classList.add('hidden');
@@ -447,7 +465,7 @@
       document.getElementById('pauseOverlay').classList.add('hidden');
       document.getElementById('dashCluster').classList.remove('hidden');
       document.getElementById('driveBar').classList.remove('hidden');
-      showToast(`🏁 ${getCar().name} 出發！衝向下一個峽谷檢查點！`);
+      showToast(`🏁 ${getCar().name} 出發！長按飄移放開觸發小噴射！`);
     }
 
     function endRace() {
@@ -468,6 +486,11 @@
     function update(dt) {
       st.time += dt;
       if (st.shake > 0) st.shake = Math.max(0, st.shake - dt);
+      for (let i = st.floats.length - 1; i >= 0; i--) {
+        const fl = st.floats[i];
+        fl.y -= 52 * dt; fl.life -= dt;
+        if (fl.life <= 0) st.floats.splice(i, 1);
+      }
 
       if (st.mode === 'menu') {
         st.dist += 55 * dt;
@@ -483,47 +506,69 @@
 
       const boosting = st.nitroTime > 0;
       if (boosting) st.nitroTime = Math.max(0, st.nitroTime - dt);
+      const miniBoosting = st.miniTurbo > 0;
+      if (miniBoosting) st.miniTurbo = Math.max(0, st.miniTurbo - dt);
 
       const steerInput = (st.keys.r ? 1 : 0) - (st.keys.l ? 1 : 0);
       const drifting = st.keys.drift && Math.abs(steerInput) > 0 && st.speed > 130;
 
       // Speed physics
       const offRoad = Math.abs(st.playerX) > 1.02;
-      const targetMax = boosting ? car.nitroSpd : (offRoad ? car.maxSpd * 0.58 : (drifting ? car.maxSpd * 0.94 : car.maxSpd));
-      const accel = boosting ? 290 : (offRoad ? 110 : 125);
+      const targetMax = boosting
+        ? car.nitroSpd
+        : (miniBoosting
+          ? car.maxSpd + 48
+          : (offRoad ? car.maxSpd * 0.58 : (drifting ? car.maxSpd * 0.94 : car.maxSpd)));
+      const accel = boosting ? 300 : (miniBoosting ? 240 : (offRoad ? 110 : 128));
       if (st.speed < targetMax) st.speed = Math.min(targetMax, st.speed + accel * dt);
       else st.speed = Math.max(targetMax, st.speed - 165 * dt);
 
       // Steering + Curve Centrifugal Force + Drift
       const curCurve = roadCurveAt(st.dist);
-      const steerPower = drifting ? 2.15 : 1.55;
+      const steerPower = drifting ? 2.18 : 1.58;
       st.steer += (steerInput - st.steer) * Math.min(1, dt * 11);
       st.driftAngle += ((drifting ? steerInput * 0.34 : 0) - st.driftAngle) * Math.min(1, dt * 8);
       st.playerX += (st.steer * steerPower - curCurve * (st.speed / 340) * 0.62) * dt;
       st.playerX = Math.max(-1.45, Math.min(1.45, st.playerX));
 
-      // Drift Nitro Charge + Sparks
+      // Drift Grading + Nitro Charge + Release Mini-Turbo!
       if (drifting && !offRoad) {
-        st.nitro = Math.min(100, st.nitro + 26 * car.driftCharge * dt);
-        st.score += 48 * dt;
+        st.driftTime += dt;
+        st.nitro = Math.min(100, st.nitro + 27 * car.driftCharge * dt);
+        st.score += 52 * dt;
+        const sparkCol = st.driftTime >= 2.8 ? '#f472b6' : (st.driftTime >= 1.8 ? '#38bdf8' : (st.driftTime >= 1.0 ? '#fbbf24' : '#fb923c'));
         for (let k = 0; k < 2; k++) {
           st.sparks.push({
             x: W / 2 + (Math.random() > 0.5 ? -38 : 38) + st.steer * 14,
             y: H * 0.86,
             vx: -steerInput * (140 + Math.random() * 140) + (Math.random() - 0.5) * 60,
             vy: -40 - Math.random() * 70,
-            col: st.nitro > 80 ? '#38bdf8' : '#fb923c',
-            life: 0.28 + Math.random() * 0.2
+            col: sparkCol,
+            life: 0.28 + Math.random() * 0.22
           });
         }
-      } else if (!boosting) {
-        st.nitro = Math.min(100, st.nitro + 3.2 * dt);
+      } else {
+        if (st.driftTime >= 0.65 && !offRoad) {
+          let label = '💨 GOOD 甩尾噴射', pts = 120, bonusCoins = 0, mt = 0.75, spdAdd = 32, col = '#fde047';
+          if (st.driftTime >= 2.8) { label = '🔥 LEGEND 傳說甩尾'; pts = 550; bonusCoins = 10; mt = 2.0; spdAdd = 78; col = '#f472b6'; }
+          else if (st.driftTime >= 1.8) { label = '⚡ SUPER 超級甩尾'; pts = 350; bonusCoins = 6; mt = 1.5; spdAdd = 62; col = '#38bdf8'; }
+          else if (st.driftTime >= 1.15) { label = '✨ GREAT 完美甩尾'; pts = 220; bonusCoins = 3; mt = 1.15; spdAdd = 48; col = '#fb923c'; }
+          st.miniTurbo = Math.max(st.miniTurbo, mt);
+          st.speed = Math.min(car.nitroSpd, st.speed + spdAdd);
+          st.score += pts;
+          if (bonusCoins > 0) st.runCoins += Math.round(bonusCoins * car.coinMult);
+          st.shake = 0.14;
+          SFX.miniTurbo();
+          spawnFloat(`${label} +${pts}${bonusCoins ? ` +${bonusCoins}🪙` : ''}`, col, -10);
+        }
+        st.driftTime = 0;
+        if (!boosting) st.nitro = Math.min(100, st.nitro + 3.2 * dt);
       }
 
       // Advance distance & score
       const meters = (st.speed / 3.6) * dt;
       st.dist += meters;
-      st.score += meters * (boosting ? 3.2 : 1.5) * (1 + st.combo * 0.25);
+      st.score += meters * (boosting ? 3.2 : (miniBoosting ? 2.2 : 1.5)) * (1 + st.combo * 0.25);
 
       // Checkpoint / Biome Transition every 1200m
       if (st.dist >= st.nextCp) {
@@ -534,7 +579,25 @@
         st.runCoins += bonus;
         save.checkpoints++;
         SFX.checkpoint();
+        spawnFloat(`🏁 檢查點！+22秒 +${bonus}🪙`, '#6ee7b7', -26);
         showToast(`🏁 檢查點達成！+22秒 +${bonus}🪙 · 進入 ${BIOMES[st.biomeIdx].name}`);
+      }
+
+      // Highway Boost Pads
+      for (let i = st.boostPads.length - 1; i >= 0; i--) {
+        const bp = st.boostPads[i];
+        const dz = bp.z - st.dist;
+        if (!bp.hit && dz < 10 && dz > -6 && Math.abs(bp.x - st.playerX) < 0.42) {
+          bp.hit = true;
+          st.miniTurbo = Math.max(st.miniTurbo, 1.35);
+          st.speed = Math.min(car.nitroSpd + 15, st.speed + 78);
+          st.nitro = Math.min(100, st.nitro + 18);
+          st.score += 150;
+          st.shake = 0.16;
+          SFX.boostPad();
+          spawnFloat('⏩ 極速加速帶！+150', '#38bdf8', -18);
+        }
+        if (dz < -18) st.boostPads.splice(i, 1);
       }
 
       // Rivals collision & Near-Miss Overtake
@@ -546,29 +609,29 @@
           const dx = Math.abs(rv.x - st.playerX);
           if (dx < 0.34) {
             if (boosting) {
-              // Nitro ram blast!
               st.rivals.splice(i, 1);
               st.score += 180;
               st.shake = 0.25;
               SFX.crash();
-              showToast('💥 氮氣撞飛對手！+180 分');
+              spawnFloat('💥 氮氣撞飛對手！+180', '#fb923c', -16);
               continue;
             } else {
               st.speed = Math.max(65, st.speed * 0.48);
               st.shake = 0.35;
               st.combo = 0;
+              st.driftTime = 0;
               rv.z -= 12;
               SFX.crash();
-              showToast('💥 擦撞車輛！速度驟降');
+              spawnFloat('💥 擦撞車輛！', '#fb7185', -8);
             }
           } else if (dx < 0.72 && !rv.passed && dz < 2) {
             rv.passed = true;
             st.combo = Math.min(5, st.combo + 1);
-            st.comboTimer = 4.0;
+            st.comboTimer = 4.2;
             st.nitro = Math.min(100, st.nitro + 14);
             st.score += 120 * st.combo;
             SFX.overtake();
-            showToast(`⚡ 極限超車 x${st.combo}！+${120 * st.combo}`);
+            spawnFloat(`⚡ 極限超車 x${st.combo}！+${120 * st.combo}`, '#fde047', -22);
           }
         }
         if (dz < -20) st.rivals.splice(i, 1);
@@ -706,8 +769,28 @@
           ctx.fillRect(p1.x + p1.w * 1.65, p1.y - ph, pw * 0.35, ph);
         }
 
-        // Draw Coins & Rival Cars on this depth slice
+        // Draw Boost Pads, Coins & Rival Cars on this depth slice
         const segZMin = p1.segIdx * SEG_LEN, segZMax = segZMin + SEG_LEN;
+        for (const bp of st.boostPads) {
+          if (bp.z >= segZMin && bp.z < segZMax + SEG_LEN * 1.4) {
+            const bw1 = p1.w * 0.24, bw2 = p2.w * 0.24;
+            const bx1 = p1.x + bp.x * p1.w, bx2 = p2.x + bp.x * p2.w;
+            const pulse = 0.65 + Math.sin(st.time * 16) * 0.28;
+            ctx.fillStyle = bp.hit ? 'rgba(52, 211, 153, 0.5)' : `rgba(56, 189, 248, ${pulse})`;
+            ctx.beginPath();
+            ctx.moveTo(bx1 - bw1, p1.y); ctx.lineTo(bx1 + bw1, p1.y);
+            ctx.lineTo(bx2 + bw2, p2.y); ctx.lineTo(bx2 - bw2, p2.y);
+            ctx.closePath(); ctx.fill();
+            // Glowing chevron arrow
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = Math.max(1.5, p1.w * 0.025);
+            ctx.beginPath();
+            ctx.moveTo(bx2 - bw2 * 0.55, p2.y);
+            ctx.lineTo(bx1, p1.y);
+            ctx.lineTo(bx2 + bw2 * 0.55, p2.y);
+            ctx.stroke();
+          }
+        }
         for (const cn of st.coins) {
           if (!cn.got && cn.z >= segZMin && cn.z < segZMax) {
             const cx = p1.x + cn.x * p1.w;
@@ -731,9 +814,27 @@
       // Draw Player 3D Supercar
       const car = getCar();
       const boosting = st.nitroTime > 0;
+      const miniBoosting = st.miniTurbo > 0;
       const carW = Math.min(138, W * 0.24);
       const carH = carW * 0.52;
-      drawCar3D(W / 2, H * 0.88 + Math.sin(st.time * 28) * (st.speed > 100 ? 1.5 : 0), carW, carH, car.body, car.stripe, st.steer * 0.14 + st.driftAngle, st.keys.drift, boosting);
+      drawCar3D(W / 2, H * 0.88 + Math.sin(st.time * 28) * (st.speed > 100 ? 1.5 : 0), carW, carH, car.body, car.stripe, st.steer * 0.14 + st.driftAngle, st.keys.drift, boosting || miniBoosting);
+
+      // Live Drift Charge Grade Badge
+      if (st.mode === 'playing' && st.driftTime >= 0.35) {
+        let gTxt = 'DRIFT CHARGING…', gCol = '#fde047';
+        if (st.driftTime >= 2.8) { gTxt = '🔥 LEGEND DRIFT!!!'; gCol = '#f472b6'; }
+        else if (st.driftTime >= 1.8) { gTxt = '⚡ SUPER DRIFT!!'; gCol = '#38bdf8'; }
+        else if (st.driftTime >= 1.15) { gTxt = '✨ GREAT DRIFT!'; gCol = '#fb923c'; }
+        else if (st.driftTime >= 0.65) { gTxt = '💨 GOOD DRIFT'; gCol = '#fde047'; }
+        ctx.save();
+        ctx.font = '900 18px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0,0,0,0.65)';
+        ctx.fillText(gTxt, W / 2 + 2, H * 0.77 + 2);
+        ctx.fillStyle = gCol;
+        ctx.fillText(gTxt, W / 2, H * 0.77);
+        ctx.restore();
+      }
 
       // Drift Sparks
       ctx.globalCompositeOperation = 'lighter';
@@ -742,12 +843,13 @@
         ctx.globalAlpha = Math.max(0, sp.life * 2.5);
         ctx.beginPath(); ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2); ctx.fill();
       }
-      // Nitro Speed Lines
-      if (boosting) {
-        ctx.strokeStyle = 'rgba(125, 211, 252, 0.45)';
-        ctx.lineWidth = 2.5;
-        for (let k = 0; k < 14; k++) {
-          const ang = (k / 14) * Math.PI * 2 + st.time * 4;
+      // Nitro & Mini-Turbo Speed Lines
+      if (boosting || miniBoosting) {
+        ctx.strokeStyle = boosting ? 'rgba(125, 211, 252, 0.48)' : 'rgba(251, 191, 36, 0.34)';
+        ctx.lineWidth = boosting ? 2.6 : 2;
+        const cnt = boosting ? 14 : 9;
+        for (let k = 0; k < cnt; k++) {
+          const ang = (k / cnt) * Math.PI * 2 + st.time * 4;
           ctx.beginPath();
           ctx.moveTo(W / 2 + Math.cos(ang) * W * 0.25, H * 0.48 + Math.sin(ang) * H * 0.22);
           ctx.lineTo(W / 2 + Math.cos(ang) * W * 0.65, H * 0.48 + Math.sin(ang) * H * 0.65);
@@ -756,6 +858,19 @@
       }
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
+
+      // Floating Arcade Callouts
+      for (const fl of st.floats) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, fl.life / (fl.maxLife * 0.45));
+        ctx.font = '900 19px system-ui, "Noto Sans TC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillText(fl.text, fl.x + 2, fl.y + 2);
+        ctx.fillStyle = fl.color;
+        ctx.fillText(fl.text, fl.x, fl.y);
+        ctx.restore();
+      }
       ctx.restore();
     }
 

@@ -428,9 +428,13 @@
       bag: [],
       queue: [],
       score: 0, lines: 0, level: 1, combo: 0, runCoins: 0,
-      timeLeft: 120, dropAcc: 0, shake: 0,
-      particles: [], trails: [], flashRows: []
+      feverTimer: 0, timeLeft: 120, dropAcc: 0, shake: 0, time: 0,
+      particles: [], trails: [], flashRows: [], floats: []
     };
+
+    function spawnFloat(x, y, text, col = '#fde047', size = 18) {
+      game.floats.push({ x, y, text, col, size, life: 1.05, max: 1.05 });
+    }
 
     function showToast(msg) {
       const el = document.getElementById('toast');
@@ -457,7 +461,9 @@
       const mat = SHAPES[t].map(r => r.slice());
       const x = Math.floor((COLS - mat[0].length) / 2);
       const y = 0;
-      game.cur = { t, mat, x, y };
+      const roll = Math.random();
+      const special = roll < 0.13 ? 'bomb' : (roll < 0.25 ? 'gold' : '');
+      game.cur = { t, mat, x, y, special };
       if (collides(mat, x, y)) {
         endGame(false);
       }
@@ -518,7 +524,6 @@
       const gy = ghostY();
       const dist = gy - startY;
       game.score += dist * 2;
-      // Add vertical laser slam trail
       const col = getTheme().palette[game.cur.t];
       for (let c = 0; c < game.cur.mat[0].length; c++) {
         game.trails.push({ x: (game.cur.x + c) * CELL, y: startY * CELL, h: Math.max(CELL, dist * CELL), col, alpha: 0.45 });
@@ -545,60 +550,94 @@
     }
 
     function lockPiece() {
-      const { mat, x, y, t } = game.cur;
+      const { mat, x, y, t, special } = game.cur;
+      let taggedSpecial = false;
       for (let r = 0; r < mat.length; r++) {
         for (let c = 0; c < mat[r].length; c++) {
           if (mat[r][c] && y + r >= 0 && y + r < ROWS) {
-            game.board[y + r][x + c] = t;
+            let val = t;
+            if (!taggedSpecial && special) {
+              val = t + (special === 'bomb' ? 100 : 200);
+              taggedSpecial = true;
+            }
+            game.board[y + r][x + c] = val;
           }
         }
       }
       game.canHold = true;
 
-      // Check full rows
-      const full = [];
+      // Check full rows + trigger Bomb / Gold special blocks!
+      const fullSet = new Set();
+      let bombTriggered = false;
+      let goldCount = 0;
       for (let r = 0; r < ROWS; r++) {
-        if (game.board[r].every(v => v !== -1)) full.push(r);
+        if (game.board[r].every(v => v !== -1)) {
+          fullSet.add(r);
+          for (let c = 0; c < COLS; c++) {
+            const v = game.board[r][c];
+            if (v >= 100 && v < 200) bombTriggered = true;
+            if (v >= 200) goldCount++;
+          }
+        }
       }
+      if (bombTriggered) {
+        Array.from(fullSet).forEach((r) => {
+          if (r - 1 >= 0) fullSet.add(r - 1);
+          if (r + 1 < ROWS) fullSet.add(r + 1);
+        });
+      }
+      const full = Array.from(fullSet).sort((a, b) => a - b);
 
       if (full.length > 0) {
         game.combo++;
-        const basePts = [0, 100, 300, 500, 900][full.length] || 1200;
-        const mult = 1 + (game.combo - 1) * 0.35;
-        game.score += Math.round(basePts * game.level * mult);
+        if (game.combo >= 3 || full.length >= 3) {
+          game.feverTimer = 12.0;
+          spawnFloat(COLS * CELL / 2, 180, '🌈 FEVER 雙倍狂熱!', '#f472b6', 22);
+        }
+        const feverMult = game.feverTimer > 0 ? 2 : 1;
+        const basePts = [0, 100, 300, 500, 900][Math.min(4, full.length)] || 1100;
+        const mult = (1 + (game.combo - 1) * 0.35) * feverMult;
+        const gainedPts = Math.round(basePts * game.level * mult);
+        game.score += gainedPts;
         game.lines += full.length;
         game.level = Math.min(18, 1 + Math.floor(game.lines / 8));
-        const earned = full.length * 3 + (full.length === 4 ? 10 : 0) + (game.combo >= 2 ? game.combo * 2 : 0);
+        const earned = (full.length * 3 + (full.length >= 4 ? 10 : 0) + (game.combo >= 2 ? game.combo * 2 : 0)) * feverMult + goldCount * 15;
         game.runCoins += earned;
-        game.shake = full.length >= 3 ? 0.32 : 0.16;
+        game.shake = (bombTriggered || full.length >= 3) ? 0.38 : 0.16;
         SFX.clear(full.length, game.combo - 1);
 
-        // Spawn neon explosion particles along cleared rows
         const pal = getTheme().palette;
+        const midY = (full[0] + 0.5) * CELL;
         full.forEach((rowIdx) => {
           for (let c = 0; c < COLS; c++) {
-            const col = pal[game.board[rowIdx][c] % pal.length];
-            for (let k = 0; k < 4; k++) {
+            const cellVal = game.board[rowIdx][c];
+            const col = cellVal >= 200 ? '#fde047' : (cellVal >= 100 ? '#fb7185' : pal[Math.max(0, cellVal) % pal.length]);
+            for (let k = 0; k < (bombTriggered ? 6 : 4); k++) {
               game.particles.push({
                 x: (c + 0.5) * CELL, y: (rowIdx + 0.5) * CELL,
-                vx: (Math.random() - 0.5) * 260, vy: (Math.random() - 0.7) * 240,
-                r: 2.5 + Math.random() * 3.5, col, life: 0.45 + Math.random() * 0.3
+                vx: (Math.random() - 0.5) * 300, vy: (Math.random() - 0.7) * 260,
+                r: 2.5 + Math.random() * 4, col, life: 0.45 + Math.random() * 0.35
               });
             }
           }
         });
 
-        // Remove cleared rows & prepend empty rows
         for (let i = full.length - 1; i >= 0; i--) game.board.splice(full[i], 1);
         while (game.board.length < ROWS) game.board.unshift(Array(COLS).fill(-1));
 
-        // Banner callout
+        if (bombTriggered) spawnFloat(COLS * CELL / 2, midY - 20, '💣 炸彈連鎖爆破！', '#fb7185', 20);
+        if (goldCount > 0) spawnFloat(COLS * CELL / 2, midY + 12, `⭐ 黃金加碼 +${goldCount * 15}🪙`, '#fde047', 17);
+        const callout = full.length >= 4 ? '💥 TETRIS!' : (full.length === 3 ? '🔥 TRIPLE!' : (full.length === 2 ? '⚡ DOUBLE!' : `+${gainedPts}`));
+        spawnFloat(COLS * CELL / 2, midY, callout, '#38bdf8', full.length >= 3 ? 22 : 16);
+
         const cb = document.getElementById('comboBanner');
-        const label = full.length === 4 ? `💥 TETRIS 四連消！` : (game.combo >= 2 ? `🔥 COMBO x${game.combo} (+${earned}🪙)` : `✨ 消除 ${full.length} 行 (+${earned}🪙)`);
+        const label = game.feverTimer > 0
+          ? `🌈 FEVER x2 · COMBO x${game.combo} (+${earned}🪙)`
+          : (full.length >= 4 ? `💥 TETRIS 四連消！` : (game.combo >= 2 ? `🔥 COMBO x${game.combo} (+${earned}🪙)` : `✨ 消除 ${full.length} 行 (+${earned}🪙)`));
         cb.textContent = label;
         cb.classList.add('show');
         clearTimeout(lockPiece._bt);
-        lockPiece._bt = setTimeout(() => cb.classList.remove('show'), 1400);
+        lockPiece._bt = setTimeout(() => cb.classList.remove('show'), 1600);
       } else {
         game.combo = 0;
       }
@@ -616,8 +655,8 @@
       game.bag = []; game.queue = [];
       game.hold = -1; game.canHold = true;
       game.score = 0; game.lines = 0; game.level = 1; game.combo = 0; game.runCoins = 0;
-      game.timeLeft = 120; game.dropAcc = 0; game.shake = 0;
-      game.particles = []; game.trails = [];
+      game.feverTimer = 0; game.timeLeft = 120; game.dropAcc = 0; game.shake = 0;
+      game.particles = []; game.trails = []; game.floats = [];
 
       document.getElementById('timerBox').style.display = variant === 'blitz' ? 'block' : 'none';
       document.getElementById('hudMode').textContent = variant === 'blitz' ? '⚡ 2分極速' : '♾️ 馬拉松';
@@ -645,18 +684,16 @@
       updateHud();
     }
 
-    // 3D Extruded Beveled Neon Block Renderer
-    function drawBlock3D(c, x, y, sz, color, alpha = 1) {
+    // 3D Extruded Beveled Neon Block Renderer (supports Bomb & Gold emblems!)
+    function drawBlock3D(c, x, y, sz, color, alpha = 1, special = '') {
       c.save();
       c.globalAlpha = alpha;
       const pad = 1.5;
       const bx = x + pad, by = y + pad, bw = sz - pad * 2, bh = sz - pad * 2;
 
-      // Base neon body
-      c.fillStyle = color;
+      c.fillStyle = special === 'gold' ? '#fbbf24' : (special === 'bomb' ? '#ef4444' : color);
       c.fillRect(bx, by, bw, bh);
 
-      // Top & Left 3D glossy bevel highlight
       c.fillStyle = 'rgba(255, 255, 255, 0.42)';
       c.beginPath();
       c.moveTo(bx, by); c.lineTo(bx + bw, by); c.lineTo(bx + bw - 5, by + 5); c.lineTo(bx + 5, by + 5);
@@ -666,7 +703,6 @@
       c.moveTo(bx, by); c.lineTo(bx + 5, by + 5); c.lineTo(bx + 5, by + bh - 5); c.lineTo(bx, by + bh);
       c.closePath(); c.fill();
 
-      // Bottom & Right 3D extruded shadow
       c.fillStyle = 'rgba(0, 0, 0, 0.42)';
       c.beginPath();
       c.moveTo(bx, by + bh); c.lineTo(bx + 5, by + bh - 5); c.lineTo(bx + bw - 5, by + bh - 5); c.lineTo(bx + bw, by + bh);
@@ -676,9 +712,14 @@
       c.moveTo(bx + bw, by); c.lineTo(bx + bw, by + bh); c.lineTo(bx + bw - 5, by + bh - 5); c.lineTo(bx + bw - 5, by + 5);
       c.closePath(); c.fill();
 
-      // Inner crystal gloss core
       c.fillStyle = 'rgba(255, 255, 255, 0.14)';
       c.fillRect(bx + 6, by + 6, bw - 12, bh - 12);
+
+      if (special) {
+        c.font = `bold ${Math.floor(sz * 0.56)}px sans-serif`;
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(special === 'bomb' ? '💣' : '⭐', bx + bw / 2, by + bh / 2 + 1);
+      }
       c.restore();
     }
 
@@ -706,15 +747,20 @@
         bctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
       }
 
-      // Dark 3D Perspective Grid Backdrop
-      bctx.fillStyle = '#08091a';
+      // Dark 3D Perspective Grid Backdrop (+ Rainbow FEVER glow!)
+      bctx.fillStyle = game.feverTimer > 0 ? '#160926' : '#08091a';
       bctx.fillRect(0, 0, COLS * CELL, ROWS * CELL);
+      if (game.feverTimer > 0) {
+        const hue = (game.time * 140) % 360;
+        bctx.strokeStyle = `hsla(${hue}, 95%, 65%, 0.65)`;
+        bctx.lineWidth = 6;
+        bctx.strokeRect(3, 3, COLS * CELL - 6, ROWS * CELL - 6);
+      }
       bctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
       bctx.lineWidth = 1;
       for (let c = 1; c < COLS; c++) { bctx.beginPath(); bctx.moveTo(c * CELL, 0); bctx.lineTo(c * CELL, ROWS * CELL); bctx.stroke(); }
       for (let r = 1; r < ROWS; r++) { bctx.beginPath(); bctx.moveTo(0, r * CELL); bctx.lineTo(COLS * CELL, r * CELL); bctx.stroke(); }
 
-      // Hard-Drop Laser Trails
       for (const tr of game.trails) {
         bctx.fillStyle = tr.col;
         bctx.globalAlpha = tr.alpha;
@@ -722,15 +768,16 @@
       }
       bctx.globalAlpha = 1;
 
-      // Locked Blocks
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const v = game.board[r] ? game.board[r][c] : -1;
-          if (v !== -1) drawBlock3D(bctx, c * CELL, r * CELL, CELL, pal[v % pal.length], 1);
+          if (v !== -1) {
+            const sp = v >= 200 ? 'gold' : (v >= 100 ? 'bomb' : '');
+            drawBlock3D(bctx, c * CELL, r * CELL, CELL, pal[(v % 100) % pal.length], 1, sp);
+          }
         }
       }
 
-      // Active Piece + Ghost Preview
       if (game.cur && (game.mode === 'playing' || game.mode === 'paused')) {
         const gy = ghostY();
         const col = pal[game.cur.t % pal.length];
@@ -741,12 +788,16 @@
             bctx.globalAlpha = 1;
           }
         }));
+        let drewSp = false;
         game.cur.mat.forEach((row, r) => row.forEach((v, c) => {
-          if (v) drawBlock3D(bctx, (game.cur.x + c) * CELL, (game.cur.y + r) * CELL, CELL, col, 1);
+          if (v) {
+            const sp = (!drewSp && game.cur.special) ? game.cur.special : '';
+            if (sp) drewSp = true;
+            drawBlock3D(bctx, (game.cur.x + c) * CELL, (game.cur.y + r) * CELL, CELL, col, 1, sp);
+          }
         }));
       }
 
-      // Neon Clear Particles
       bctx.globalCompositeOperation = 'lighter';
       for (const pt of game.particles) {
         bctx.globalAlpha = Math.max(0, pt.life * 1.5);
@@ -754,6 +805,14 @@
         bctx.beginPath(); bctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); bctx.fill();
       }
       bctx.globalCompositeOperation = 'source-over';
+
+      bctx.textAlign = 'center';
+      for (const fl of game.floats) {
+        bctx.globalAlpha = Math.max(0, fl.life / fl.max);
+        bctx.font = `900 ${fl.size}px sans-serif`;
+        bctx.fillStyle = fl.col;
+        bctx.fillText(fl.text, fl.x, fl.y);
+      }
       bctx.globalAlpha = 1;
       bctx.restore();
     }
@@ -873,7 +932,9 @@
     function loop(now) {
       const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
       last = now;
+      game.time += dt;
       if (game.shake > 0) game.shake = Math.max(0, game.shake - dt);
+      if (game.feverTimer > 0) game.feverTimer = Math.max(0, game.feverTimer - dt);
       for (let i = game.particles.length - 1; i >= 0; i--) {
         const pt = game.particles[i];
         pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 420 * dt; pt.life -= dt;
@@ -882,6 +943,11 @@
       for (let i = game.trails.length - 1; i >= 0; i--) {
         game.trails[i].alpha -= dt * 2.2;
         if (game.trails[i].alpha <= 0) game.trails.splice(i, 1);
+      }
+      for (let i = game.floats.length - 1; i >= 0; i--) {
+        const fl = game.floats[i];
+        fl.y -= 42 * dt; fl.life -= dt;
+        if (fl.life <= 0) game.floats.splice(i, 1);
       }
       if (game.mode === 'playing') {
         if (game.variant === 'blitz') {
