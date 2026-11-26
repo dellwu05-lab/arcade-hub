@@ -123,6 +123,20 @@
     .swatches { display: flex; gap: 4px; margin-top: 6px; }
     .sw { width: 14px; height: 14px; border-radius: 4px; }
 
+    .perm-upg-head { font-size: 11.5px; font-weight: 800; color: #f9a8d4; text-align: left; margin: 2px 0 6px; display: flex; justify-content: space-between; }
+    .perm-upg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 11px; text-align: left; }
+    .perm-upg-card {
+      padding: 8px 8px; border-radius: 11px; border: 1px solid rgba(236, 72, 153, 0.28);
+      background: rgba(15, 23, 42, 0.72); color: #fff; cursor: pointer; transition: all 0.14s ease;
+    }
+    .perm-upg-card:hover { border-color: #fde047; background: rgba(88, 28, 135, 0.45); }
+    .perm-upg-card.max { border-color: rgba(52, 211, 153, 0.5); }
+    .pu-top { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800; }
+    .pu-pips { display: flex; gap: 3px; margin: 5px 0 4px; }
+    .pu-pip { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.14); }
+    .pu-pip.on { background: #ec4899; box-shadow: 0 0 6px rgba(236,72,153,0.8); }
+    .pu-foot { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--muted); }
+
     .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn-primary {
       flex: 1; padding: 11px 16px; border-radius: 13px; border: none;
@@ -153,6 +167,7 @@
       .next-cv { width: 66px; height: 132px; }
       .board-stage { gap: 8px; }
       .tbtn { padding: 12px 2px; font-size: 12px; }
+      .perm-upg-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -241,6 +256,9 @@
 
         <div class="theme-grid" id="themeGrid"></div>
 
+        <div class="perm-upg-head"><span>🔧 霓虹科技升級（點擊強化）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
+        <div class="perm-upg-grid" id="permUpgGrid"></div>
+
         <p class="sub" style="font-size:11px;margin-bottom:12px;">
           鍵盤：←→ 移動 · ↑ 旋轉 · ↓ 加速 · Space 瞬落 · C 暫存｜手機支援下方按鈕與滑動
         </p>
@@ -322,8 +340,21 @@
     function getSaveKey() {
       return auth.currentUser ? `arcade_save_${GAME_ID}_acct_${auth.currentUser.uid}` : `arcade_save_${GAME_ID}_guest`;
     }
+    const UPG_DEFS = [
+      { id: 'fever',   icon: '🌈', name: '狂熱延長', costs: [30, 60, 100, 150, 220], stat: (lv) => `狂熱 +${(lv * 2.5).toFixed(1)}s` },
+      { id: 'special', icon: '💣', name: '特效方塊', costs: [30, 60, 100, 150, 220], stat: (lv) => `機率 +${lv * 5}%` },
+      { id: 'coin',    icon: '🪙', name: '消行財富', costs: [35, 70, 115, 170, 240], stat: (lv) => `金幣 +${lv * 20}%` }
+    ];
+    function cleanUpg(raw) {
+      const u = raw && typeof raw === 'object' ? raw : {};
+      return {
+        fever: Math.max(0, Math.min(5, Math.floor(Number(u.fever) || 0))),
+        special: Math.max(0, Math.min(5, Math.floor(Number(u.special) || 0))),
+        coin: Math.max(0, Math.min(5, Math.floor(Number(u.coin) || 0)))
+      };
+    }
     function defaultSave() {
-      return { coins: 40, bestScore: 0, bestLines: 0, ownedThemes: ['cyber'], equippedTheme: 'cyber' };
+      return { coins: 40, bestScore: 0, bestLines: 0, ownedThemes: ['cyber'], equippedTheme: 'cyber', upgrades: { fever: 0, special: 0, coin: 0 } };
     }
     function loadSave() {
       try {
@@ -335,7 +366,8 @@
           bestScore: Math.max(0, Math.floor(Number(p.bestScore) || 0)),
           bestLines: Math.max(0, Math.floor(Number(p.bestLines) || 0)),
           ownedThemes: Array.isArray(p.ownedThemes) && p.ownedThemes.length ? p.ownedThemes : ['cyber'],
-          equippedTheme: THEMES.some(t => t.id === p.equippedTheme) ? p.equippedTheme : 'cyber'
+          equippedTheme: THEMES.some(t => t.id === p.equippedTheme) ? p.equippedTheme : 'cyber',
+          upgrades: cleanUpg(p.upgrades)
         };
       } catch (e) { return defaultSave(); }
     }
@@ -343,9 +375,11 @@
 
     function getSummaryStats() {
       const stars = Math.min(15, Math.floor(save.bestLines / 5));
+      const upgTotal = Object.values(save.upgrades || {}).reduce((a, b) => a + (Number(b) || 0), 0);
       return {
         coins: save.coins, bestScore: save.bestScore, stars, maxStars: 15,
-        charsUnlocked: save.ownedThemes.length, charsTotal: THEMES.length, bestLines: save.bestLines
+        charsUnlocked: save.ownedThemes.length, charsTotal: THEMES.length,
+        upgradeLevel: upgTotal, upgradeMax: 15, bestLines: save.bestLines
       };
     }
     function persistSave() {
@@ -462,7 +496,10 @@
       const x = Math.floor((COLS - mat[0].length) / 2);
       const y = 0;
       const roll = Math.random();
-      const special = roll < 0.13 ? 'bomb' : (roll < 0.25 ? 'gold' : '');
+      const upgSp = (save.upgrades && save.upgrades.special) || 0;
+      const bombChance = 0.13 + upgSp * 0.025;
+      const goldChance = 0.12 + upgSp * 0.025;
+      const special = roll < bombChance ? 'bomb' : (roll < bombChance + goldChance ? 'gold' : '');
       game.cur = { t, mat, x, y, special };
       if (collides(mat, x, y)) {
         endGame(false);
@@ -590,8 +627,10 @@
 
       if (full.length > 0) {
         game.combo++;
+        const upgFev = (save.upgrades && save.upgrades.fever) || 0;
+        const upgCoin = (save.upgrades && save.upgrades.coin) || 0;
         if (game.combo >= 3 || full.length >= 3) {
-          game.feverTimer = 12.0;
+          game.feverTimer = 12.0 + upgFev * 2.5;
           spawnFloat(COLS * CELL / 2, 180, '🌈 FEVER 雙倍狂熱!', '#f472b6', 22);
         }
         const feverMult = game.feverTimer > 0 ? 2 : 1;
@@ -601,7 +640,8 @@
         game.score += gainedPts;
         game.lines += full.length;
         game.level = Math.min(18, 1 + Math.floor(game.lines / 8));
-        const earned = (full.length * 3 + (full.length >= 4 ? 10 : 0) + (game.combo >= 2 ? game.combo * 2 : 0)) * feverMult + goldCount * 15;
+        const rawEarned = (full.length * 3 + (full.length >= 4 ? 10 : 0) + (game.combo >= 2 ? game.combo * 2 : 0)) * feverMult + goldCount * 15;
+        const earned = Math.max(1, Math.round(rawEarned * (1 + upgCoin * 0.2)));
         game.runCoins += earned;
         game.shake = (bombTriggered || full.length >= 3) ? 0.38 : 0.16;
         SFX.clear(full.length, game.combo - 1);
@@ -855,6 +895,42 @@
           renderThemes(); updateHud(); drawSidePreviews();
         });
         grid.appendChild(btn);
+      });
+      renderPermUpgrades();
+    }
+
+    function renderPermUpgrades() {
+      const grid = document.getElementById('permUpgGrid');
+      const lbl = document.getElementById('permUpgLvl');
+      if (!grid) return;
+      if (!save.upgrades) save.upgrades = { fever: 0, special: 0, coin: 0 };
+      const totalLv = Object.values(save.upgrades).reduce((a, b) => a + (Number(b) || 0), 0);
+      if (lbl) lbl.textContent = `總等級 Lv.${totalLv}/15`;
+      grid.innerHTML = '';
+      UPG_DEFS.forEach((u) => {
+        const lv = save.upgrades[u.id] || 0;
+        const isMax = lv >= 5;
+        const cost = isMax ? 0 : u.costs[lv];
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'perm-upg-card' + (isMax ? ' max' : '');
+        const pips = Array.from({ length: 5 }, (_, i) => `<span class="pu-pip${i < lv ? ' on' : ''}"></span>`).join('');
+        card.innerHTML = `
+          <div class="pu-top"><span>${u.icon} ${u.name}</span><span style="color:#f9a8d4;">Lv.${lv}</span></div>
+          <div class="pu-pips">${pips}</div>
+          <div class="pu-foot"><span>${u.stat(isMax ? 5 : lv + 1)}</span><span style="color:${isMax ? '#6ee7b7' : '#fde047'};font-weight:800;">${isMax ? 'MAX' : '🪙 ' + cost}</span></div>
+        `;
+        card.addEventListener('click', () => {
+          if (isMax) { showToast(`✨ 【${u.name}】已達最高 Lv.5！`); return; }
+          if (save.coins < cost) { showToast(`⚠️ 金幣不足（需 🪙 ${cost}）`); return; }
+          save.coins -= cost;
+          save.upgrades[u.id] = lv + 1;
+          persistSave();
+          SFX.clear(3, 1);
+          showToast(`⚡ 【${u.name}】升級至 Lv.${lv + 1}！`);
+          renderThemes(); updateHud();
+        });
+        grid.appendChild(card);
       });
     }
 

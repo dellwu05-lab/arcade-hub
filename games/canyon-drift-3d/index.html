@@ -110,6 +110,20 @@
     .car-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; }
     .car-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
+    .perm-upg-head { font-size: 11.5px; font-weight: 800; color: #fdba74; text-align: left; margin: 2px 0 6px; display: flex; justify-content: space-between; }
+    .perm-upg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 11px; text-align: left; }
+    .perm-upg-card {
+      padding: 8px 8px; border-radius: 11px; border: 1px solid rgba(251, 146, 60, 0.3);
+      background: rgba(15, 23, 42, 0.72); color: #fff; cursor: pointer; transition: all 0.14s ease;
+    }
+    .perm-upg-card:hover { border-color: #fde047; background: rgba(154, 52, 18, 0.45); }
+    .perm-upg-card.max { border-color: rgba(52, 211, 153, 0.5); }
+    .pu-top { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800; }
+    .pu-pips { display: flex; gap: 3px; margin: 5px 0 4px; }
+    .pu-pip { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.14); }
+    .pu-pip.on { background: #f97316; box-shadow: 0 0 6px rgba(249,115,22,0.85); }
+    .pu-foot { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--muted); }
+
     .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 13px 0; }
     .stat-box { padding: 10px 6px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
     .stat-box .l { font-size: 10.5px; color: var(--muted); }
@@ -135,6 +149,7 @@
 
     @media (max-width: 600px) {
       .car-grid { grid-template-columns: 1fr; }
+      .perm-upg-grid { grid-template-columns: 1fr; }
       .dbtn { min-width: 66px; min-height: 60px; padding: 8px 10px; font-size: 13px; }
       .dash-cluster { top: 52px; padding: 5px 12px; gap: 8px; }
       .nitro-wrap { width: 82px; }
@@ -201,6 +216,9 @@
         </div>
 
         <div class="car-grid" id="carGrid"></div>
+
+        <div class="perm-upg-head"><span>🔧 超跑性能改裝（點擊升級）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
+        <div class="perm-upg-grid" id="permUpgGrid"></div>
 
         <p class="sub" style="font-size:11px;margin-bottom:12px;">
           鍵盤：←→ / AD 轉向 · Shift / ↓ 飄移集氣 · Space / ↑ 氮氣爆發｜手機支援下方四鍵操控
@@ -289,8 +307,21 @@
     function getSaveKey() {
       return auth.currentUser ? `arcade_save_${GAME_ID}_acct_${auth.currentUser.uid}` : `arcade_save_${GAME_ID}_guest`;
     }
+    const UPG_DEFS = [
+      { id: 'engine', icon: '⚙️', name: '渦輪引擎', costs: [30, 60, 100, 150, 220], stat: (lv) => `極速 +${lv * 12}km/h` },
+      { id: 'nitro',  icon: '🔥', name: '氮氣容量', costs: [30, 60, 100, 150, 220], stat: (lv) => `氮氣 +${lv * 18}%` },
+      { id: 'drift',  icon: '💨', name: '飄移調校', costs: [35, 70, 115, 170, 240], stat: (lv) => `集氣 +${lv * 18}%` }
+    ];
+    function cleanUpg(raw) {
+      const u = raw && typeof raw === 'object' ? raw : {};
+      return {
+        engine: Math.max(0, Math.min(5, Math.floor(Number(u.engine) || 0))),
+        nitro: Math.max(0, Math.min(5, Math.floor(Number(u.nitro) || 0))),
+        drift: Math.max(0, Math.min(5, Math.floor(Number(u.drift) || 0)))
+      };
+    }
     function defaultSave() {
-      return { coins: 40, bestScore: 0, bestDist: 0, checkpoints: 0, ownedCars: ['red_gt'], equippedCar: 'red_gt' };
+      return { coins: 40, bestScore: 0, bestDist: 0, checkpoints: 0, ownedCars: ['red_gt'], equippedCar: 'red_gt', upgrades: { engine: 0, nitro: 0, drift: 0 } };
     }
     function loadSave() {
       try {
@@ -303,7 +334,8 @@
           bestDist: Math.max(0, Math.floor(Number(p.bestDist) || 0)),
           checkpoints: Math.max(0, Math.floor(Number(p.checkpoints) || 0)),
           ownedCars: Array.isArray(p.ownedCars) && p.ownedCars.length ? p.ownedCars : ['red_gt'],
-          equippedCar: CARS.some(c => c.id === p.equippedCar) ? p.equippedCar : 'red_gt'
+          equippedCar: CARS.some(c => c.id === p.equippedCar) ? p.equippedCar : 'red_gt',
+          upgrades: cleanUpg(p.upgrades)
         };
       } catch (e) { return defaultSave(); }
     }
@@ -311,16 +343,28 @@
 
     function getSummaryStats() {
       const stars = Math.min(15, Math.floor(save.bestDist / 400));
+      const upgTotal = Object.values(save.upgrades || {}).reduce((a, b) => a + (Number(b) || 0), 0);
       return {
         coins: save.coins, bestScore: save.bestScore, stars, maxStars: 15,
-        charsUnlocked: save.ownedCars.length, charsTotal: CARS.length, bestDist: save.bestDist
+        charsUnlocked: save.ownedCars.length, charsTotal: CARS.length,
+        upgradeLevel: upgTotal, upgradeMax: 15, bestDist: save.bestDist
       };
     }
     function persistSave() {
       try { localStorage.setItem(getSaveKey(), JSON.stringify(save)); } catch (e) {}
       postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
     }
-    function getCar() { return CARS.find(c => c.id === save.equippedCar) || CARS[0]; }
+    function getCar() {
+      const base = CARS.find(c => c.id === save.equippedCar) || CARS[0];
+      const u = save.upgrades || { engine: 0, nitro: 0, drift: 0 };
+      return Object.assign({}, base, {
+        maxSpd: base.maxSpd + (u.engine || 0) * 12,
+        nitroSpd: base.nitroSpd + (u.engine || 0) * 14,
+        driftCharge: base.driftCharge * (1 + (u.drift || 0) * 0.18),
+        nitroMult: 1 + (u.nitro || 0) * 0.18,
+        startNitro: Math.min(100, 45 + (u.nitro || 0) * 10)
+      });
+    }
 
     // =========================================================================
     // 2. SYNTH EUROBEAT AUDIO
@@ -440,7 +484,7 @@
 
     function triggerNitro() {
       if (st.mode !== 'playing' || st.nitro < 30 || st.nitroTime > 0) return;
-      st.nitroTime = 1.6 + (st.nitro / 100) * 1.6;
+      st.nitroTime = (1.6 + (st.nitro / 100) * 1.6) * (getCar().nitroMult || 1);
       st.nitro = 0;
       st.shake = 0.22;
       SFX.nitro();
@@ -451,11 +495,12 @@
     function startRace() {
       SFX.ensure();
       SFX.startBgm();
+      const car = getCar();
       st.mode = 'playing';
       st.dist = 0; st.nextCp = 1200; st.biomeIdx = 0;
       st.speed = 90; st.playerX = 0; st.steer = 0; st.driftAngle = 0;
       st.driftTime = 0; st.miniTurbo = 0;
-      st.nitro = 45; st.nitroTime = 0; st.timeLeft = 36;
+      st.nitro = car.startNitro || 45; st.nitroTime = 0; st.timeLeft = 36;
       st.score = 0; st.runCoins = 0; st.combo = 0; st.comboTimer = 0; st.shake = 0;
       st.rivals = []; st.coins = []; st.boostPads = []; st.sparks = []; st.floats = [];
       spawnWorldEntities();
@@ -974,6 +1019,42 @@
           renderCarGrid(); updateHud();
         });
         grid.appendChild(btn);
+      });
+      renderPermUpgrades();
+    }
+
+    function renderPermUpgrades() {
+      const grid = document.getElementById('permUpgGrid');
+      const lbl = document.getElementById('permUpgLvl');
+      if (!grid) return;
+      if (!save.upgrades) save.upgrades = { engine: 0, nitro: 0, drift: 0 };
+      const totalLv = Object.values(save.upgrades).reduce((a, b) => a + (Number(b) || 0), 0);
+      if (lbl) lbl.textContent = `總等級 Lv.${totalLv}/15`;
+      grid.innerHTML = '';
+      UPG_DEFS.forEach((u) => {
+        const lv = save.upgrades[u.id] || 0;
+        const isMax = lv >= 5;
+        const cost = isMax ? 0 : u.costs[lv];
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'perm-upg-card' + (isMax ? ' max' : '');
+        const pips = Array.from({ length: 5 }, (_, i) => `<span class="pu-pip${i < lv ? ' on' : ''}"></span>`).join('');
+        card.innerHTML = `
+          <div class="pu-top"><span>${u.icon} ${u.name}</span><span style="color:#fdba74;">Lv.${lv}</span></div>
+          <div class="pu-pips">${pips}</div>
+          <div class="pu-foot"><span>${u.stat(isMax ? 5 : lv + 1)}</span><span style="color:${isMax ? '#6ee7b7' : '#fde047'};font-weight:800;">${isMax ? 'MAX' : '🪙 ' + cost}</span></div>
+        `;
+        card.addEventListener('click', () => {
+          if (isMax) { showToast(`✨ 【${u.name}】已達最高 Lv.5！`); return; }
+          if (save.coins < cost) { showToast(`⚠️ 金幣不足（需 🪙 ${cost}）`); return; }
+          save.coins -= cost;
+          save.upgrades[u.id] = lv + 1;
+          persistSave();
+          SFX.checkpoint();
+          showToast(`⚡ 【${u.name}】升級至 Lv.${lv + 1}！`);
+          renderCarGrid(); updateHud();
+        });
+        grid.appendChild(card);
       });
     }
 

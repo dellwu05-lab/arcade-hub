@@ -134,6 +134,20 @@
     .ship-status.cost { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
     .ship-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
+    .perm-upg-head { font-size: 11.5px; font-weight: 800; color: #7dd3fc; text-align: left; margin: 4px 0 6px; display: flex; justify-content: space-between; }
+    .perm-upg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 12px; text-align: left; }
+    .perm-upg-card {
+      padding: 8px 8px; border-radius: 11px; border: 1px solid rgba(56, 189, 248, 0.25);
+      background: rgba(15, 23, 42, 0.72); color: #fff; cursor: pointer; transition: all 0.14s ease;
+    }
+    .perm-upg-card:hover { border-color: #fde047; background: rgba(30, 58, 138, 0.45); }
+    .perm-upg-card.max { border-color: rgba(52, 211, 153, 0.5); }
+    .pu-top { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800; }
+    .pu-pips { display: flex; gap: 3px; margin: 5px 0 4px; }
+    .pu-pip { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.14); }
+    .pu-pip.on { background: #38bdf8; box-shadow: 0 0 6px rgba(56,189,248,0.8); }
+    .pu-foot { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--muted); }
+
     .upgrade-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 14px 0 4px; text-align: left; }
     .upg-card {
       display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 14px;
@@ -171,6 +185,7 @@
 
     @media (max-width: 600px) {
       .ship-grid { grid-template-columns: 1fr; }
+      .perm-upg-grid { grid-template-columns: 1fr; }
       .panel { padding: 18px 14px; }
       .hide-sm { display: none; }
     }
@@ -236,6 +251,9 @@
         </div>
 
         <div class="ship-grid" id="shipGrid"></div>
+
+        <div class="perm-upg-head"><span>🔧 機庫永久升級（點擊強化）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
+        <div class="perm-upg-grid" id="permUpgGrid"></div>
 
         <p class="sub" style="font-size:11.5px;margin-bottom:12px;">
           操控：鍵盤 WASD / 方向鍵 / 滑鼠拖曳，手機直接觸控拖曳飛行；滿氣按 <strong>Space / Shift</strong> 或點右下角發動 <strong>💥 超新星清屏</strong>！
@@ -329,8 +347,22 @@
       { id: 'solaris',  name: '黃金天帝號', icon: '👑', price: 480, color: '#fbbf24', accent: '#fef08a', hp: 150, speed: 510, fireRate: 0.115, spread: 3, homing: 1, coinMult: 1.4, desc: '三向光束＋追蹤飛彈＋裝甲強化' }
     ];
 
+    const UPG_DEFS = [
+      { id: 'dmg',  icon: '🔥', name: '雷射火力', costs: [30, 60, 100, 150, 220], stat: (lv) => `傷害 +${lv * 18}%` },
+      { id: 'hp',   icon: '🛡️', name: '鈦金裝甲', costs: [30, 60, 100, 150, 220], stat: (lv) => `裝甲 +${lv * 20}` },
+      { id: 'nova', icon: '💥', name: '超新星核', costs: [35, 70, 115, 170, 240], stat: (lv) => `充能 +${lv * 20}%` }
+    ];
+    function cleanUpg(raw) {
+      const u = raw && typeof raw === 'object' ? raw : {};
+      return {
+        dmg: Math.max(0, Math.min(5, Math.floor(Number(u.dmg) || 0))),
+        hp: Math.max(0, Math.min(5, Math.floor(Number(u.hp) || 0))),
+        nova: Math.max(0, Math.min(5, Math.floor(Number(u.nova) || 0)))
+      };
+    }
+
     function defaultSave() {
-      return { coins: 40, bestScore: 0, bestWave: 1, bossesDefeated: 0, ownedShips: ['vanguard'], equippedShip: 'vanguard', stageStars: {} };
+      return { coins: 40, bestScore: 0, bestWave: 1, bossesDefeated: 0, ownedShips: ['vanguard'], equippedShip: 'vanguard', upgrades: { dmg: 0, hp: 0, nova: 0 }, stageStars: {} };
     }
 
     function loadSave() {
@@ -345,6 +377,7 @@
           bossesDefeated: Math.max(0, Math.floor(Number(p.bossesDefeated) || 0)),
           ownedShips: Array.isArray(p.ownedShips) && p.ownedShips.length ? p.ownedShips : ['vanguard'],
           equippedShip: SHIPS.some(s => s.id === p.equippedShip) ? p.equippedShip : 'vanguard',
+          upgrades: cleanUpg(p.upgrades),
           stageStars: p.stageStars && typeof p.stageStars === 'object' ? p.stageStars : {}
         };
       } catch (e) { return defaultSave(); }
@@ -354,6 +387,7 @@
 
     function getSummaryStats() {
       const stars = Math.min(15, Math.floor(save.bestWave * 1.5) + save.bossesDefeated * 3);
+      const upgTotal = Object.values(save.upgrades || {}).reduce((a, b) => a + (Number(b) || 0), 0);
       return {
         coins: save.coins,
         bestScore: save.bestScore,
@@ -361,6 +395,8 @@
         maxStars: 15,
         charsUnlocked: save.ownedShips.length,
         charsTotal: SHIPS.length,
+        upgradeLevel: upgTotal,
+        upgradeMax: 15,
         bestWave: save.bestWave
       };
     }
@@ -627,14 +663,18 @@
       state.wave = 1;
       state.waveKills = 0;
       state.waveKillGoal = 12;
-      state.novaCharge = 25;
+      const upg = save.upgrades || { dmg: 0, hp: 0, nova: 0 };
+      const bonusHp = (upg.hp || 0) * 20;
+      state.novaCharge = Math.min(100, 25 + (upg.nova || 0) * 12);
       state.combo = 0; state.comboTimer = 0; state.overdrive = 0; state.magnetBuff = 0;
       state.boss = null;
       state.bullets = []; state.eBullets = []; state.enemies = []; state.pickups = []; state.particles = []; state.shockwaves = []; state.floats = [];
       state.player = {
         x: W / 2, y: H * 0.78, vx: 0, bank: 0,
-        hp: ship.hp, maxHp: ship.hp, shield: ship.id === 'solaris', fireCd: 0, missileCd: 0, invuln: 1.0,
-        spread: ship.spread, fireMult: 1.0, homing: ship.homing, magnet: 115, novaRate: 1.0
+        hp: ship.hp + bonusHp, maxHp: ship.hp + bonusHp, shield: ship.id === 'solaris', fireCd: 0, missileCd: 0, invuln: 1.0,
+        spread: ship.spread, fireMult: 1.0, homing: ship.homing, magnet: 115,
+        novaRate: 1.0 + (upg.nova || 0) * 0.2,
+        dmgMult: 1.0 + (upg.dmg || 0) * 0.18
       };
       document.getElementById('startOverlay').classList.add('hidden');
       document.getElementById('overOverlay').classList.add('hidden');
@@ -716,7 +756,7 @@
           state.bullets.push({
             x: p.x + offset * 9, y: p.y - 20,
             vx: Math.cos(angle) * 760, vy: Math.sin(angle) * 760,
-            dmg: isOd ? 18 : 14, col: isOd ? '#fde047' : ship.accent, homing: false
+            dmg: Math.round((isOd ? 18 : 14) * (p.dmgMult || 1)), col: isOd ? '#fde047' : ship.accent, homing: false
           });
         }
         SFX.laser();
@@ -729,7 +769,7 @@
           p.missileCd = 1.05;
           for (let i = 0; i < p.homing; i++) {
             const side = i % 2 === 0 ? -18 : 18;
-            state.bullets.push({ x: p.x + side, y: p.y - 6, vx: side * 6, vy: -320, dmg: 24, col: '#c084fc', homing: true });
+            state.bullets.push({ x: p.x + side, y: p.y - 6, vx: side * 6, vy: -320, dmg: Math.round(24 * (p.dmgMult || 1)), col: '#c084fc', homing: true });
           }
         }
       }
@@ -1221,6 +1261,42 @@
           updateHudUI();
         });
         grid.appendChild(btn);
+      });
+      renderPermUpgrades();
+    }
+
+    function renderPermUpgrades() {
+      const grid = document.getElementById('permUpgGrid');
+      const lbl = document.getElementById('permUpgLvl');
+      if (!grid) return;
+      if (!save.upgrades) save.upgrades = { dmg: 0, hp: 0, nova: 0 };
+      const totalLv = Object.values(save.upgrades).reduce((a, b) => a + (Number(b) || 0), 0);
+      if (lbl) lbl.textContent = `總等級 Lv.${totalLv}/15`;
+      grid.innerHTML = '';
+      UPG_DEFS.forEach((u) => {
+        const lv = save.upgrades[u.id] || 0;
+        const isMax = lv >= 5;
+        const cost = isMax ? 0 : u.costs[lv];
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'perm-upg-card' + (isMax ? ' max' : '');
+        const pips = Array.from({ length: 5 }, (_, i) => `<span class="pu-pip${i < lv ? ' on' : ''}"></span>`).join('');
+        card.innerHTML = `
+          <div class="pu-top"><span>${u.icon} ${u.name}</span><span style="color:#7dd3fc;">Lv.${lv}</span></div>
+          <div class="pu-pips">${pips}</div>
+          <div class="pu-foot"><span>${u.stat(isMax ? 5 : lv + 1)}</span><span style="color:${isMax ? '#6ee7b7' : '#fde047'};font-weight:800;">${isMax ? 'MAX' : '🪙 ' + cost}</span></div>
+        `;
+        card.addEventListener('click', () => {
+          if (isMax) { showToast(`✨ 【${u.name}】已達最高 Lv.5！`); return; }
+          if (save.coins < cost) { showToast(`⚠️ 星幣不足（需 🪙 ${cost}）`); return; }
+          save.coins -= cost;
+          save.upgrades[u.id] = lv + 1;
+          persistSave();
+          SFX.upgrade();
+          showToast(`⚡ 【${u.name}】升級至 Lv.${lv + 1}！`);
+          renderShipGrid(); updateHudUI();
+        });
+        grid.appendChild(card);
       });
     }
 

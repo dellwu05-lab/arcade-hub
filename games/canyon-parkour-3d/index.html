@@ -1798,6 +1798,7 @@
 
         <div class="btn-row">
           <button class="btn-primary" id="btnStartRun" type="button">開始挑戰第 1 關</button>
+          <button class="btn-secondary" id="btnStartUpgrades" type="button">⚡ 升級</button>
           <button class="btn-secondary" id="btnStartShop" type="button">🎭 人物</button>
           <button class="btn-secondary has-notif" id="btnStartMissions" type="button">
             🎯 任務<span class="notif-dot" id="notifStart"></span>
@@ -1846,6 +1847,7 @@
         </div>
         <div class="btn-row">
           <button class="btn-primary" id="btnNextStage" type="button">前往下一關 →</button>
+          <button class="btn-secondary" id="btnClearUpgrades" type="button">⚡ 升級</button>
           <button class="btn-secondary" id="btnClearShop" type="button">🎭 人物</button>
           <button class="btn-secondary" id="btnClearLb" type="button">🏆 排行</button>
         </div>
@@ -1857,7 +1859,7 @@
       <div class="panel">
         <div class="tag-line">💥 撞上障礙物</div>
         <h2>衝刺中斷</h2>
-        <p class="subtitle" id="gameOverSub">沿途收集的金幣已全數保留，再挑戰一次就能抵達終點光門！</p>
+        <p class="subtitle" id="gameOverSub">沿途收集的金幣已全數保留，升級能力或再挑戰一次抵達終點光門！</p>
         <div class="rank-callout" id="overRankNote" style="display:none;"></div>
         <div class="stats-grid">
           <div class="stat-card">
@@ -1875,6 +1877,7 @@
         </div>
         <div class="btn-row">
           <button class="btn-primary" id="btnRetry" type="button">重玩本關 (Space)</button>
+          <button class="btn-secondary" id="btnOverUpgrades" type="button">⚡ 升級</button>
           <button class="btn-secondary" id="btnOverShop" type="button">🎭 人物</button>
           <button class="btn-secondary" id="btnOverLb" type="button">🏆 排行</button>
         </div>
@@ -1938,6 +1941,20 @@
           <button class="hud-btn icon-only" id="btnCloseMissions" type="button" aria-label="關閉任務">✕</button>
         </div>
         <div class="lb-list" id="missionsList"></div>
+      </div>
+    </div>
+
+    <!-- Permanent Capability Upgrade Workshop Overlay -->
+    <div class="overlay hidden" id="upgradeOverlay">
+      <div class="lb-panel">
+        <div class="lb-header">
+          <div>
+            <h2>⚡ 跑者強化工坊（永久升級）</h2>
+            <div class="lb-sub">消耗金幣永久升級全角色通用能力，最高 Lv.5 · 擁有金幣：<strong id="upgCoinsVal" style="color:#fde047;">40</strong> 🪙</div>
+          </div>
+          <button class="hud-btn icon-only" id="btnCloseUpgrades" type="button" aria-label="關閉強化工坊">✕</button>
+        </div>
+        <div class="lb-list" id="upgradesList"></div>
       </div>
     </div>
 
@@ -2434,6 +2451,21 @@
       return auth.currentUser ? `${SAVE_KEY}_acct_${auth.currentUser.uid}` : SAVE_KEY;
     }
 
+    const UPGRADE_DEFS = [
+      { id: 'magnet', icon: '🧲', name: '磁力吸金增幅', costs: [30, 60, 100, 150, 220], desc: (lv) => `被動吸金半徑 +${(lv * 0.45).toFixed(2)}m · 道具持續時間 +${(lv * 1.4).toFixed(1)}s` },
+      { id: 'energy', icon: '⚡', name: '大招極速充能', costs: [30, 60, 100, 150, 220], desc: (lv) => `角色專屬大招充能速度 +${lv * 18}%（更快放招破關！）` },
+      { id: 'gold',   icon: '💰', name: '峽谷財富倍率', costs: [35, 70, 115, 170, 240], desc: (lv) => `拾取金幣收益 +${lv * 20}% · 分數倍率 +${lv * 12}%` }
+    ];
+
+    function sanitizeUpgrades(raw) {
+      const u = raw && typeof raw === 'object' ? raw : {};
+      return {
+        magnet: Math.max(0, Math.min(5, Math.floor(Number(u.magnet) || 0))),
+        energy: Math.max(0, Math.min(5, Math.floor(Number(u.energy) || 0))),
+        gold:   Math.max(0, Math.min(5, Math.floor(Number(u.gold)   || 0)))
+      };
+    }
+
     function createDefaultSave() {
       return {
         playerName: '',
@@ -2444,6 +2476,7 @@
         stageStars: {},
         ownedChars: ['rex'],
         equippedChar: 'rex',
+        upgrades: { magnet: 0, energy: 0, gold: 0 },
         leaderboard: [],
         stats: { totalCoins: 0, maxCombo: 0, nearMisses: 0, skillsUsed: 0, bestEndless: 0, bossesDefeated: 0 },
         claimedMissions: [],
@@ -2467,6 +2500,7 @@
         stageStars: parsed.stageStars && typeof parsed.stageStars === 'object' ? Object.assign({}, parsed.stageStars) : {},
         ownedChars: Array.isArray(parsed.ownedChars) && parsed.ownedChars.length ? parsed.ownedChars.slice() : ['rex'],
         equippedChar: CHARACTERS.some(c => c.id === parsed.equippedChar) ? parsed.equippedChar : 'rex',
+        upgrades: sanitizeUpgrades(parsed.upgrades),
         leaderboard: lb,
         stats: st,
         claimedMissions: Array.isArray(parsed.claimedMissions) ? parsed.claimedMissions.slice() : [],
@@ -2499,6 +2533,9 @@
       }
       const charSet = new Set(out.ownedChars.concat(inc.ownedChars));
       out.ownedChars = Array.from(charSet);
+      for (const k of Object.keys(out.upgrades)) {
+        out.upgrades[k] = Math.max(out.upgrades[k] || 0, (inc.upgrades && inc.upgrades[k]) || 0);
+      }
       for (const k of Object.keys(out.stats)) {
         out.stats[k] = Math.max(out.stats[k] || 0, inc.stats[k] || 0);
       }
@@ -2531,6 +2568,7 @@
 
     function getGameSummaryStats() {
       const totalStars = Object.values(save.stageStars || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+      const upgTotal = Object.values(save.upgrades || {}).reduce((a, b) => a + (Number(b) || 0), 0);
       return {
         coins: save.coins || 0,
         bestScore: save.bestScore || 0,
@@ -2538,6 +2576,8 @@
         maxStars: STAGES.length * 3,
         charsUnlocked: (save.ownedChars || []).length,
         charsTotal: CHARACTERS.length,
+        upgradeLevel: upgTotal,
+        upgradeMax: 15,
         unlockedStage: save.unlockedStage || 1,
         bestEndless: (save.stats && save.stats.bestEndless) || 0,
         missionsClaimed: (save.claimedMissions || []).length
@@ -5310,8 +5350,9 @@
 
     function addSkillCharge(amt) {
       if (state.skillCharge >= 100) return;
+      const energyLv = (save.upgrades && save.upgrades.energy) || 0;
       const prev = state.skillCharge;
-      state.skillCharge = Math.min(100, state.skillCharge + amt);
+      state.skillCharge = Math.min(100, state.skillCharge + amt * (1 + energyLv * 0.18));
       if (prev < 100 && state.skillCharge >= 100) {
         const sk = CHAR_SKILLS[save.equippedChar] || CHAR_SKILLS.rex;
         showToast(`${sk.icon} 大招就緒！【${sk.name}】(按 Shift / E)`);
@@ -5697,21 +5738,25 @@
           haptic(15);
           spawnCoinBurst(pu.x - state.distance, pu.y, true);
           addSkillCharge(18);
+          const magLv = (save.upgrades && save.upgrades.magnet) || 0;
           if (pu.kind === 'magnet') {
-            state.buffs.magnet = Math.max(state.buffs.magnet, 8.5);
-            spawnFloatText(PLAYER_X, player.y + 2.0, '🧲 超級磁鐵 8.5s！', '#7dd3fc');
+            const dur = 8.5 + magLv * 1.4;
+            state.buffs.magnet = Math.max(state.buffs.magnet, dur);
+            spawnFloatText(PLAYER_X, player.y + 2.0, `🧲 超級磁鐵 ${dur.toFixed(1)}s！`, '#7dd3fc');
           } else if (pu.kind === 'dash') {
-            state.buffs.dash = Math.max(state.buffs.dash, 4.8);
+            state.buffs.dash = Math.max(state.buffs.dash, 4.8 + magLv * 0.7);
             spawnFloatText(PLAYER_X, player.y + 2.0, '🔥 烈焰無敵衝刺！', '#fdba74');
           } else {
-            state.buffs.double = Math.max(state.buffs.double, 10.0);
+            state.buffs.double = Math.max(state.buffs.double, 10.0 + magLv * 1.4);
             spawnFloatText(PLAYER_X, player.y + 2.0, '✨ 雙倍積分＆金幣！', '#6ee7b7');
           }
         }
       }
 
-      // Coin Pickup (Character Magnet + Super Magnet Buff + Combo Multiplier!)
-      const activeMagnet = state.buffs.magnet > 0 ? 12.5 : ch.magnetRange;
+      // Coin Pickup (Character Magnet + Upgrade Magnet + Super Magnet Buff + Combo Multiplier!)
+      const magLvC = (save.upgrades && save.upgrades.magnet) || 0;
+      const goldLvC = (save.upgrades && save.upgrades.gold) || 0;
+      const activeMagnet = state.buffs.magnet > 0 ? (12.5 + magLvC * 0.8) : (ch.magnetRange + magLvC * 0.45);
       for (let i = 0; i < coins.length; i++) {
         const c = coins[i];
         if (c.collected) continue;
@@ -5733,8 +5778,8 @@
           if (state.combo > save.stats.maxCombo) save.stats.maxCombo = state.combo;
 
           const dbl = state.buffs.double > 0 ? 2 : 1;
-          const gained = Math.max(1, Math.round(c.value * ch.coinMult * dbl));
-          const pts = Math.round((c.isGem ? 120 : 25) * getComboMult() * dbl);
+          const gained = Math.max(1, Math.round(c.value * ch.coinMult * (1 + goldLvC * 0.2) * dbl));
+          const pts = Math.round((c.isGem ? 120 : 25) * getComboMult() * (1 + goldLvC * 0.12) * dbl);
           state.stageCoins += gained;
           save.stats.totalCoins += gained;
           state.score += pts;
@@ -6074,6 +6119,7 @@
     const shopOverlay = document.getElementById('shopOverlay');
     const leaderboardOverlay = document.getElementById('leaderboardOverlay');
     const missionsOverlay = document.getElementById('missionsOverlay');
+    const upgradeOverlay = document.getElementById('upgradeOverlay');
     const authOverlay = document.getElementById('authOverlay');
     const progressWrap = document.getElementById('progressWrap');
     const touchBar = document.getElementById('touchBar');
@@ -6086,6 +6132,7 @@
       shopOverlay.classList.add('hidden');
       leaderboardOverlay.classList.add('hidden');
       missionsOverlay.classList.add('hidden');
+      if (upgradeOverlay) upgradeOverlay.classList.add('hidden');
       authOverlay.classList.add('hidden');
     }
 
@@ -6873,6 +6920,87 @@
       refreshMissionDots();
     }
 
+    function openUpgrades() {
+      if (state.mode === 'playing') {
+        state.mode = 'paused';
+        state.prevModeBeforeUpgrades = 'paused';
+      } else if (state.mode !== 'upgrades') {
+        state.prevModeBeforeUpgrades = state.mode;
+      }
+      state.mode = 'upgrades';
+      hideAllOverlays();
+      progressWrap.classList.add('hidden');
+      touchBar.classList.add('hidden');
+      renderUpgradesUI();
+      upgradeOverlay.classList.remove('hidden');
+    }
+
+    function closeUpgrades() {
+      upgradeOverlay.classList.add('hidden');
+      const prev = state.prevModeBeforeUpgrades || 'menu';
+      state.mode = prev;
+      BGM.sync(prev, state.stageIdx, 0);
+      if (prev === 'menu') {
+        renderStageStrip();
+        updateStartButtonLabel();
+        startOverlay.classList.remove('hidden');
+      } else if (prev === 'paused') {
+        pauseOverlay.classList.remove('hidden');
+      } else if (prev === 'clear') {
+        clearOverlay.classList.remove('hidden');
+      } else if (prev === 'gameover') {
+        gameOverOverlay.classList.remove('hidden');
+      }
+      updateHud();
+    }
+
+    function renderUpgradesUI() {
+      const list = document.getElementById('upgradesList');
+      const coinsEl = document.getElementById('upgCoinsVal');
+      if (coinsEl) coinsEl.textContent = (save.coins || 0).toLocaleString();
+      if (!list) return;
+      list.innerHTML = '';
+      if (!save.upgrades) save.upgrades = { magnet: 0, energy: 0, gold: 0 };
+
+      UPGRADE_DEFS.forEach((u) => {
+        const lv = save.upgrades[u.id] || 0;
+        const isMax = lv >= 5;
+        const cost = isMax ? 0 : u.costs[lv];
+        const canBuy = !isMax && save.coins >= cost;
+        const pct = (lv / 5) * 100;
+
+        const row = document.createElement('div');
+        row.className = 'mission-row' + (isMax ? ' done' : '');
+        const btnCls = isMax ? 'claimed' : (canBuy ? 'claim' : 'pending');
+        const btnText = isMax ? '★ MAX' : `升級 🪙 ${cost}`;
+        row.innerHTML = `
+          <div class="mission-info">
+            <div class="mission-title">${u.icon} ${u.name} <span style="font-size:11px;color:#38bdf8;font-weight:800;">Lv.${lv} / 5</span></div>
+            <div class="mission-desc">${u.desc(isMax ? 5 : lv + 1)}${lv > 0 && !isMax ? `（目前 Lv.${lv}）` : ''}</div>
+            <div class="mission-bar"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+          <button class="mission-btn ${btnCls}" type="button">${btnText}</button>
+        `;
+        const btn = row.querySelector('.mission-btn');
+        btn.addEventListener('click', () => {
+          if (isMax) return;
+          if (save.coins < cost) {
+            showToast(`⚠️ 金幣不足（需 🪙 ${cost}）`);
+            return;
+          }
+          save.coins -= cost;
+          save.upgrades[u.id] = lv + 1;
+          persistSave();
+          AudioFX.playMissionClaim();
+          spawnFireworks(PLAYER_X + 1.0, 2.8);
+          showToast(`⚡ 【${u.name}】升級至 Lv.${lv + 1}！`);
+          renderUpgradesUI();
+          updateHud();
+        });
+        list.appendChild(row);
+      });
+    }
+
     // --- GOOGLE ACCOUNT SIGN-IN & MANAGEMENT LOGIC ---
     let gisScriptState = 'idle'; // 'idle' | 'loading' | 'ready' | 'error'
     let gisRenderedClientId = '';
@@ -7264,6 +7392,11 @@
     document.getElementById('btnOpenMissionsHud').addEventListener('click', openMissions);
     document.getElementById('btnStartMissions').addEventListener('click', openMissions);
     document.getElementById('btnCloseMissions').addEventListener('click', closeMissions);
+
+    document.getElementById('btnStartUpgrades').addEventListener('click', openUpgrades);
+    document.getElementById('btnClearUpgrades').addEventListener('click', openUpgrades);
+    document.getElementById('btnOverUpgrades').addEventListener('click', openUpgrades);
+    document.getElementById('btnCloseUpgrades').addEventListener('click', closeUpgrades);
 
     // Google Account & Auth Modal listeners
     document.getElementById('hudAccountBtn').addEventListener('click', openAuth);

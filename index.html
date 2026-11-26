@@ -1365,17 +1365,22 @@
           stars = Math.min(15, Math.floor((Number(raw.bestDist) || 0) / 400));
         }
         const unlockedArr = raw.ownedChars || raw.ownedShips || raw.ownedThemes || raw.ownedCars;
+        const upgradeLevel = raw.upgrades && typeof raw.upgrades === 'object'
+          ? Object.values(raw.upgrades).reduce((a, b) => a + (Number(b) || 0), 0)
+          : 0;
         return {
           coins: Number(raw.coins) || 0,
           bestScore: Number(raw.bestScore) || 0,
           stars,
           maxStars: 15,
           charsUnlocked: Array.isArray(unlockedArr) ? unlockedArr.length : 1,
-          charsTotal: defaultTotal
+          charsTotal: defaultTotal,
+          upgradeLevel,
+          upgradeMax: 15
         };
       }
       if (liveStatsCache[cacheKey]) return liveStatsCache[cacheKey];
-      return { coins: 40, bestScore: 0, stars: 0, maxStars: 15, charsUnlocked: 1, charsTotal: defaultTotal };
+      return { coins: 40, bestScore: 0, stars: 0, maxStars: 15, charsUnlocked: 1, charsTotal: defaultTotal, upgradeLevel: 0, upgradeMax: 15 };
     }
 
     // =========================================================================
@@ -1564,7 +1569,7 @@
       }
 
       const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
-      let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0;
+      let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0, sumUpgrades = 0;
       liveGames.forEach((g) => {
         const st = readStatsForGame(g.id);
         sumCoins += st.coins;
@@ -1572,15 +1577,16 @@
         if (st.bestScore > topScore) topScore = st.bestScore;
         sumStars += st.stars;
         sumItems += st.charsUnlocked;
+        sumUpgrades += Number(st.upgradeLevel) || 0;
       });
       document.getElementById('statLiveGames').textContent = `${liveGames.length} 款`;
       document.getElementById('statTotalCoins').textContent = sumCoins.toLocaleString();
       document.getElementById('statBestScore').textContent = topScore.toLocaleString();
-      document.getElementById('statStarsChars').textContent = `${sumStars}★ · ${sumItems}收藏`;
+      document.getElementById('statStarsChars').textContent = `${sumStars}★ · ⚡Lv.${sumUpgrades}`;
 
       // Arcade Rank & XP Bar
       const spinMeta = getDailySpinState();
-      const totalXp = sumStars * 120 + Math.max(0, sumItems - 4) * 160 + Math.floor(sumBestScores / 100) + (spinMeta.totalSpins || 0) * 80;
+      const totalXp = sumStars * 120 + Math.max(0, sumItems - 4) * 160 + sumUpgrades * 75 + Math.floor(sumBestScores / 100) + (spinMeta.totalSpins || 0) * 80;
       const level = Math.min(20, 1 + Math.floor(totalXp / 300));
       const curLevelXp = totalXp % 300;
       const pct = level >= 20 ? 100 : Math.max(8, Math.round((curLevelXp / 300) * 100));
@@ -1665,6 +1671,7 @@
 
         const badgesHtml = `
           <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
+          ${isLive && stats ? `<span class="cbadge tech" style="color:#fde047;border-color:rgba(251,191,36,0.45);">⚡ 強化 Lv.${stats.upgradeLevel || 0}/${stats.upgradeMax || 15}</span>` : ''}
           ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
         `;
 
