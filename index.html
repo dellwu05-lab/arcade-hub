@@ -1734,7 +1734,9 @@
       const frame = document.getElementById('gameFrame');
       stage.classList.add('active');
       document.body.classList.add('in-game');
+      frame.onload = () => { try { frame.contentWindow && frame.contentWindow.focus(); } catch (e) {} };
       frame.src = game.url;
+      setTimeout(() => { try { frame.focus(); frame.contentWindow && frame.contentWindow.focus(); } catch (e) {} }, 120);
       renderHubUI();
     }
 

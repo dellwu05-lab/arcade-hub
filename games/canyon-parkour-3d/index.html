@@ -1179,16 +1179,16 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-width: 112px;
-      min-height: 52px;
-      padding: 7px 14px;
+      min-width: 158px;
+      min-height: 56px;
+      padding: 8px 18px;
       border-radius: 18px;
-      border: 1.5px solid rgba(255, 255, 255, 0.2);
-      background: rgba(11, 17, 30, 0.68);
+      border: 2px solid rgba(255, 255, 255, 0.28);
+      background: rgba(11, 17, 30, 0.78);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      color: var(--muted);
-      font-size: 12px;
+      color: #e2e8f0;
+      font-size: 13px;
       font-weight: 800;
       cursor: pointer;
       transition: transform 0.1s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1200,7 +1200,7 @@
       bottom: 0;
       top: 0;
       width: 0%;
-      background: linear-gradient(90deg, rgba(56, 189, 248, 0.28), rgba(245, 158, 11, 0.45));
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.36), rgba(245, 158, 11, 0.56));
       transition: width 0.12s linear;
       z-index: 0;
     }
@@ -1210,27 +1210,47 @@
       z-index: 1;
       display: flex;
       align-items: center;
-      gap: 5px;
-      font-size: 12.5px;
+      gap: 6px;
+      font-size: 13.5px;
+      font-weight: 900;
     }
 
     .skill-btn .skill-sub {
       position: relative;
       z-index: 1;
-      font-size: 10px;
-      opacity: 0.82;
-      margin-top: 1px;
+      font-size: 10.5px;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+
+    @keyframes skillPulse {
+      0%, 100% { box-shadow: 0 0 18px rgba(251, 191, 36, 0.65); filter: brightness(1); }
+      50% { box-shadow: 0 0 36px rgba(253, 224, 71, 1); filter: brightness(1.16); }
     }
 
     .skill-btn.ready {
       color: #fff;
-      border-color: #fde047;
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.86), rgba(234, 88, 12, 0.88));
-      box-shadow: 0 0 24px rgba(251, 191, 36, 0.65);
+      border-color: #fef08a;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.94), rgba(234, 88, 12, 0.95));
+      animation: skillPulse 1.15s ease-in-out infinite;
     }
 
     .skill-btn.ready:active {
       transform: scale(0.93);
+      animation: none;
+    }
+
+    .ult-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 24;
+      opacity: 0;
+      transition: opacity 0.42s ease-out;
+    }
+    .ult-flash.boom {
+      opacity: 0.52;
+      transition: none;
     }
 
     /* Notification Dot for Claimable Missions */
@@ -1791,8 +1811,8 @@
             <span class="kbd">Space</span><span class="kbd">↑</span><span class="kbd">↓</span> 或手機點觸／上下滑
           </div>
           <div class="ctrl-box">
-            <strong>角色專屬大招</strong>
-            滿氣按 <span class="kbd">Shift</span><span class="kbd">E</span> 或點擊大招鈕
+            <strong>角色專屬大招（開局滿氣！）</strong>
+            點擊下方大招鈕，或按 <span class="kbd">F</span><span class="kbd">Enter</span><span class="kbd">Shift</span>
           </div>
         </div>
 
@@ -2074,13 +2094,15 @@
       </div>
     </div>
 
+    <div class="ult-flash" id="ultFlash"></div>
+
     <!-- On-screen Touch & Skill Controls -->
     <div class="touch-bar hidden" id="touchBar">
       <button class="touch-btn" id="touchDuck" type="button">⬇️ 滑行 / 急降</button>
-      <button class="skill-btn" id="btnSkill" type="button" title="角色大招 (Shift / E)">
+      <button class="skill-btn" id="btnSkill" type="button" title="角色大招 (點擊 / F / Enter / Shift)">
         <div class="skill-fill" id="skillFill"></div>
-        <div class="skill-text"><span id="skillIcon">⚡</span><span id="skillLabel">集氣 0%</span></div>
-        <div class="skill-sub" id="skillSub">Shift / E</div>
+        <div class="skill-text"><span id="skillIcon">⚡</span><span id="skillLabel">施放大招！</span></div>
+        <div class="skill-sub" id="skillSub">點擊 / F / Enter</div>
       </button>
       <button class="touch-btn" id="touchJump" type="button">⬆️ 跳躍 / 二段跳</button>
     </div>
@@ -5695,7 +5717,11 @@
     }
 
     function activateSkill() {
-      if (state.mode !== 'playing' || state.skillCharge < 100) return;
+      if (state.mode !== 'playing') return;
+      if (state.skillCharge < 100) {
+        showToast(`⚡ 大招集氣中 ${Math.floor(state.skillCharge)}%（吃金幣加速集氣！）`);
+        return;
+      }
       const ch = getEquippedChar();
       const sk = CHAR_SKILLS[ch.id] || CHAR_SKILLS.rex;
       state.skillCharge = 0;
@@ -5705,14 +5731,27 @@
 
       AudioFX.playUltimate();
       haptic(25);
-      state.shakeTime = 0.28;
-      state.shakeMag = 0.32;
+      state.shakeTime = 0.34;
+      state.shakeMag = 0.38;
       showToast(`${sk.icon} 奧義發動：${sk.name}！`);
       spawnFloatText(PLAYER_X, player.y + 2.2, `${sk.icon} ${sk.name}！`, '#fde047');
+      spawnFireworks(PLAYER_X + 1.4, player.y + 1.5);
+
+      // Full-screen elemental Ultimate flash!
+      const fl = document.getElementById('ultFlash');
+      if (fl) {
+        const c = sk.color || [1, 0.85, 0.2];
+        const rgb = `${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)}`;
+        fl.style.background = `radial-gradient(circle at 30% 60%, rgba(${rgb}, 0.85), rgba(${rgb}, 0.18) 70%, transparent)`;
+        fl.classList.add('boom');
+        requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove('boom')));
+      }
 
       if (sk.kind === 'water' || sk.kind === 'wave' || sk.kind === 'frost') {
-        // Surging 3D Energy / Water Dragon Wave smashing all obstacles ahead!
-        skillWaves.push({ x: PLAYER_X + 0.8, speed: 28, life: 1.6, kind: sk.kind, color: sk.color });
+        // Twin Surging 3D Energy / Water / Thunder / Mist Waves smashing all obstacles ahead!
+        skillWaves.push({ x: PLAYER_X + 0.8, speed: 30, life: 1.8, kind: sk.kind, color: sk.color });
+        skillWaves.push({ x: PLAYER_X - 1.2, speed: 26, life: 1.9, kind: sk.kind, color: sk.color });
+        state.buffs.dash = Math.max(state.buffs.dash, 1.8);
         if (sk.kind === 'frost') {
           player.shieldActive = true;
           spawnFloatText(PLAYER_X, player.y + 1.6, '🛡️ 極冰護盾重塑', '#7dd3fc');
@@ -5738,11 +5777,11 @@
         player.vy = 0;
         player.grounded = false;
       } else if (sk.kind === 'magnet') {
-        // Kitsune Super Magnet + Double Score!
+        // Kitsune / Doraemon Super Magnet + Double Score!
         state.buffs.magnet = Math.max(state.buffs.magnet, 9.0);
         state.buffs.double = Math.max(state.buffs.double, 9.0);
       } else if (sk.kind === 'solar') {
-        // Golden Dragon Solar Comet Dash + Magnet!
+        // Golden Dragon / Mario Star Invincible Dash + Magnet!
         state.buffs.dash = Math.max(state.buffs.dash, 5.2);
         state.buffs.magnet = Math.max(state.buffs.magnet, 6.0);
         if (state.boss.active) defeatBoss();
@@ -5904,7 +5943,7 @@
       state.distance += stepDist;
       const scoreMult = (state.buffs.double > 0 ? 2 : 1) * (1 + (getComboMult() - 1) * 0.25);
       state.score += stepDist * 8.5 * scoreMult;
-      addSkillCharge(dt * 4.2);
+      addSkillCharge(dt * 9.5);
 
       // Ghost Runner sample recording (Stage Mode)
       if (!state.endless && state.distance >= state.ghost.nextSampleDist) {
@@ -6102,7 +6141,7 @@
           state.stageCoins += gained;
           save.stats.totalCoins += gained;
           state.score += pts;
-          addSkillCharge(c.isGem ? 12 : 4.5);
+          addSkillCharge(c.isGem ? 22 : 8);
 
           spawnCoinBurst(c.x - state.distance, c.y, c.isGem);
           AudioFX.playCoin(c.isGem);
@@ -6530,7 +6569,7 @@
         if (fill) fill.style.width = pct.toFixed(0) + '%';
         if (icon) icon.textContent = sk.icon;
         if (lbl) lbl.textContent = ready ? sk.name : `集氣 ${Math.floor(pct)}%`;
-        if (sub) sub.textContent = ready ? '點擊 / Shift 發動' : 'Shift / E';
+        if (sub) sub.textContent = ready ? '點擊 / F / Enter 發動' : '點擊 / F / Enter / Shift';
         btnSkill.classList.toggle('ready', ready);
       }
 
@@ -6603,7 +6642,7 @@
       state.combo = 0;
       state.comboTimer = 0;
       state.runMaxCombo = 0;
-      state.skillCharge = 0;
+      state.skillCharge = 100;
       state.buffs.magnet = 0;
       state.buffs.dash = 0;
       state.buffs.double = 0;
@@ -7902,7 +7941,7 @@
       } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
         e.preventDefault();
         requestDuck(true);
-      } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyE') {
+      } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.key === 'Shift' || e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'KeyX' || e.code === 'Enter') {
         if (state.mode === 'playing' && !e.repeat) {
           e.preventDefault();
           AudioFX.ensure();
@@ -7912,6 +7951,7 @@
         if (state.mode === 'shop') closeShop();
         else if (state.mode === 'leaderboard') closeLeaderboard();
         else if (state.mode === 'missions') closeMissions();
+        else if (state.mode === 'upgrades') closeUpgrades();
         else if (state.mode === 'auth') closeAuth();
         else if (state.mode === 'playing' || state.mode === 'paused') togglePause();
       } else if (e.code === 'KeyL') {
