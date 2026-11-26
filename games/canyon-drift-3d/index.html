@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>峽谷極速漂移 3D · 遊戲綜合區 GAME #04</title>
+  <style>
+    :root {
+      --bg: #080912;
+      --surface: rgba(12, 17, 32, 0.8);
+      --surface-strong: rgba(12, 17, 32, 0.94);
+      --border: rgba(251, 146, 60, 0.28);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #f97316;
+      --gold: #fbbf24;
+      --cyan: #38bdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      touch-action: none;
+    }
+    .app-root { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Top HUD */
+    .hud-top {
+      position: absolute; top: max(10px, env(safe-area-inset-top, 0px) + 6px); left: 12px; right: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 7px; pointer-events: none; z-index: 20; flex-wrap: wrap;
+    }
+    .hud-cluster { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px;
+      background: var(--surface); backdrop-filter: blur(12px); border: 1px solid var(--border);
+      font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums;
+    }
+    .hud-btn {
+      pointer-events: auto; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 11px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 12.5px; font-weight: 800; backdrop-filter: blur(12px);
+    }
+    .hud-btn.signed-in { border-color: rgba(52, 211, 153, 0.55); }
+    .g-avatar {
+      width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: #fff; background: #f97316; overflow: hidden; flex-shrink: 0;
+    }
+
+    /* Speedometer & Nitro Gauge */
+    .dash-cluster {
+      position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-radius: 999px;
+      background: rgba(9, 13, 24, 0.78); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.14);
+      pointer-events: none; z-index: 18;
+    }
+    .dash-cluster.hidden { display: none; }
+    .spd-val { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; color: #fff; }
+    .spd-unit { font-size: 10px; color: var(--muted); font-weight: 800; margin-left: 2px; }
+    .nitro-wrap { width: 110px; }
+    .nitro-lbl { font-size: 10px; font-weight: 800; color: #7dd3fc; display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .nitro-track { height: 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+    .nitro-fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, #38bdf8, #f59e0b, #ef4444); transition: width 0.08s linear; }
+    .time-pill { font-size: 15px; font-weight: 900; color: #fde047; font-variant-numeric: tabular-nums; }
+    .time-pill.low { color: #fb7185; }
+
+    /* Bottom Touch Driving Bar */
+    .drive-bar {
+      position: absolute; bottom: max(14px, env(safe-area-inset-bottom, 0px) + 10px); left: 14px; right: 14px;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; pointer-events: none; z-index: 20;
+    }
+    .drive-bar.hidden { display: none; }
+    .steer-group, .pedal-group { display: flex; gap: 8px; pointer-events: auto; }
+    .dbtn {
+      min-width: 74px; min-height: 58px; padding: 10px 14px; border-radius: 16px;
+      border: 1.5px solid rgba(255, 255, 255, 0.22); background: rgba(12, 17, 32, 0.72);
+      backdrop-filter: blur(12px); color: #fff; font-size: 14px; font-weight: 900; cursor: pointer;
+    }
+    .dbtn:active, .dbtn.on { transform: scale(0.94); background: rgba(249, 115, 22, 0.45); border-color: #fb923c; }
+    .dbtn.nitro { background: rgba(14, 165, 233, 0.35); border-color: rgba(56, 189, 248, 0.65); }
+    .dbtn.nitro.ready { background: linear-gradient(135deg, rgba(14, 165, 233, 0.9), rgba(249, 115, 22, 0.9)); border-color: #fde047; box-shadow: 0 0 22px rgba(56, 189, 248, 0.6); }
+
+    /* Overlays */
+    .overlay {
+      position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
+      padding: 16px; background: rgba(8, 9, 18, 0.76); backdrop-filter: blur(7px);
+    }
+    .overlay.hidden { display: none; }
+    .panel {
+      width: 100%; max-width: 490px; max-height: 88dvh; overflow-y: auto; padding: 22px 20px 18px;
+      border-radius: 22px; background: var(--surface-strong); border: 1px solid rgba(251, 146, 60, 0.32);
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.65); text-align: center;
+    }
+    .tag {
+      display: inline-flex; padding: 4px 12px; border-radius: 999px; background: rgba(249, 115, 22, 0.16);
+      border: 1px solid rgba(249, 115, 22, 0.4); color: #fdba74; font-size: 11px; font-weight: 800; margin-bottom: 10px;
+    }
+    .panel h1, .panel h2 { font-size: 25px; font-weight: 900; margin-bottom: 7px; }
+    .sub { font-size: 12.5px; line-height: 1.6; color: var(--muted); margin-bottom: 13px; }
+    .sso-strip {
+      display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 12px; margin-bottom: 12px;
+      background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.32); text-align: left; font-size: 12px;
+    }
+    .car-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 13px; text-align: left; }
+    .car-card {
+      padding: 10px 11px; border-radius: 13px; border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04); color: #fff; cursor: pointer;
+    }
+    .car-card.sel { border-color: #f97316; background: rgba(249, 115, 22, 0.16); }
+    .car-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; }
+    .car-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 13px 0; }
+    .stat-box { padding: 10px 6px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .stat-box .l { font-size: 10.5px; color: var(--muted); }
+    .stat-box .v { font-size: 18px; font-weight: 900; margin-top: 2px; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-primary {
+      flex: 1; padding: 12px 18px; border-radius: 13px; border: none;
+      background: linear-gradient(135deg, #f59e0b, #ea580c); color: #fff; font-size: 14.5px; font-weight: 900;
+      cursor: pointer; box-shadow: 0 10px 24px rgba(234, 88, 12, 0.4);
+    }
+    .btn-secondary {
+      padding: 12px 15px; border-radius: 13px; border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.07); color: #fff; font-size: 13.5px; font-weight: 800; cursor: pointer;
+    }
+
+    .toast {
+      position: absolute; top: 106px; left: 50%; transform: translateX(-50%) translateY(-10px); z-index: 40;
+      padding: 8px 16px; border-radius: 999px; background: rgba(234, 88, 12, 0.94); color: #fff;
+      font-size: 13px; font-weight: 800; opacity: 0; pointer-events: none; transition: all 0.2s ease; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .car-grid { grid-template-columns: 1fr; }
+      .dbtn { min-width: 66px; min-height: 60px; padding: 8px 10px; font-size: 13px; }
+      .dash-cluster { top: 52px; padding: 5px 12px; gap: 8px; }
+      .nitro-wrap { width: 82px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <canvas id="roadCanvas" aria-label="峽谷極速漂移 3D 畫布"></canvas>
+
+    <div class="hud-top">
+      <div class="hud-cluster">
+        <button class="hud-btn" id="hudAcctBtn" type="button">
+          <span class="g-avatar" id="hudAvatar">👤</span>
+          <span id="hudPlayerName">峽谷車手</span>
+        </button>
+        <div class="pill" style="color:#fdba74;"><span id="hudBiome">🏜️ 烈日赤岩峽谷</span></div>
+        <div class="pill" style="color:#fde68a;">🪙 <span id="hudCoins">40</span></div>
+      </div>
+      <div class="hud-cluster">
+        <div class="pill">SCORE <span id="hudScore" style="color:#38bdf8;">00000</span></div>
+        <button class="hud-btn" id="btnBgm" type="button" title="音樂 (B)">🎵</button>
+        <button class="hud-btn" id="btnMute" type="button" title="靜音 (M)">🔊</button>
+        <button class="hud-btn" id="btnPause" type="button" title="暫停 (P)">⏸</button>
+      </div>
+    </div>
+
+    <div class="dash-cluster hidden" id="dashCluster">
+      <div><span class="spd-val" id="dashSpeed">0</span><span class="spd-unit">KM/H</span></div>
+      <div class="nitro-wrap">
+        <div class="nitro-lbl"><span>🔥 NITRO</span><span id="nitroPct">0%</span></div>
+        <div class="nitro-track"><div class="nitro-fill" id="nitroFill"></div></div>
+      </div>
+      <div class="time-pill" id="dashTime">⏱️ 35s</div>
+    </div>
+
+    <div class="drive-bar hidden" id="driveBar">
+      <div class="steer-group">
+        <button class="dbtn" id="btnLeft" type="button">◀ 左轉</button>
+        <button class="dbtn" id="btnRight" type="button">右轉 ▶</button>
+      </div>
+      <div class="pedal-group">
+        <button class="dbtn" id="btnDrift" type="button">💨 飄移</button>
+        <button class="dbtn nitro" id="btnNitro" type="button">🔥 氮氣</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Start & Garage Overlay -->
+    <div class="overlay" id="startOverlay">
+      <div class="panel">
+        <div class="tag">🏎️ GAME #04 · 峽谷宇宙 3D 街機競速</div>
+        <h1>峽谷極速漂移 3D</h1>
+        <p class="sub">奔馳於 5 大峽谷主題彎道！過彎按住飄移集滿氮氣、高速擦身超車賺取連擊倍率，衝破檢查點延長時間！</p>
+
+        <div class="sso-strip">
+          <span class="g-avatar" id="startAvatar">👤</span>
+          <div style="flex:1;min-width:0;">
+            <div id="startAcctName" style="font-weight:800;color:#fff;">訪客車手</div>
+            <div id="startAcctSub" style="font-size:10.5px;color:var(--muted);">全站 Google 帳號自動同步車庫存檔</div>
+          </div>
+          <span style="font-weight:800;color:#fde68a;">🪙 <span id="startCoins">40</span></span>
+        </div>
+
+        <div class="car-grid" id="carGrid"></div>
+
+        <p class="sub" style="font-size:11px;margin-bottom:12px;">
+          鍵盤：←→ / AD 轉向 · Shift / ↓ 飄移集氣 · Space / ↑ 氮氣爆發｜手機支援下方四鍵操控
+        </p>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnStart" type="button">🏁 發動引擎！峽谷大巡迴</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div class="overlay hidden" id="pauseOverlay">
+      <div class="panel">
+        <div class="tag">⏸ 賽事暫停</div>
+        <h2>維修區待命</h2>
+        <p class="sub">按 P 回到賽道繼續極速漂移。</p>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnResume" type="button">繼續狂飆</button>
+          <button class="btn-secondary" id="btnMenu" type="button">返回車庫</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finish / Time Up Overlay -->
+    <div class="overlay hidden" id="overOverlay">
+      <div class="panel">
+        <div class="tag">🏁 賽事結算</div>
+        <h2 id="overTitle">時間到！衝刺完成</h2>
+        <p class="sub" id="overSub">沿途賺取的賽事金幣已全數匯入您的車庫！</p>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="l">最終分數</div><div class="v" id="overScore" style="color:#38bdf8;">0</div></div>
+          <div class="stat-box"><div class="l">奔馳里程</div><div class="v" id="overDist" style="color:#34d399;">0m</div></div>
+          <div class="stat-box"><div class="l">獲得金幣</div><div class="v" id="overCoins" style="color:#fbbf24;">+0</div></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnRetry" type="button">🏎️ 再次挑戰</button>
+          <button class="btn-secondary" id="btnGarage" type="button">🔧 升級超跑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // =========================================================================
+    // 1. UNIFIED ARCADE SSO & SAVE
+    // =========================================================================
+    const GAME_ID = 'canyon_drift_3d';
+    const SSO_KEY = 'arcade_hub_sso_v1';
+    const IS_EMBEDDED = (function () { try { return window.parent && window.parent !== window; } catch (e) { return false; } })();
+
+    function postToHub(msg) {
+      if (!IS_EMBEDDED) return;
+      try { window.parent.postMessage(msg, '*'); } catch (e) {}
+    }
+
+    function loadAuth() {
+      try {
+        const raw = localStorage.getItem(SSO_KEY);
+        if (raw) {
+          const p = JSON.parse(raw);
+          return { currentUser: p && p.currentUser && p.currentUser.uid ? p.currentUser : null };
+        }
+      } catch (e) {}
+      return { currentUser: null };
+    }
+    const auth = loadAuth();
+
+    const CARS = [
+      { id: 'red_gt',   name: '赤岩 GT-01',   icon: '🏎️', price: 0,   body: '#ef4444', stripe: '#fde047', maxSpd: 275, nitroSpd: 350, driftCharge: 1.0, coinMult: 1.0, desc: '均衡街機超跑，過彎穩定好上手' },
+      { id: 'emerald',  name: '翠影流光',     icon: '💚', price: 110, body: '#10b981', stripe: '#a7f3d0', maxSpd: 290, nitroSpd: 365, driftCharge: 1.3, coinMult: 1.2, desc: '飄移集氣 +30% ＋ 金幣收益 +20%' },
+      { id: 'frost_x',  name: '極霜雷霆',     icon: '❄️', price: 240, body: '#38bdf8', stripe: '#e0f2fe', maxSpd: 310, nitroSpd: 390, driftCharge: 1.25, coinMult: 1.25, desc: '極速 310 km/h ＋ 超長氮氣爆發' },
+      { id: 'solar_s',  name: '星輝黃金超跑', icon: '👑', price: 450, body: '#fbbf24', stripe: '#ffffff', maxSpd: 335, nitroSpd: 420, driftCharge: 1.45, coinMult: 1.45, desc: '峽谷王者：極速 420 km/h 氮氣＋超大吸金' }
+    ];
+
+    const BIOMES = [
+      { name: '🏜️ 烈日赤岩峽谷', skyTop: '#1d4ed8', skyBot: '#fb923c', ground1: '#b45309', ground2: '#92400e', road1: '#334155', road2: '#273449', rumble1: '#ef4444', rumble2: '#f8fafc', propCol: '#c2410c', sun: '#fef08a' },
+      { name: '🌿 翠綠秘境山谷', skyTop: '#0369a1', skyBot: '#6ee7b7', ground1: '#15803d', ground2: '#166534', road1: '#374151', road2: '#2d3748', rumble1: '#f59e0b', rumble2: '#ffffff', propCol: '#047857', sun: '#fde68a' },
+      { name: '❄️ 寒霜水晶冰峽', skyTop: '#1e3a8a', skyBot: '#93c5fd', ground1: '#0284c7', ground2: '#0369a1', road1: '#1e293b', road2: '#172033', rumble1: '#38bdf8', rumble2: '#f8fafc', propCol: '#7dd3fc', sun: '#e0f2fe' },
+      { name: '🌋 熔岩黑曜深淵', skyTop: '#1c1917', skyBot: '#dc2626', ground1: '#450a0a', ground2: '#290707', road1: '#27272a', road2: '#18181b', rumble1: '#f97316', rumble2: '#fde047', propCol: '#ea580c', sun: '#fb923c' },
+      { name: '✨ 星輝霓虹天峽', skyTop: '#090d1f', skyBot: '#6d28d9', ground1: '#1e1b4b', ground2: '#17143b', road1: '#1e293b', road2: '#0f172a', rumble1: '#ec4899', rumble2: '#38bdf8', propCol: '#a855f7', sun: '#f472b6' }
+    ];
+
+    function getSaveKey() {
+      return auth.currentUser ? `arcade_save_${GAME_ID}_acct_${auth.currentUser.uid}` : `arcade_save_${GAME_ID}_guest`;
+    }
+    function defaultSave() {
+      return { coins: 40, bestScore: 0, bestDist: 0, checkpoints: 0, ownedCars: ['red_gt'], equippedCar: 'red_gt' };
+    }
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(getSaveKey());
+        if (!raw) return defaultSave();
+        const p = JSON.parse(raw);
+        return {
+          coins: Math.max(0, Math.floor(Number(p.coins) || 40)),
+          bestScore: Math.max(0, Math.floor(Number(p.bestScore) || 0)),
+          bestDist: Math.max(0, Math.floor(Number(p.bestDist) || 0)),
+          checkpoints: Math.max(0, Math.floor(Number(p.checkpoints) || 0)),
+          ownedCars: Array.isArray(p.ownedCars) && p.ownedCars.length ? p.ownedCars : ['red_gt'],
+          equippedCar: CARS.some(c => c.id === p.equippedCar) ? p.equippedCar : 'red_gt'
+        };
+      } catch (e) { return defaultSave(); }
+    }
+    const save = loadSave();
+
+    function getSummaryStats() {
+      const stars = Math.min(15, Math.floor(save.bestDist / 400));
+      return {
+        coins: save.coins, bestScore: save.bestScore, stars, maxStars: 15,
+        charsUnlocked: save.ownedCars.length, charsTotal: CARS.length, bestDist: save.bestDist
+      };
+    }
+    function persistSave() {
+      try { localStorage.setItem(getSaveKey(), JSON.stringify(save)); } catch (e) {}
+      postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
+    }
+    function getCar() { return CARS.find(c => c.id === save.equippedCar) || CARS[0]; }
+
+    // =========================================================================
+    // 2. SYNTH EUROBEAT AUDIO
+    // =========================================================================
+    const SFX = {
+      ctx: null, muted: false, bgmOn: true, timer: null, step: 0,
+      ensure() {
+        if (this.muted) return null;
+        if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this.ctx = new AC(); }
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+        return this.ctx;
+      },
+      tone(type, f1, f2, dur, vol) {
+        const ac = this.ensure(); if (!ac) return;
+        const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+        o.type = type; o.frequency.setValueAtTime(f1, t);
+        if (f2 !== f1) o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur);
+      },
+      coin() { this.tone('triangle', 920, 1440, 0.09, 0.075); },
+      nitro() { this.tone('sawtooth', 160, 520, 0.35, 0.11); },
+      crash() { this.tone('sawtooth', 140, 35, 0.28, 0.14); },
+      checkpoint() { this.tone('triangle', 587, 1174, 0.24, 0.1); },
+      overtake() { this.tone('sine', 660, 990, 0.11, 0.065); },
+      startBgm() {
+        if (this.timer) return;
+        const bass = [98, 98, 116.5, 130.8, 98, 98, 146.8, 130.8];
+        const lead = [392, 466.2, 523.2, 587.3, 523.2, 466.2, 587.3, 698.5];
+        this.timer = setInterval(() => {
+          if (this.muted || !this.bgmOn || st.mode !== 'playing') return;
+          const b = bass[this.step % bass.length];
+          const l = lead[(this.step * 2) % lead.length];
+          this.tone('sawtooth', b, b * 0.99, 0.12, 0.032);
+          if (this.step % 2 === 0) this.tone('square', l, l, 0.09, 0.016);
+          this.step++;
+        }, 155);
+      }
+    };
+
+    // =========================================================================
+    // 3. 3D PERSPECTIVE CURVED HIGHWAY ENGINE
+    // =========================================================================
+    const canvas = document.getElementById('roadCanvas');
+    const ctx = canvas.getContext('2d');
+    let W = 960, H = 640;
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = Math.floor(W * dpr);
+      canvas.height = Math.floor(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const st = {
+      mode: 'menu', // 'menu' | 'playing' | 'paused' | 'over'
+      time: 0, dist: 0, nextCp: 1200, biomeIdx: 0,
+      speed: 0, playerX: 0, steer: 0, driftAngle: 0,
+      nitro: 40, nitroTime: 0, timeLeft: 35,
+      score: 0, runCoins: 0, combo: 0, comboTimer: 0, shake: 0,
+      keys: { l: false, r: false, drift: false },
+      rivals: [], coins: [], sparks: []
+    };
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg; el.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function roadCurveAt(z) {
+      return Math.sin(z * 0.0042) * 1.15 + Math.cos(z * 0.0019) * 0.65;
+    }
+
+    function spawnWorldEntities(aheadDist) {
+      while (st.rivals.length < 7) {
+        const lastZ = st.rivals.length ? Math.max(...st.rivals.map(r => r.z)) : st.dist + 80;
+        const nz = Math.max(st.dist + 110, lastZ + 55 + Math.random() * 65);
+        const lanes = [-0.62, 0, 0.62];
+        st.rivals.push({
+          z: nz,
+          x: lanes[Math.floor(Math.random() * lanes.length)],
+          spd: 115 + Math.random() * 65,
+          col: ['#60a5fa', '#f472b6', '#a78bfa', '#34d399', '#fbbf24'][Math.floor(Math.random() * 5)],
+          passed: false
+        });
+      }
+      while (st.coins.length < 16) {
+        const lastZ = st.coins.length ? Math.max(...st.coins.map(c => c.z)) : st.dist + 40;
+        const lane = (Math.floor(Math.random() * 3) - 1) * 0.55;
+        const startZ = Math.max(st.dist + 70, lastZ + 38 + Math.random() * 30);
+        for (let k = 0; k < 4; k++) {
+          st.coins.push({ z: startZ + k * 14, x: lane, got: false });
+        }
+      }
+    }
+
+    function triggerNitro() {
+      if (st.mode !== 'playing' || st.nitro < 30 || st.nitroTime > 0) return;
+      st.nitroTime = 1.6 + (st.nitro / 100) * 1.6;
+      st.nitro = 0;
+      st.shake = 0.22;
+      SFX.nitro();
+      showToast('🔥 氮氣極速爆發！');
+    }
+
+    function startRace() {
+      SFX.ensure();
+      SFX.startBgm();
+      st.mode = 'playing';
+      st.dist = 0; st.nextCp = 1200; st.biomeIdx = 0;
+      st.speed = 90; st.playerX = 0; st.steer = 0; st.driftAngle = 0;
+      st.nitro = 45; st.nitroTime = 0; st.timeLeft = 36;
+      st.score = 0; st.runCoins = 0; st.combo = 0; st.comboTimer = 0; st.shake = 0;
+      st.rivals = []; st.coins = []; st.sparks = [];
+      spawnWorldEntities();
+
+      document.getElementById('startOverlay').classList.add('hidden');
+      document.getElementById('overOverlay').classList.add('hidden');
+      document.getElementById('pauseOverlay').classList.add('hidden');
+      document.getElementById('dashCluster').classList.remove('hidden');
+      document.getElementById('driveBar').classList.remove('hidden');
+      showToast(`🏁 ${getCar().name} 出發！衝向下一個峽谷檢查點！`);
+    }
+
+    function endRace() {
+      st.mode = 'over';
+      save.coins += st.runCoins;
+      if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
+      if (st.dist > save.bestDist) save.bestDist = Math.floor(st.dist);
+      persistSave();
+      document.getElementById('dashCluster').classList.add('hidden');
+      document.getElementById('driveBar').classList.add('hidden');
+      document.getElementById('overScore').textContent = Math.floor(st.score).toLocaleString();
+      document.getElementById('overDist').textContent = `${Math.floor(st.dist)}m`;
+      document.getElementById('overCoins').textContent = `+${st.runCoins}`;
+      document.getElementById('overOverlay').classList.remove('hidden');
+      updateHud();
+    }
+
+    function update(dt) {
+      st.time += dt;
+      if (st.shake > 0) st.shake = Math.max(0, st.shake - dt);
+
+      if (st.mode === 'menu') {
+        st.dist += 55 * dt;
+        return;
+      }
+      if (st.mode !== 'playing') return;
+
+      const car = getCar();
+      st.timeLeft -= dt;
+      if (st.timeLeft <= 0) { st.timeLeft = 0; endRace(); return; }
+
+      if (st.comboTimer > 0) { st.comboTimer -= dt; if (st.comboTimer <= 0) st.combo = 0; }
+
+      const boosting = st.nitroTime > 0;
+      if (boosting) st.nitroTime = Math.max(0, st.nitroTime - dt);
+
+      const steerInput = (st.keys.r ? 1 : 0) - (st.keys.l ? 1 : 0);
+      const drifting = st.keys.drift && Math.abs(steerInput) > 0 && st.speed > 130;
+
+      // Speed physics
+      const offRoad = Math.abs(st.playerX) > 1.02;
+      const targetMax = boosting ? car.nitroSpd : (offRoad ? car.maxSpd * 0.58 : (drifting ? car.maxSpd * 0.94 : car.maxSpd));
+      const accel = boosting ? 290 : (offRoad ? 110 : 125);
+      if (st.speed < targetMax) st.speed = Math.min(targetMax, st.speed + accel * dt);
+      else st.speed = Math.max(targetMax, st.speed - 165 * dt);
+
+      // Steering + Curve Centrifugal Force + Drift
+      const curCurve = roadCurveAt(st.dist);
+      const steerPower = drifting ? 2.15 : 1.55;
+      st.steer += (steerInput - st.steer) * Math.min(1, dt * 11);
+      st.driftAngle += ((drifting ? steerInput * 0.34 : 0) - st.driftAngle) * Math.min(1, dt * 8);
+      st.playerX += (st.steer * steerPower - curCurve * (st.speed / 340) * 0.62) * dt;
+      st.playerX = Math.max(-1.45, Math.min(1.45, st.playerX));
+
+      // Drift Nitro Charge + Sparks
+      if (drifting && !offRoad) {
+        st.nitro = Math.min(100, st.nitro + 26 * car.driftCharge * dt);
+        st.score += 48 * dt;
+        for (let k = 0; k < 2; k++) {
+          st.sparks.push({
+            x: W / 2 + (Math.random() > 0.5 ? -38 : 38) + st.steer * 14,
+            y: H * 0.86,
+            vx: -steerInput * (140 + Math.random() * 140) + (Math.random() - 0.5) * 60,
+            vy: -40 - Math.random() * 70,
+            col: st.nitro > 80 ? '#38bdf8' : '#fb923c',
+            life: 0.28 + Math.random() * 0.2
+          });
+        }
+      } else if (!boosting) {
+        st.nitro = Math.min(100, st.nitro + 3.2 * dt);
+      }
+
+      // Advance distance & score
+      const meters = (st.speed / 3.6) * dt;
+      st.dist += meters;
+      st.score += meters * (boosting ? 3.2 : 1.5) * (1 + st.combo * 0.25);
+
+      // Checkpoint / Biome Transition every 1200m
+      if (st.dist >= st.nextCp) {
+        st.nextCp += 1200;
+        st.biomeIdx = (st.biomeIdx + 1) % BIOMES.length;
+        st.timeLeft = Math.min(60, st.timeLeft + 22);
+        const bonus = Math.round(25 * car.coinMult);
+        st.runCoins += bonus;
+        save.checkpoints++;
+        SFX.checkpoint();
+        showToast(`🏁 檢查點達成！+22秒 +${bonus}🪙 · 進入 ${BIOMES[st.biomeIdx].name}`);
+      }
+
+      // Rivals collision & Near-Miss Overtake
+      for (let i = st.rivals.length - 1; i >= 0; i--) {
+        const rv = st.rivals[i];
+        rv.z += (rv.spd / 3.6) * dt;
+        const dz = rv.z - st.dist;
+        if (dz < 8 && dz > -4) {
+          const dx = Math.abs(rv.x - st.playerX);
+          if (dx < 0.34) {
+            if (boosting) {
+              // Nitro ram blast!
+              st.rivals.splice(i, 1);
+              st.score += 180;
+              st.shake = 0.25;
+              SFX.crash();
+              showToast('💥 氮氣撞飛對手！+180 分');
+              continue;
+            } else {
+              st.speed = Math.max(65, st.speed * 0.48);
+              st.shake = 0.35;
+              st.combo = 0;
+              rv.z -= 12;
+              SFX.crash();
+              showToast('💥 擦撞車輛！速度驟降');
+            }
+          } else if (dx < 0.72 && !rv.passed && dz < 2) {
+            rv.passed = true;
+            st.combo = Math.min(5, st.combo + 1);
+            st.comboTimer = 4.0;
+            st.nitro = Math.min(100, st.nitro + 14);
+            st.score += 120 * st.combo;
+            SFX.overtake();
+            showToast(`⚡ 極限超車 x${st.combo}！+${120 * st.combo}`);
+          }
+        }
+        if (dz < -20) st.rivals.splice(i, 1);
+      }
+
+      // Coins pickup
+      const magnetRange = car.id === 'solar_s' ? 0.52 : 0.34;
+      for (let i = st.coins.length - 1; i >= 0; i--) {
+        const cn = st.coins[i];
+        const dz = cn.z - st.dist;
+        if (!cn.got && dz < 9 && dz > -5 && Math.abs(cn.x - st.playerX) < magnetRange) {
+          cn.got = true;
+          const v = Math.max(1, Math.round(2 * car.coinMult));
+          st.runCoins += v;
+          st.score += 35;
+          st.nitro = Math.min(100, st.nitro + 3.5);
+          SFX.coin();
+        }
+        if (cn.got || dz < -15) st.coins.splice(i, 1);
+      }
+      spawnWorldEntities();
+
+      // Update sparks
+      for (let i = st.sparks.length - 1; i >= 0; i--) {
+        const sp = st.sparks[i];
+        sp.x += sp.vx * dt; sp.y += sp.vy * dt; sp.vy += 260 * dt; sp.life -= dt;
+        if (sp.life <= 0) st.sparks.splice(i, 1);
+      }
+
+      updateHud();
+    }
+
+    function render() {
+      const bm = BIOMES[st.biomeIdx];
+      ctx.save();
+      if (st.shake > 0) {
+        const m = st.shake * 12;
+        ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+      }
+
+      const horizon = H * 0.44;
+
+      // Sky gradient
+      const sky = ctx.createLinearGradient(0, 0, 0, horizon);
+      sky.addColorStop(0, bm.skyTop);
+      sky.addColorStop(1, bm.skyBot);
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, horizon + 2);
+
+      // Sun / Moon & Parallax Canyon Silhouettes
+      const sunX = W * 0.5 - roadCurveAt(st.dist) * 85;
+      const sg = ctx.createRadialGradient(sunX, horizon * 0.62, 10, sunX, horizon * 0.62, 95);
+      sg.addColorStop(0, bm.sun); sg.addColorStop(0.35, bm.sun + '88'); sg.addColorStop(1, 'transparent');
+      ctx.fillStyle = sg;
+      ctx.beginPath(); ctx.arc(sunX, horizon * 0.62, 95, 0, Math.PI * 2); ctx.fill();
+
+      // Distant Canyon Mesas
+      ctx.fillStyle = bm.ground2;
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let i = 0; i <= 10; i++) {
+        const mx = (i / 10) * W;
+        const mh = 26 + Math.abs(Math.sin(i * 1.7 + st.biomeIdx)) * 62;
+        ctx.lineTo(mx, horizon - mh);
+      }
+      ctx.lineTo(W, horizon); ctx.closePath(); ctx.fill();
+
+      // 3D Perspective Road Segments (back to front)
+      const SEG_COUNT = 82;
+      const SEG_LEN = 3.2;
+      const roadW = W * 0.44;
+      let curveAcc = 0;
+      const baseIndex = Math.floor(st.dist / SEG_LEN);
+      const frac = (st.dist % SEG_LEN) / SEG_LEN;
+      const proj = [];
+
+      for (let i = 0; i <= SEG_COUNT; i++) {
+        const segIdx = baseIndex + i;
+        const depth = (i - frac) * SEG_LEN + 2.2;
+        const scale = 1 / (depth * 0.055);
+        const curve = roadCurveAt(segIdx * SEG_LEN);
+        curveAcc += curve * 0.016;
+        const hill = Math.sin(segIdx * 0.08) * 18;
+        const screenY = horizon + scale * (H * 0.46) - hill * scale * 0.35;
+        const screenX = W / 2 + (curveAcc * depth * 0.45 - st.playerX * 1.12) * roadW * scale * 0.5;
+        const halfW = roadW * scale;
+        proj.push({ segIdx, depth, scale, x: screenX, y: screenY, w: halfW });
+      }
+
+      // Draw ground + road strips far to near
+      for (let i = SEG_COUNT; i >= 1; i--) {
+        const p1 = proj[i], p2 = proj[i - 1];
+        if (p1.y >= p2.y) continue;
+        const alt = Math.floor(p1.segIdx / 3) % 2 === 0;
+
+        // Ground strip
+        ctx.fillStyle = alt ? bm.ground1 : bm.ground2;
+        ctx.fillRect(0, p1.y, W, p2.y - p1.y + 1);
+
+        // Rumble shoulder
+        const r1 = p1.w * 1.15, r2 = p2.w * 1.15;
+        ctx.fillStyle = alt ? bm.rumble1 : bm.rumble2;
+        ctx.beginPath();
+        ctx.moveTo(p1.x - r1, p1.y); ctx.lineTo(p1.x + r1, p1.y);
+        ctx.lineTo(p2.x + r2, p2.y); ctx.lineTo(p2.x - r2, p2.y);
+        ctx.closePath(); ctx.fill();
+
+        // Road surface
+        ctx.fillStyle = alt ? bm.road1 : bm.road2;
+        ctx.beginPath();
+        ctx.moveTo(p1.x - p1.w, p1.y); ctx.lineTo(p1.x + p1.w, p1.y);
+        ctx.lineTo(p2.x + p2.w, p2.y); ctx.lineTo(p2.x - p2.w, p2.y);
+        ctx.closePath(); ctx.fill();
+
+        // Lane dashes
+        if (alt) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+          for (const laneF of [-0.33, 0.33]) {
+            const lw1 = p1.w * 0.032, lw2 = p2.w * 0.032;
+            ctx.beginPath();
+            ctx.moveTo(p1.x + p1.w * laneF - lw1, p1.y); ctx.lineTo(p1.x + p1.w * laneF + lw1, p1.y);
+            ctx.lineTo(p2.x + p2.w * laneF + lw2, p2.y); ctx.lineTo(p2.x + p2.w * laneF - lw2, p2.y);
+            ctx.closePath(); ctx.fill();
+          }
+        }
+
+        // Roadside 3D Canyon Pillars / Crystals
+        if (p1.segIdx % 7 === 0) {
+          const ph = p1.w * 0.72, pw = p1.w * 0.28;
+          ctx.fillStyle = bm.propCol;
+          ctx.fillRect(p1.x - p1.w * 1.65 - pw, p1.y - ph, pw, ph);
+          ctx.fillRect(p1.x + p1.w * 1.65, p1.y - ph, pw, ph);
+          ctx.fillStyle = 'rgba(255,255,255,0.18)';
+          ctx.fillRect(p1.x - p1.w * 1.65 - pw, p1.y - ph, pw * 0.35, ph);
+          ctx.fillRect(p1.x + p1.w * 1.65, p1.y - ph, pw * 0.35, ph);
+        }
+
+        // Draw Coins & Rival Cars on this depth slice
+        const segZMin = p1.segIdx * SEG_LEN, segZMax = segZMin + SEG_LEN;
+        for (const cn of st.coins) {
+          if (!cn.got && cn.z >= segZMin && cn.z < segZMax) {
+            const cx = p1.x + cn.x * p1.w;
+            const cr = Math.max(4, p1.w * 0.095);
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath(); ctx.arc(cx, p1.y - cr * 1.4, cr, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath(); ctx.arc(cx, p1.y - cr * 1.4, cr * 0.5, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+        for (const rv of st.rivals) {
+          if (rv.z >= segZMin && rv.z < segZMax) {
+            const rx = p1.x + rv.x * p1.w;
+            const rw = Math.max(12, p1.w * 0.36);
+            const rh = rw * 0.56;
+            drawCar3D(rx, p1.y, rw, rh, rv.col, '#ffffff', 0, false, false);
+          }
+        }
+      }
+
+      // Draw Player 3D Supercar
+      const car = getCar();
+      const boosting = st.nitroTime > 0;
+      const carW = Math.min(138, W * 0.24);
+      const carH = carW * 0.52;
+      drawCar3D(W / 2, H * 0.88 + Math.sin(st.time * 28) * (st.speed > 100 ? 1.5 : 0), carW, carH, car.body, car.stripe, st.steer * 0.14 + st.driftAngle, st.keys.drift, boosting);
+
+      // Drift Sparks
+      ctx.globalCompositeOperation = 'lighter';
+      for (const sp of st.sparks) {
+        ctx.fillStyle = sp.col;
+        ctx.globalAlpha = Math.max(0, sp.life * 2.5);
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2); ctx.fill();
+      }
+      // Nitro Speed Lines
+      if (boosting) {
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.45)';
+        ctx.lineWidth = 2.5;
+        for (let k = 0; k < 14; k++) {
+          const ang = (k / 14) * Math.PI * 2 + st.time * 4;
+          ctx.beginPath();
+          ctx.moveTo(W / 2 + Math.cos(ang) * W * 0.25, H * 0.48 + Math.sin(ang) * H * 0.22);
+          ctx.lineTo(W / 2 + Math.cos(ang) * W * 0.65, H * 0.48 + Math.sin(ang) * H * 0.65);
+          ctx.stroke();
+        }
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    function drawCar3D(cx, baseY, w, h, bodyCol, stripeCol, tilt, braking, boosting) {
+      ctx.save();
+      ctx.translate(cx, baseY);
+      ctx.rotate(tilt);
+
+      // Ground shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
+      ctx.beginPath(); ctx.ellipse(0, 2, w * 0.58, h * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+
+      // Rear Tires
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-w * 0.48, -h * 0.34, w * 0.2, h * 0.36);
+      ctx.fillRect(w * 0.28, -h * 0.34, w * 0.2, h * 0.36);
+
+      // Lower Widebody Chassis
+      ctx.fillStyle = bodyCol;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.5, -h * 0.18);
+      ctx.lineTo(-w * 0.44, -h * 0.62);
+      ctx.lineTo(w * 0.44, -h * 0.62);
+      ctx.lineTo(w * 0.5, -h * 0.18);
+      ctx.closePath(); ctx.fill();
+
+      // Racing Center Stripe
+      ctx.fillStyle = stripeCol;
+      ctx.fillRect(-w * 0.08, -h * 0.62, w * 0.16, h * 0.44);
+
+      // Cabin Roof & Rear Windshield
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.34, -h * 0.60);
+      ctx.lineTo(-w * 0.24, -h * 0.96);
+      ctx.lineTo(w * 0.24, -h * 0.96);
+      ctx.lineTo(w * 0.34, -h * 0.60);
+      ctx.closePath(); ctx.fill();
+
+      // Rear Wing Spoiler
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-w * 0.48, -h * 0.78, w * 0.96, h * 0.1);
+
+      // Glowing Tail Lights
+      ctx.fillStyle = braking ? '#ff2a55' : '#ef4444';
+      ctx.fillRect(-w * 0.42, -h * 0.46, w * 0.18, h * 0.12);
+      ctx.fillRect(w * 0.24, -h * 0.46, w * 0.18, h * 0.12);
+
+      // Twin Nitro Exhaust Flames
+      if (boosting) {
+        const fl = h * (0.45 + Math.random() * 0.35);
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath(); ctx.moveTo(-w * 0.22, -h * 0.16); ctx.lineTo(-w * 0.14, fl); ctx.lineTo(-w * 0.06, -h * 0.16); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(w * 0.06, -h * 0.16); ctx.lineTo(w * 0.14, fl); ctx.lineTo(w * 0.22, -h * 0.16); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function updateHud() {
+      const u = auth.currentUser;
+      document.getElementById('hudPlayerName').textContent = u && u.name ? u.name : '峽谷車手';
+      document.getElementById('hudAcctBtn').classList.toggle('signed-in', !!u);
+      [document.getElementById('hudAvatar'), document.getElementById('startAvatar')].forEach((el) => {
+        if (!el) return;
+        if (u) { el.style.background = u.color || '#f97316'; el.textContent = (u.name || 'G').charAt(0).toUpperCase(); }
+        else { el.style.background = 'rgba(255,255,255,0.14)'; el.textContent = '👤'; }
+      });
+      document.getElementById('startAcctName').textContent = u ? `${u.name}（Google 已登入）` : '訪客車手';
+      document.getElementById('startAcctSub').textContent = u ? `${u.email} · 專屬超跑車庫存檔` : '於遊戲綜合區登入即可自動同步';
+      document.getElementById('startCoins').textContent = save.coins;
+
+      document.getElementById('hudBiome').textContent = BIOMES[st.biomeIdx].name;
+      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      document.getElementById('hudScore').textContent = String(Math.floor(st.score)).padStart(5, '0');
+      document.getElementById('dashSpeed').textContent = Math.floor(st.speed);
+      const np = Math.floor(st.nitro);
+      document.getElementById('nitroPct').textContent = np + '%';
+      document.getElementById('nitroFill').style.width = np + '%';
+      document.getElementById('btnNitro').classList.toggle('ready', np >= 30);
+
+      const tEl = document.getElementById('dashTime');
+      tEl.textContent = `⏱️ ${Math.ceil(st.timeLeft)}s`;
+      tEl.classList.toggle('low', st.timeLeft <= 8);
+    }
+
+    function renderCarGrid() {
+      const grid = document.getElementById('carGrid');
+      grid.innerHTML = '';
+      CARS.forEach((c) => {
+        const own = save.ownedCars.includes(c.id);
+        const eq = save.equippedCar === c.id;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'car-card' + (eq ? ' sel' : '');
+        const tag = eq ? '<span style="color:#6ee7b7;font-size:10.5px;">駕駛中</span>' : (own ? '<span style="color:#7dd3fc;font-size:10.5px;">已擁有</span>' : `<span style="color:#fde68a;font-size:10.5px;">🪙 ${c.price}</span>`);
+        btn.innerHTML = `<div class="car-top"><span>${c.icon} ${c.name}</span>${tag}</div><div class="car-desc">${c.desc}</div>`;
+        btn.addEventListener('click', () => {
+          if (own) { save.equippedCar = c.id; persistSave(); SFX.coin(); showToast(`🏎️ 已切換超跑：【${c.name}】`); }
+          else if (save.coins >= c.price) { save.coins -= c.price; save.ownedCars.push(c.id); save.equippedCar = c.id; persistSave(); SFX.checkpoint(); showToast(`🎉 解鎖並駕駛【${c.name}】！`); }
+          else showToast(`⚠️ 金幣不足（需 ${c.price} 🪙）`);
+          renderCarGrid(); updateHud();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    // Inputs
+    document.getElementById('btnStart').addEventListener('click', startRace);
+    document.getElementById('btnRetry').addEventListener('click', startRace);
+    document.getElementById('btnGarage').addEventListener('click', () => {
+      st.mode = 'menu'; document.getElementById('overOverlay').classList.add('hidden');
+      renderCarGrid(); updateHud(); document.getElementById('startOverlay').classList.remove('hidden');
+    });
+    document.getElementById('btnPause').addEventListener('click', () => {
+      if (st.mode === 'playing') { st.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
+      else if (st.mode === 'paused') { st.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+    });
+    document.getElementById('btnResume').addEventListener('click', () => { st.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); });
+    document.getElementById('btnMenu').addEventListener('click', () => {
+      st.mode = 'menu'; document.getElementById('pauseOverlay').classList.add('hidden');
+      document.getElementById('dashCluster').classList.add('hidden'); document.getElementById('driveBar').classList.add('hidden');
+      renderCarGrid(); updateHud(); document.getElementById('startOverlay').classList.remove('hidden');
+    });
+    document.getElementById('btnBgm').addEventListener('click', () => { SFX.bgmOn = !SFX.bgmOn; showToast(SFX.bgmOn ? '🎵 音樂：開' : '🔇 音樂：關'); });
+    document.getElementById('btnMute').addEventListener('click', () => { SFX.muted = !SFX.muted; document.getElementById('btnMute').textContent = SFX.muted ? '🔇' : '🔊'; });
+    document.getElementById('hudAcctBtn').addEventListener('click', () => {
+      if (IS_EMBEDDED) postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID });
+      else showToast('🔑 請從「遊戲綜合區」統一管理 Google 帳號');
+    });
+
+    function bindHold(id, key) {
+      const el = document.getElementById(id);
+      const on = (e) => { e.preventDefault(); st.keys[key] = true; el.classList.add('on'); };
+      const off = (e) => { e.preventDefault(); st.keys[key] = false; el.classList.remove('on'); };
+      el.addEventListener('pointerdown', on);
+      el.addEventListener('pointerup', off);
+      el.addEventListener('pointercancel', off);
+      el.addEventListener('pointerleave', off);
+    }
+    bindHold('btnLeft', 'l');
+    bindHold('btnRight', 'r');
+    bindHold('btnDrift', 'drift');
+    document.getElementById('btnNitro').addEventListener('pointerdown', (e) => { e.preventDefault(); triggerNitro(); });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') st.keys.l = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') st.keys.r = true;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'ArrowDown' || e.code === 'KeyS') st.keys.drift = true;
+      if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && st.mode === 'playing') { e.preventDefault(); triggerNitro(); }
+      if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (st.mode === 'playing') { st.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
+        else if (st.mode === 'paused') { st.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') st.keys.l = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') st.keys.r = false;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'ArrowDown' || e.code === 'KeyS') st.keys.drift = false;
+    });
+
+    // SSO Bridge
+    function applySso(incoming) {
+      const nextU = incoming && incoming.currentUser && incoming.currentUser.uid ? incoming.currentUser : null;
+      const prevUid = auth.currentUser ? auth.currentUser.uid : null;
+      const nextUid = nextU ? nextU.uid : null;
+      auth.currentUser = nextU;
+      if (prevUid !== nextUid) { Object.assign(save, loadSave()); renderCarGrid(); }
+      updateHud();
+      postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: nextUid, stats: getSummaryStats() });
+    }
+    window.addEventListener('message', (e) => {
+      const d = e && e.data;
+      if (d && d.type === 'ARCADE_SSO_SYNC' && d.auth) applySso(d.auth);
+    });
+    window.addEventListener('storage', (e) => {
+      if (e.key === SSO_KEY && e.newValue) { try { applySso(JSON.parse(e.newValue)); } catch (_) {} }
+    });
+
+    // Boot
+    renderCarGrid();
+    updateHud();
+    postToHub({ type: 'ARCADE_GAME_READY', gameId: GAME_ID, stats: getSummaryStats() });
+
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+      last = now;
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>

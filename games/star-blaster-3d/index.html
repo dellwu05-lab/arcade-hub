@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>星際彈幕射擊 3D · 遊戲綜合區 GAME #02</title>
+  <style>
+    :root {
+      --bg: #040713;
+      --surface: rgba(10, 17, 36, 0.78);
+      --surface-strong: rgba(11, 18, 36, 0.94);
+      --border: rgba(125, 211, 252, 0.22);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --cyan: #38bdf8;
+      --amber: #f59e0b;
+      --pink: #fb7185;
+      --green: #34d399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      touch-action: none;
+    }
+    .app-root { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Top HUD */
+    .hud-top {
+      position: absolute; top: max(10px, env(safe-area-inset-top, 0px) + 6px); left: 12px; right: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; pointer-events: none; z-index: 20;
+      flex-wrap: wrap;
+    }
+    .hud-cluster { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px;
+      background: var(--surface); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border); font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .hud-btn {
+      pointer-events: auto; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 11px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 12.5px; font-weight: 800; backdrop-filter: blur(12px);
+      transition: transform 0.1s ease, border-color 0.15s ease;
+    }
+    .hud-btn:hover { border-color: rgba(56, 189, 248, 0.7); }
+    .hud-btn:active { transform: scale(0.95); }
+    .hud-acct { padding: 4px 10px 4px 5px; }
+    .hud-acct.signed-in { border-color: rgba(52, 211, 153, 0.5); }
+    .g-avatar {
+      width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: #fff; background: #38bdf8; overflow: hidden; flex-shrink: 0;
+    }
+    .g-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* HP / Shield / Boss Bars */
+    .bars-wrap {
+      position: absolute; top: 54px; left: 50%; transform: translateX(-50%); width: min(360px, 84vw);
+      display: flex; flex-direction: column; gap: 6px; pointer-events: none; z-index: 18;
+    }
+    .bars-wrap.hidden { display: none; }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; }
+    .bar-track { flex: 1; height: 8px; border-radius: 999px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.14); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; transition: width 0.12s linear; }
+    .bar-fill.hp { background: linear-gradient(90deg, #10b981, #34d399); }
+    .bar-fill.boss { background: linear-gradient(90deg, #ef4444, #fb7185, #f59e0b); }
+    .boss-bar-row { display: none; }
+    .boss-bar-row.show { display: flex; }
+
+    /* Bottom Nova Skill Button */
+    .nova-bar {
+      position: absolute; bottom: max(16px, env(safe-area-inset-bottom, 0px) + 12px); right: 16px; z-index: 20;
+      display: flex; align-items: center; gap: 10px; pointer-events: none;
+    }
+    .nova-bar.hidden { display: none; }
+    .nova-btn {
+      pointer-events: auto; position: relative; overflow: hidden; min-width: 126px; padding: 11px 16px;
+      border-radius: 18px; border: 1.5px solid rgba(56, 189, 248, 0.35); background: rgba(10, 17, 36, 0.82);
+      color: var(--muted); font-size: 13px; font-weight: 900; cursor: pointer; text-align: center;
+      backdrop-filter: blur(12px); transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+    .nova-btn .fill {
+      position: absolute; inset: 0 auto 0 0; width: 0%; background: linear-gradient(90deg, rgba(56, 189, 248, 0.3), rgba(168, 85, 247, 0.45)); z-index: 0;
+    }
+    .nova-btn .lbl { position: relative; z-index: 1; }
+    .nova-btn.ready {
+      color: #fff; border-color: #fde047;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.9), rgba(168, 85, 247, 0.9));
+      box-shadow: 0 0 26px rgba(56, 189, 248, 0.7);
+    }
+    .nova-btn.ready:active { transform: scale(0.94); }
+
+    /* Overlays */
+    .overlay {
+      position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
+      padding: 16px; background: radial-gradient(circle at 50% 45%, rgba(4, 7, 19, 0.45), rgba(4, 7, 19, 0.82));
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    .overlay.hidden { display: none; }
+    .panel {
+      width: 100%; max-width: 500px; max-height: 88dvh; overflow-y: auto; padding: 24px 22px 20px;
+      border-radius: 22px; background: var(--surface-strong); border: 1px solid rgba(125, 211, 252, 0.24);
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.65); text-align: center;
+    }
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px;
+      background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #7dd3fc; font-size: 11px; font-weight: 800; margin-bottom: 10px;
+    }
+    .panel h1, .panel h2 { font-size: 26px; font-weight: 900; margin-bottom: 8px; }
+    .sub { font-size: 13px; line-height: 1.6; color: var(--muted); margin-bottom: 14px; }
+
+    .sso-banner {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; margin-bottom: 14px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.14), rgba(52, 211, 153, 0.12));
+      border: 1px solid rgba(56, 189, 248, 0.32); text-align: left; font-size: 12.5px;
+    }
+    .sso-banner .sb-info { flex: 1; min-width: 0; }
+    .sso-banner .sb-name { font-weight: 800; color: #fff; }
+    .sso-banner .sb-sub { font-size: 11px; color: var(--muted); }
+
+    .ship-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-bottom: 14px; text-align: left; }
+    .ship-card {
+      padding: 10px 11px; border-radius: 13px; border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04); cursor: pointer; transition: all 0.15s ease; color: #fff;
+    }
+    .ship-card.selected { border-color: #38bdf8; background: rgba(56, 189, 248, 0.14); box-shadow: 0 0 18px rgba(56, 189, 248, 0.25); }
+    .ship-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; }
+    .ship-status { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; font-weight: 800; }
+    .ship-status.eq { background: rgba(52, 211, 153, 0.2); color: #6ee7b7; }
+    .ship-status.own { background: rgba(56, 189, 248, 0.18); color: #7dd3fc; }
+    .ship-status.cost { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
+    .ship-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+    .upgrade-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 14px 0 4px; text-align: left; }
+    .upg-card {
+      display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 14px;
+      border: 1px solid rgba(56, 189, 248, 0.32); background: rgba(15, 23, 42, 0.85); color: #fff;
+      cursor: pointer; transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .upg-card:hover { transform: translateY(-2px); border-color: #fde047; background: rgba(30, 58, 138, 0.45); }
+    .upg-ico { width: 42px; height: 42px; border-radius: 12px; background: rgba(56, 189, 248, 0.16); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .upg-title { font-size: 14px; font-weight: 900; }
+    .upg-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+    .stat-box { padding: 10px 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .stat-box .l { font-size: 11px; color: var(--muted); }
+    .stat-box .v { font-size: 19px; font-weight: 900; margin-top: 3px; }
+
+    .btn-row { display: flex; gap: 9px; flex-wrap: wrap; }
+    .btn-primary {
+      flex: 1; padding: 12px 18px; border-radius: 13px; border: none;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; font-size: 14.5px; font-weight: 900;
+      cursor: pointer; box-shadow: 0 10px 26px rgba(14, 165, 233, 0.4);
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-secondary {
+      padding: 12px 15px; border-radius: 13px; border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.07); color: #f8fafc; font-size: 13.5px; font-weight: 800; cursor: pointer;
+    }
+
+    .toast {
+      position: absolute; top: 96px; left: 50%; transform: translateX(-50%) translateY(-10px); z-index: 40;
+      padding: 8px 16px; border-radius: 999px; background: rgba(14, 165, 233, 0.92); color: #fff;
+      font-size: 13px; font-weight: 800; opacity: 0; pointer-events: none; transition: all 0.2s ease; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .ship-grid { grid-template-columns: 1fr; }
+      .panel { padding: 18px 14px; }
+      .hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <canvas id="gameCanvas" aria-label="星際彈幕射擊 3D 畫布"></canvas>
+
+    <div class="hud-top">
+      <div class="hud-cluster">
+        <button class="hud-btn hud-acct" id="hudAcctBtn" type="button" title="全站 Google 帳號">
+          <span class="g-avatar" id="hudAvatar">👤</span>
+          <span id="hudPlayerName">星際飛官</span>
+        </button>
+        <div class="pill" style="color:#7dd3fc;"><span>🌊</span><span id="hudWave">WAVE 1</span></div>
+        <div class="pill" style="color:#fde68a;"><span>🪙</span><span id="hudCoins">40</span></div>
+      </div>
+      <div class="hud-cluster">
+        <div class="pill"><span>SCORE</span><span id="hudScore" style="color:#38bdf8;">00000</span></div>
+        <button class="hud-btn" id="btnBgm" type="button" title="背景音樂 (B)">🎵</button>
+        <button class="hud-btn" id="btnMute" type="button" title="靜音 (M)">🔊</button>
+        <button class="hud-btn" id="btnPause" type="button" title="暫停 (P)">⏸</button>
+      </div>
+    </div>
+
+    <div class="bars-wrap hidden" id="barsWrap">
+      <div class="bar-row">
+        <span style="color:#6ee7b7;min-width:54px;">🛡️ 裝甲</span>
+        <div class="bar-track"><div class="bar-fill hp" id="hpFill" style="width:100%"></div></div>
+        <span id="hpText" style="min-width:44px;text-align:right;">100%</span>
+      </div>
+      <div class="bar-row boss-bar-row" id="bossBarRow">
+        <span style="color:#fda4af;min-width:54px;">🛸 母艦</span>
+        <div class="bar-track"><div class="bar-fill boss" id="bossFill" style="width:100%"></div></div>
+        <span id="bossText" style="min-width:44px;text-align:right;">BOSS</span>
+      </div>
+    </div>
+
+    <div class="nova-bar hidden" id="novaBar">
+      <button class="nova-btn" id="btnNova" type="button">
+        <div class="fill" id="novaFill"></div>
+        <div class="lbl" id="novaLabel">💥 超新星 0%</div>
+      </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Start & Hangar Overlay -->
+    <div class="overlay" id="startOverlay">
+      <div class="panel">
+        <div class="tag">🚀 GAME #02 · 3D 太空射擊 ROGUELIKE</div>
+        <h1>星際彈幕射擊 3D</h1>
+        <p class="sub">駕駛 3D 星際戰機穿梭星雲與小行星帶！每波擊破後挑選 Roguelike 強化模組，迎戰巨型星系母艦 BOSS！</p>
+
+        <div class="sso-banner">
+          <span class="g-avatar" id="startAvatar">👤</span>
+          <div class="sb-info">
+            <div class="sb-name" id="startAcctName">訪客飛官</div>
+            <div class="sb-sub" id="startAcctSub">由遊戲綜合區統一登入 · 獨立帳號存檔</div>
+          </div>
+          <span style="font-size:12px;font-weight:800;color:#fde68a;">🪙 <span id="startCoins">40</span></span>
+        </div>
+
+        <div class="ship-grid" id="shipGrid"></div>
+
+        <p class="sub" style="font-size:11.5px;margin-bottom:12px;">
+          操控：鍵盤 WASD / 方向鍵 / 滑鼠拖曳，手機直接觸控拖曳飛行；滿氣按 <strong>Space / Shift</strong> 或點右下角發動 <strong>💥 超新星清屏</strong>！
+        </p>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="btnStart" type="button">🚀 出擊！進入第 1 波</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Roguelike Upgrade Draft Overlay -->
+    <div class="overlay hidden" id="upgradeOverlay">
+      <div class="panel">
+        <div class="tag">✨ WAVE CLEAR · ROGUELIKE 模組三選一</div>
+        <h2 id="upgTitle">第 1 波掃蕩完成！</h2>
+        <p class="sub">選擇一項戰機強化模組，迎戰下一波更強大的星際艦隊：</p>
+        <div class="upgrade-grid" id="upgradeGrid"></div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div class="overlay hidden" id="pauseOverlay">
+      <div class="panel">
+        <div class="tag">⏸ 航行暫停</div>
+        <h2>戰術整補中</h2>
+        <p class="sub">按 P 或點擊繼續返回星際戰場。</p>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnResume" type="button">繼續作戰</button>
+          <button class="btn-secondary" id="btnBackMenu" type="button">返回機庫</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay hidden" id="overOverlay">
+      <div class="panel">
+        <div class="tag">💥 戰機返航結算</div>
+        <h2 id="overTitle">星際作戰結束</h2>
+        <p class="sub" id="overSub">本次蒐集的星幣已全數匯入您的帳號機庫，升級更強戰機再戰母艦！</p>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="l">本局分數</div><div class="v" id="overScore" style="color:#38bdf8;">0</div></div>
+          <div class="stat-box"><div class="l">抵達波次</div><div class="v" id="overWave" style="color:#a78bfa;">W1</div></div>
+          <div class="stat-box"><div class="l">獲得星幣</div><div class="v" id="overCoins" style="color:#fbbf24;">+0</div></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnRetry" type="button">🚀 再次出擊</button>
+          <button class="btn-secondary" id="btnOverHangar" type="button">🛸 戰機機庫</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // =========================================================================
+    // 1. UNIFIED ARCADE HUB SSO & PER-ACCOUNT SAVE
+    // =========================================================================
+    const GAME_ID = 'star_blaster_3d';
+    const SSO_KEY = 'arcade_hub_sso_v1';
+    const IS_EMBEDDED = (function () { try { return window.parent && window.parent !== window; } catch (e) { return false; } })();
+
+    function postToHub(msg) {
+      if (!IS_EMBEDDED) return;
+      try { window.parent.postMessage(msg, '*'); } catch (e) {}
+    }
+
+    function loadAuth() {
+      try {
+        const raw = localStorage.getItem(SSO_KEY);
+        if (raw) {
+          const p = JSON.parse(raw);
+          return { currentUser: p && p.currentUser && p.currentUser.uid ? p.currentUser : null };
+        }
+      } catch (e) {}
+      return { currentUser: null };
+    }
+
+    const auth = loadAuth();
+
+    function getSaveKey() {
+      return auth.currentUser ? `arcade_save_${GAME_ID}_acct_${auth.currentUser.uid}` : `arcade_save_${GAME_ID}_guest`;
+    }
+
+    const SHIPS = [
+      { id: 'vanguard', name: '蒼穹攔截機', icon: '✈️', price: 0, color: '#38bdf8', accent: '#7dd3fc', hp: 100, speed: 460, fireRate: 0.16, spread: 1, homing: 0, coinMult: 1.0, desc: '均衡全能型 3D 戰機，機動靈敏' },
+      { id: 'crimson',  name: '猩紅烈焰號', icon: '🔥', price: 120, color: '#fb7185', accent: '#fda4af', hp: 115, speed: 480, fireRate: 0.125, spread: 2, homing: 0, coinMult: 1.15, desc: '雙聯高速電漿砲＋星幣 +15%' },
+      { id: 'aurora',   name: '極光幽靈艦', icon: '💠', price: 260, color: '#a78bfa', accent: '#ddd6fe', hp: 120, speed: 520, fireRate: 0.14, spread: 2, homing: 1, coinMult: 1.25, desc: '內建自動追蹤飛彈＋極速閃避' },
+      { id: 'solaris',  name: '黃金天帝號', icon: '👑', price: 480, color: '#fbbf24', accent: '#fef08a', hp: 150, speed: 510, fireRate: 0.115, spread: 3, homing: 1, coinMult: 1.4, desc: '三向光束＋追蹤飛彈＋裝甲強化' }
+    ];
+
+    function defaultSave() {
+      return { coins: 40, bestScore: 0, bestWave: 1, bossesDefeated: 0, ownedShips: ['vanguard'], equippedShip: 'vanguard', stageStars: {} };
+    }
+
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(getSaveKey());
+        if (!raw) return defaultSave();
+        const p = JSON.parse(raw);
+        return {
+          coins: Math.max(0, Math.floor(Number(p.coins) || 40)),
+          bestScore: Math.max(0, Math.floor(Number(p.bestScore) || 0)),
+          bestWave: Math.max(1, Math.floor(Number(p.bestWave) || 1)),
+          bossesDefeated: Math.max(0, Math.floor(Number(p.bossesDefeated) || 0)),
+          ownedShips: Array.isArray(p.ownedShips) && p.ownedShips.length ? p.ownedShips : ['vanguard'],
+          equippedShip: SHIPS.some(s => s.id === p.equippedShip) ? p.equippedShip : 'vanguard',
+          stageStars: p.stageStars && typeof p.stageStars === 'object' ? p.stageStars : {}
+        };
+      } catch (e) { return defaultSave(); }
+    }
+
+    const save = loadSave();
+
+    function getSummaryStats() {
+      const stars = Math.min(15, Math.floor(save.bestWave * 1.5) + save.bossesDefeated * 3);
+      return {
+        coins: save.coins,
+        bestScore: save.bestScore,
+        stars,
+        maxStars: 15,
+        charsUnlocked: save.ownedShips.length,
+        charsTotal: SHIPS.length,
+        bestWave: save.bestWave
+      };
+    }
+
+    function persistSave() {
+      try { localStorage.setItem(getSaveKey(), JSON.stringify(save)); } catch (e) {}
+      postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
+    }
+
+    function getPlayerName() {
+      return auth.currentUser && auth.currentUser.name ? auth.currentUser.name : '星際飛官';
+    }
+
+    function getShip() {
+      return SHIPS.find(s => s.id === save.equippedShip) || SHIPS[0];
+    }
+
+    // =========================================================================
+    // 2. PROCEDURAL SCI-FI SYNTH AUDIO + BGM
+    // =========================================================================
+    const SFX = {
+      ctx: null, muted: false, bgmOn: true, bgmTimer: null, step: 0,
+      ensure() {
+        if (this.muted) return null;
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          this.ctx = new AC();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+        return this.ctx;
+      },
+      tone(type, f1, f2, dur, vol) {
+        const ac = this.ensure();
+        if (!ac) return;
+        const t = ac.currentTime;
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(f1, t);
+        if (f2 !== f1) o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t); o.stop(t + dur);
+      },
+      laser() { this.tone('sawtooth', 780, 260, 0.06, 0.035); },
+      hit() { this.tone('square', 220, 90, 0.05, 0.04); },
+      explode(big) { this.tone('sawtooth', big ? 140 : 210, 32, big ? 0.36 : 0.16, big ? 0.14 : 0.075); },
+      coin() { this.tone('triangle', 880, 1320, 0.09, 0.07); },
+      nova() { this.tone('sawtooth', 420, 48, 0.55, 0.16); this.tone('sine', 880, 1760, 0.4, 0.08); },
+      upgrade() { this.tone('triangle', 523, 1046, 0.2, 0.09); },
+      startBgm() {
+        if (this.bgmTimer) return;
+        const bass = [110, 110, 130.8, 146.8, 110, 110, 164.8, 146.8];
+        const arp  = [440, 523.2, 659.2, 784, 659.2, 523.2, 587.3, 659.2];
+        this.bgmTimer = setInterval(() => {
+          if (this.muted || !this.bgmOn || state.mode !== 'playing') return;
+          const b = bass[this.step % bass.length];
+          const a = arp[(this.step * 2) % arp.length];
+          this.tone('triangle', b, b * 0.98, 0.16, 0.035);
+          if (this.step % 2 === 0) this.tone('sine', a, a, 0.11, 0.02);
+          this.step++;
+        }, 185);
+      }
+    };
+
+    // =========================================================================
+    // 3. 3D PERSPECTIVE RENDERER & GAME STATE
+    // =========================================================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let W = 960, H = 640;
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = Math.floor(W * dpr);
+      canvas.height = Math.floor(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // 3D Starfield
+    const stars = Array.from({ length: 130 }, () => ({
+      x: (Math.random() - 0.5) * 2.2,
+      y: (Math.random() - 0.5) * 2.2,
+      z: Math.random() * 1.8 + 0.1,
+      c: ['#bae6fd', '#fde68a', '#e9d5ff', '#ffffff'][Math.floor(Math.random() * 4)]
+    }));
+
+    const state = {
+      mode: 'menu', // 'menu' | 'playing' | 'upgrade' | 'paused' | 'over'
+      score: 0, runCoins: 0, wave: 1, waveKillGoal: 12, waveKills: 0,
+      time: 0, shake: 0, novaCharge: 0, spawnTimer: 0,
+      boss: null,
+      keys: { l: false, r: false, u: false, d: false },
+      pointer: { active: false, x: 0, y: 0 },
+      player: { x: 480, y: 500, vx: 0, bank: 0, hp: 100, maxHp: 100, fireCd: 0, missileCd: 0, invuln: 0, spread: 1, fireMult: 1, homing: 0, magnet: 110, novaRate: 1 },
+      bullets: [], eBullets: [], enemies: [], pickups: [], particles: [], shockwaves: []
+    };
+
+    const UPGRADES = [
+      { id: 'spread', icon: '🔫', title: '多向光束擴充', desc: '主砲額外增加 +1 道高能電漿散射（最高 5 向）', apply: p => { p.spread = Math.min(5, p.spread + 1); } },
+      { id: 'rate',   icon: '⚡', title: '超頻射速核心', desc: '武器開火速度提升 22%，壓制敵艦彈幕', apply: p => { p.fireMult *= 0.80; } },
+      { id: 'homing', icon: '🎯', title: '追蹤光束飛彈', desc: '自動發射鎖定敵艦與母艦的星際飛彈 +1', apply: p => { p.homing = Math.min(3, p.homing + 1); } },
+      { id: 'repair', icon: '🛡️', title: '奈米裝甲修復', desc: '立即回復 45% 裝甲並提升最大裝甲值 +20', apply: p => { p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * 0.45)); } },
+      { id: 'magnet', icon: '🧲', title: '星幣重力磁場', desc: '大幅擴大星幣吸附半徑，並立即獲得 +25 星幣', apply: p => { p.magnet += 95; state.runCoins += 25; } },
+      { id: 'nova',   icon: '💥', title: '超新星反應爐', desc: '大招集氣效率 +40%，並立即充能 50%', apply: p => { p.novaRate += 0.4; state.novaCharge = Math.min(100, state.novaCharge + 50); } }
+    ];
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function addParticles(x, y, col, n, spd = 180) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = (0.3 + Math.random() * 0.9) * spd;
+        state.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 2 + Math.random() * 3.5, col, life: 0.35 + Math.random() * 0.4, max: 0.75 });
+      }
+    }
+
+    function spawnEnemy() {
+      const r = Math.random();
+      const w = state.wave;
+      let kind = 'scout';
+      if (r > 0.75 && w >= 2) kind = 'cruiser';
+      else if (r > 0.45) kind = 'asteroid';
+
+      const x = 44 + Math.random() * (W - 88);
+      if (kind === 'asteroid') {
+        state.enemies.push({ kind, x, y: -36, vx: (Math.random() - 0.5) * 65, vy: 115 + w * 14, r: 22 + Math.random() * 12, hp: 22 + w * 9, maxHp: 22 + w * 9, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 3, fireCd: 99, score: 45, coins: 2 });
+      } else if (kind === 'cruiser') {
+        state.enemies.push({ kind, x, y: -42, vx: (Math.random() - 0.5) * 55, vy: 82 + w * 8, r: 26, hp: 52 + w * 18, maxHp: 52 + w * 18, rot: 0, vr: 0, fireCd: 1.1, score: 130, coins: 5 });
+      } else {
+        state.enemies.push({ kind, x, y: -30, vx: Math.sin(state.time * 2) * 85, vy: 138 + w * 15, r: 19, hp: 18 + w * 7, maxHp: 18 + w * 7, rot: 0, vr: 0, fireCd: 1.4, score: 75, coins: 3 });
+      }
+    }
+
+    function spawnBoss() {
+      const tier = Math.max(1, Math.floor(state.wave / 3));
+      const hp = 560 + state.wave * 240;
+      state.boss = {
+        x: W / 2, y: -90, targetY: Math.min(165, H * 0.24),
+        hp, maxHp: hp, phase: 0, fireCd: 1.0, ringCd: 2.6, dir: 1, tier
+      };
+      showToast(`🛸 警告！星系母艦 BOSS Lv.${tier} 登場！`);
+      SFX.nova();
+    }
+
+    function activateNova() {
+      if (state.mode !== 'playing' || state.novaCharge < 100) return;
+      state.novaCharge = 0;
+      state.shake = 0.45;
+      SFX.nova();
+      state.shockwaves.push({ x: state.player.x, y: state.player.y, r: 20, maxR: Math.max(W, H) * 0.9, alpha: 1 });
+      // Clear enemy bullets & deal heavy damage to all enemies/boss
+      state.eBullets = [];
+      for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const e = state.enemies[i];
+        e.hp -= 160;
+        addParticles(e.x, e.y, '#38bdf8', 10, 220);
+        if (e.hp <= 0) killEnemy(i);
+      }
+      if (state.boss) {
+        state.boss.hp -= 240;
+        addParticles(state.boss.x, state.boss.y, '#fde047', 26, 280);
+        if (state.boss.hp <= 0) defeatBoss();
+      }
+      showToast('💥 超新星光爆！清空全場彈幕！');
+    }
+
+    function killEnemy(idx) {
+      const e = state.enemies[idx];
+      state.enemies.splice(idx, 1);
+      state.score += e.score;
+      state.waveKills++;
+      state.novaCharge = Math.min(100, state.novaCharge + 7.5 * state.player.novaRate);
+      SFX.explode(e.kind === 'cruiser');
+      addParticles(e.x, e.y, e.kind === 'cruiser' ? '#fb7185' : '#f59e0b', 16, 210);
+      for (let c = 0; c < e.coins; c++) {
+        state.pickups.push({ x: e.x + (Math.random() - 0.5) * 20, y: e.y + (Math.random() - 0.5) * 16, vy: 75 + Math.random() * 45, kind: 'coin' });
+      }
+      if (Math.random() < 0.08) {
+        state.pickups.push({ x: e.x, y: e.y, vy: 85, kind: 'heal' });
+      }
+    }
+
+    function defeatBoss() {
+      const b = state.boss;
+      if (!b) return;
+      state.boss = null;
+      state.score += 1200 * b.tier;
+      const bonus = Math.round(35 * getShip().coinMult);
+      state.runCoins += bonus;
+      save.bossesDefeated++;
+      state.shake = 0.6;
+      SFX.explode(true);
+      addParticles(b.x, b.y, '#fde047', 50, 340);
+      addParticles(b.x, b.y, '#fb7185', 40, 290);
+      state.shockwaves.push({ x: b.x, y: b.y, r: 30, maxR: 420, alpha: 1 });
+      showToast(`🏆 擊墜星系母艦！+${1200 * b.tier} 分 +${bonus} 星幣`);
+      openUpgradeDraft();
+    }
+
+    function openUpgradeDraft() {
+      state.mode = 'upgrade';
+      state.eBullets = [];
+      const pool = UPGRADES.slice().sort(() => Math.random() - 0.5).slice(0, 3);
+      document.getElementById('upgTitle').textContent = `第 ${state.wave} 波掃蕩完成！`;
+      const grid = document.getElementById('upgradeGrid');
+      grid.innerHTML = '';
+      pool.forEach((u) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'upg-card';
+        btn.innerHTML = `
+          <div class="upg-ico">${u.icon}</div>
+          <div>
+            <div class="upg-title">${u.title}</div>
+            <div class="upg-desc">${u.desc}</div>
+          </div>`;
+        btn.addEventListener('click', () => {
+          u.apply(state.player);
+          SFX.upgrade();
+          state.wave++;
+          if (state.wave > save.bestWave) save.bestWave = state.wave;
+          state.waveKills = 0;
+          state.waveKillGoal = 12 + state.wave * 4;
+          state.mode = 'playing';
+          document.getElementById('upgradeOverlay').classList.add('hidden');
+          showToast(`⚡ 裝備【${u.title}】！迎戰第 ${state.wave} 波`);
+        });
+        grid.appendChild(btn);
+      });
+      document.getElementById('upgradeOverlay').classList.remove('hidden');
+    }
+
+    function startGame() {
+      SFX.ensure();
+      SFX.startBgm();
+      const ship = getShip();
+      state.mode = 'playing';
+      state.score = 0;
+      state.runCoins = 0;
+      state.wave = 1;
+      state.waveKills = 0;
+      state.waveKillGoal = 12;
+      state.novaCharge = 25;
+      state.boss = null;
+      state.bullets = []; state.eBullets = []; state.enemies = []; state.pickups = []; state.particles = []; state.shockwaves = [];
+      state.player = {
+        x: W / 2, y: H * 0.78, vx: 0, bank: 0,
+        hp: ship.hp, maxHp: ship.hp, fireCd: 0, missileCd: 0, invuln: 1.0,
+        spread: ship.spread, fireMult: 1.0, homing: ship.homing, magnet: 115, novaRate: 1.0
+      };
+      document.getElementById('startOverlay').classList.add('hidden');
+      document.getElementById('overOverlay').classList.add('hidden');
+      document.getElementById('pauseOverlay').classList.add('hidden');
+      document.getElementById('upgradeOverlay').classList.add('hidden');
+      document.getElementById('barsWrap').classList.remove('hidden');
+      document.getElementById('novaBar').classList.remove('hidden');
+      showToast(`🚀 ${getPlayerName()} 駕駛【${ship.name}】出擊！`);
+    }
+
+    function triggerGameOver() {
+      state.mode = 'over';
+      SFX.explode(true);
+      addParticles(state.player.x, state.player.y, '#fb7185', 45, 300);
+      save.coins += state.runCoins;
+      if (state.score > save.bestScore) save.bestScore = Math.floor(state.score);
+      if (state.wave > save.bestWave) save.bestWave = state.wave;
+      persistSave();
+      document.getElementById('barsWrap').classList.add('hidden');
+      document.getElementById('novaBar').classList.add('hidden');
+      document.getElementById('overScore').textContent = Math.floor(state.score).toLocaleString();
+      document.getElementById('overWave').textContent = `WAVE ${state.wave}`;
+      document.getElementById('overCoins').textContent = `+${state.runCoins}`;
+      document.getElementById('overOverlay').classList.remove('hidden');
+      updateHudUI();
+    }
+
+    // =========================================================================
+    // 4. UPDATE & 3D RENDER LOOP
+    // =========================================================================
+    function update(dt) {
+      state.time += dt;
+      // Warp starfield always animates
+      const starSpeed = state.mode === 'playing' ? 1.15 : 0.45;
+      for (const s of stars) {
+        s.z -= dt * starSpeed;
+        if (s.z <= 0.06) { s.x = (Math.random() - 0.5) * 2.2; s.y = (Math.random() - 0.5) * 2.2; s.z = 1.9; }
+      }
+
+      if (state.shake > 0) state.shake = Math.max(0, state.shake - dt);
+
+      if (state.mode !== 'playing') return;
+
+      const p = state.player;
+      const ship = getShip();
+      if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
+
+      // Movement (Keyboard or Pointer drag)
+      const prevX = p.x;
+      if (state.pointer.active) {
+        const dx = state.pointer.x - p.x;
+        const dy = state.pointer.y - p.y;
+        p.x += dx * Math.min(1, dt * 16);
+        p.y += dy * Math.min(1, dt * 16);
+      } else {
+        let mx = (state.keys.r ? 1 : 0) - (state.keys.l ? 1 : 0);
+        let my = (state.keys.d ? 1 : 0) - (state.keys.u ? 1 : 0);
+        if (mx && my) { mx *= 0.707; my *= 0.707; }
+        p.x += mx * ship.speed * dt;
+        p.y += my * ship.speed * dt;
+      }
+      p.x = Math.max(28, Math.min(W - 28, p.x));
+      p.y = Math.max(85, Math.min(H - 54, p.y));
+      p.bank += (((p.x - prevX) / Math.max(0.01, dt)) * 0.0014 - p.bank) * Math.min(1, dt * 10);
+      p.bank = Math.max(-0.55, Math.min(0.55, p.bank));
+
+      // Auto-Fire Primary Plasma
+      p.fireCd -= dt;
+      if (p.fireCd <= 0) {
+        p.fireCd = ship.fireRate * p.fireMult;
+        const cnt = p.spread;
+        for (let i = 0; i < cnt; i++) {
+          const offset = cnt === 1 ? 0 : (i - (cnt - 1) / 2);
+          const angle = -Math.PI / 2 + offset * 0.14;
+          state.bullets.push({
+            x: p.x + offset * 9, y: p.y - 20,
+            vx: Math.cos(angle) * 720, vy: Math.sin(angle) * 720,
+            dmg: 14, col: ship.accent, homing: false
+          });
+        }
+        SFX.laser();
+      }
+
+      // Auto-Fire Homing Missiles
+      if (p.homing > 0) {
+        p.missileCd -= dt;
+        if (p.missileCd <= 0) {
+          p.missileCd = 1.05;
+          for (let i = 0; i < p.homing; i++) {
+            const side = i % 2 === 0 ? -18 : 18;
+            state.bullets.push({ x: p.x + side, y: p.y - 6, vx: side * 6, vy: -320, dmg: 24, col: '#c084fc', homing: true });
+          }
+        }
+      }
+
+      // Enemy & Boss Spawning
+      if (!state.boss) {
+        if (state.waveKills >= state.waveKillGoal && state.enemies.length === 0) {
+          if (state.wave % 3 === 0) spawnBoss();
+          else openUpgradeDraft();
+        } else if (state.waveKills + state.enemies.length < state.waveKillGoal) {
+          state.spawnTimer -= dt;
+          if (state.spawnTimer <= 0) {
+            spawnEnemy();
+            state.spawnTimer = Math.max(0.32, 1.05 - state.wave * 0.07);
+          }
+        }
+      }
+
+      // Update Player Bullets
+      for (let i = state.bullets.length - 1; i >= 0; i--) {
+        const b = state.bullets[i];
+        if (b.homing) {
+          let tgt = state.boss || state.enemies[0];
+          let bestD = 1e9;
+          for (const e of state.enemies) {
+            const d = (e.x - b.x) ** 2 + (e.y - b.y) ** 2;
+            if (d < bestD) { bestD = d; tgt = e; }
+          }
+          if (tgt) {
+            const ang = Math.atan2(tgt.y - b.y, tgt.x - b.x);
+            b.vx += Math.cos(ang) * 1400 * dt;
+            b.vy += Math.sin(ang) * 1400 * dt;
+            const sp = Math.hypot(b.vx, b.vy);
+            if (sp > 560) { b.vx = (b.vx / sp) * 560; b.vy = (b.vy / sp) * 560; }
+          }
+        }
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.y < -30 || b.x < -30 || b.x > W + 30) { state.bullets.splice(i, 1); continue; }
+
+        let hit = false;
+        if (state.boss && Math.hypot(b.x - state.boss.x, b.y - state.boss.y) < 58) {
+          state.boss.hp -= b.dmg;
+          state.score += 6;
+          addParticles(b.x, b.y, b.col, 3, 90);
+          SFX.hit();
+          hit = true;
+          if (state.boss.hp <= 0) defeatBoss();
+        }
+        if (!hit) {
+          for (let j = state.enemies.length - 1; j >= 0; j--) {
+            const e = state.enemies[j];
+            if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + 7) {
+              e.hp -= b.dmg;
+              addParticles(b.x, b.y, b.col, 3, 90);
+              SFX.hit();
+              hit = true;
+              if (e.hp <= 0) killEnemy(j);
+              break;
+            }
+          }
+        }
+        if (hit) state.bullets.splice(i, 1);
+      }
+
+      // Update Enemies
+      for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const e = state.enemies[i];
+        e.x += e.vx * dt; e.y += e.vy * dt; e.rot += e.vr * dt;
+        if (e.x < 24 || e.x > W - 24) e.vx *= -1;
+        if (e.kind !== 'asteroid') {
+          e.fireCd -= dt;
+          if (e.fireCd <= 0 && e.y > 40 && e.y < H * 0.65) {
+            e.fireCd = e.kind === 'cruiser' ? 1.35 : 1.75;
+            const ang = Math.atan2(p.y - e.y, p.x - e.x);
+            const spd = 240 + state.wave * 18;
+            if (e.kind === 'cruiser') {
+              for (let k = -1; k <= 1; k++) {
+                state.eBullets.push({ x: e.x, y: e.y + 18, vx: Math.cos(ang + k * 0.25) * spd, vy: Math.sin(ang + k * 0.25) * spd, r: 6, col: '#fb7185' });
+              }
+            } else {
+              state.eBullets.push({ x: e.x, y: e.y + 14, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 5.5, col: '#f59e0b' });
+            }
+          }
+        }
+        if (Math.hypot(e.x - p.x, e.y - p.y) < e.r + 16) {
+          damagePlayer(22);
+          killEnemy(i);
+          continue;
+        }
+        if (e.y > H + 50) state.enemies.splice(i, 1);
+      }
+
+      // Update Boss
+      if (state.boss) {
+        const b = state.boss;
+        b.y += (b.targetY - b.y) * Math.min(1, dt * 3);
+        b.x += b.dir * (90 + state.wave * 8) * dt;
+        if (b.x < 90) b.dir = 1;
+        if (b.x > W - 90) b.dir = -1;
+        b.fireCd -= dt;
+        if (b.fireCd <= 0) {
+          b.fireCd = 0.72;
+          const ang = Math.atan2(p.y - b.y, p.x - b.x);
+          for (let k = -1; k <= 1; k++) {
+            state.eBullets.push({ x: b.x + k * 28, y: b.y + 32, vx: Math.cos(ang + k * 0.18) * 285, vy: Math.sin(ang + k * 0.18) * 285, r: 6.5, col: '#fb7185' });
+          }
+        }
+        b.ringCd -= dt;
+        if (b.ringCd <= 0) {
+          b.ringCd = 2.6;
+          const count = 12 + b.tier * 2;
+          for (let k = 0; k < count; k++) {
+            const a = (k / count) * Math.PI * 2 + state.time;
+            state.eBullets.push({ x: b.x, y: b.y + 10, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, r: 6, col: '#c084fc' });
+          }
+        }
+      }
+
+      // Update Enemy Bullets
+      for (let i = state.eBullets.length - 1; i >= 0; i--) {
+        const eb = state.eBullets[i];
+        eb.x += eb.vx * dt; eb.y += eb.vy * dt;
+        if (Math.hypot(eb.x - p.x, eb.y - p.y) < eb.r + 12) {
+          state.eBullets.splice(i, 1);
+          damagePlayer(14);
+          continue;
+        }
+        if (eb.x < -30 || eb.x > W + 30 || eb.y < -30 || eb.y > H + 30) state.eBullets.splice(i, 1);
+      }
+
+      // Pickups
+      for (let i = state.pickups.length - 1; i >= 0; i--) {
+        const pk = state.pickups[i];
+        const d = Math.hypot(p.x - pk.x, p.y - pk.y);
+        if (d < p.magnet) {
+          pk.x += ((p.x - pk.x) / Math.max(1, d)) * 420 * dt;
+          pk.y += ((p.y - pk.y) / Math.max(1, d)) * 420 * dt;
+        } else {
+          pk.y += pk.vy * dt;
+        }
+        if (d < 26) {
+          if (pk.kind === 'coin') {
+            const val = Math.max(1, Math.round(1 * ship.coinMult));
+            state.runCoins += val;
+            state.score += 20;
+            state.novaCharge = Math.min(100, state.novaCharge + 2.4 * p.novaRate);
+            SFX.coin();
+          } else {
+            p.hp = Math.min(p.maxHp, p.hp + 25);
+            SFX.upgrade();
+            showToast('💚 裝甲修復 +25');
+          }
+          state.pickups.splice(i, 1);
+          continue;
+        }
+        if (pk.y > H + 30) state.pickups.splice(i, 1);
+      }
+
+      // Particles & Shockwaves
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const pt = state.particles[i];
+        pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
+        if (pt.life <= 0) state.particles.splice(i, 1);
+      }
+      for (let i = state.shockwaves.length - 1; i >= 0; i--) {
+        const sw = state.shockwaves[i];
+        sw.r += 950 * dt; sw.alpha = Math.max(0, 1 - sw.r / sw.maxR);
+        if (sw.alpha <= 0) state.shockwaves.splice(i, 1);
+      }
+
+      updateHudUI();
+    }
+
+    function damagePlayer(amt) {
+      const p = state.player;
+      if (p.invuln > 0) return;
+      p.hp = Math.max(0, p.hp - amt);
+      p.invuln = 0.75;
+      state.shake = 0.28;
+      SFX.explode(false);
+      addParticles(p.x, p.y, '#fb7185', 18, 220);
+      if (p.hp <= 0) triggerGameOver();
+    }
+
+    function draw3DShip(x, y, bank, col, accent, scale = 1, flipY = false) {
+      ctx.save();
+      ctx.translate(x, y);
+      if (flipY) ctx.scale(1, -1);
+      ctx.scale(scale, scale);
+
+      // Engine thruster glow
+      const flicker = 0.8 + Math.sin(state.time * 42) * 0.25;
+      const g = ctx.createRadialGradient(0, 22, 2, 0, 26, 22 * flicker);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(0.35, accent);
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 24, 22 * flicker, 0, Math.PI * 2); ctx.fill();
+
+      // 3D Banked Wings (left/right foreshortening)
+      const lw = 24 * (1 - bank * 0.45);
+      const rw = 24 * (1 + bank * 0.45);
+
+      // Left wing (shaded)
+      ctx.fillStyle = bank > 0 ? col : accent;
+      ctx.beginPath(); ctx.moveTo(-4, -8); ctx.lineTo(-lw, 14); ctx.lineTo(-6, 16); ctx.closePath(); ctx.fill();
+      // Right wing (shaded)
+      ctx.fillStyle = bank < 0 ? col : accent;
+      ctx.beginPath(); ctx.moveTo(4, -8); ctx.lineTo(rw, 14); ctx.lineTo(6, 16); ctx.closePath(); ctx.fill();
+
+      // Fuselage top ridge (3D facet illusion)
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(-9, 14); ctx.lineTo(0, 20); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(9, 14); ctx.lineTo(0, 20); ctx.closePath(); ctx.fill();
+
+      // Glowing Cockpit canopy
+      ctx.fillStyle = '#0ea5e9';
+      ctx.beginPath(); ctx.ellipse(bank * 3, -5, 4.2, 8.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e0f2fe';
+      ctx.beginPath(); ctx.ellipse(bank * 3 - 1, -8, 1.8, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function draw3DBoss(b) {
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      // Outer rotating energy halo
+      ctx.strokeStyle = 'rgba(251, 113, 133, 0.45)';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(0, 0, 74, 26, Math.sin(state.time * 2) * 0.08, 0, Math.PI * 2); ctx.stroke();
+
+      // Armored 3D Mothership Hull
+      ctx.fillStyle = '#312e81';
+      ctx.beginPath(); ctx.moveTo(0, 44); ctx.lineTo(-66, -12); ctx.lineTo(-34, -36); ctx.lineTo(34, -36); ctx.lineTo(66, -12); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#4c1d95';
+      ctx.beginPath(); ctx.moveTo(0, 44); ctx.lineTo(66, -12); ctx.lineTo(34, -36); ctx.lineTo(0, -20); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#fb7185'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Glowing Core Reactor
+      const pulse = 14 + Math.sin(state.time * 10) * 3;
+      const g = ctx.createRadialGradient(0, 4, 2, 0, 4, pulse * 1.9);
+      g.addColorStop(0, '#fff'); g.addColorStop(0.4, '#fb7185'); g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 4, pulse * 1.9, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function render() {
+      ctx.save();
+      if (state.shake > 0) {
+        const m = state.shake * 14;
+        ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+      }
+
+      // Deep Space Nebula Background
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#030612');
+      bg.addColorStop(0.55, '#0b1026');
+      bg.addColorStop(1, '#120a24');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // 3D Warp Starfield
+      const cx = W / 2, cy = H * 0.38;
+      for (const s of stars) {
+        const px = cx + (s.x / s.z) * W * 0.45;
+        const py = cy + (s.y / s.z) * H * 0.45;
+        const r = Math.max(0.7, (1.9 - s.z) * 1.8);
+        ctx.fillStyle = s.c;
+        ctx.globalAlpha = Math.min(1, (2.0 - s.z) * 0.7);
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Shockwaves
+      for (const sw of state.shockwaves) {
+        ctx.strokeStyle = `rgba(56, 189, 248, ${sw.alpha})`;
+        ctx.lineWidth = 6 * sw.alpha + 1;
+        ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2); ctx.stroke();
+      }
+
+      // Pickups
+      for (const pk of state.pickups) {
+        ctx.save();
+        ctx.translate(pk.x, pk.y);
+        if (pk.kind === 'coin') {
+          const sx = 0.55 + Math.abs(Math.cos(state.time * 6 + pk.x)) * 0.45;
+          ctx.scale(sx, 1);
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillStyle = '#34d399';
+          ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff'; ctx.fillRect(-5, -2, 10, 4); ctx.fillRect(-2, -5, 4, 10);
+        }
+        ctx.restore();
+      }
+
+      // Enemies
+      for (const e of state.enemies) {
+        if (e.kind === 'asteroid') {
+          ctx.save();
+          ctx.translate(e.x, e.y); ctx.rotate(e.rot);
+          ctx.fillStyle = '#64748b';
+          ctx.beginPath();
+          for (let k = 0; k < 7; k++) {
+            const a = (k / 7) * Math.PI * 2;
+            const rad = e.r * (k % 2 === 0 ? 1 : 0.78);
+            if (k === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+            else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+          }
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.stroke();
+          ctx.restore();
+        } else {
+          draw3DShip(e.x, e.y, 0, e.kind === 'cruiser' ? '#fb7185' : '#f59e0b', e.kind === 'cruiser' ? '#fda4af' : '#fde68a', e.kind === 'cruiser' ? 1.15 : 0.85, true);
+        }
+      }
+
+      if (state.boss) draw3DBoss(state.boss);
+
+      // Player Ship
+      const ship = getShip();
+      if (state.mode !== 'over') {
+        const px = state.mode === 'menu' ? W / 2 : state.player.x;
+        const py = state.mode === 'menu' ? H * 0.78 + Math.sin(state.time * 3) * 8 : state.player.y;
+        const blink = state.player.invuln > 0 && Math.floor(state.time * 16) % 2 === 0;
+        if (!blink) draw3DShip(px, py, state.mode === 'menu' ? Math.sin(state.time * 1.4) * 0.25 : state.player.bank, ship.color, ship.accent, 1.12, false);
+      }
+
+      // Additive Plasma Bullets & Particles
+      ctx.globalCompositeOperation = 'lighter';
+      for (const b of state.bullets) {
+        ctx.fillStyle = b.col;
+        ctx.beginPath();
+        if (b.homing) ctx.arc(b.x, b.y, 5.5, 0, Math.PI * 2);
+        else ctx.ellipse(b.x, b.y, 3.2, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      for (const eb of state.eBullets) {
+        ctx.fillStyle = eb.col;
+        ctx.beginPath(); ctx.arc(eb.x, eb.y, eb.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(eb.x, eb.y, eb.r * 0.45, 0, Math.PI * 2); ctx.fill();
+      }
+      for (const pt of state.particles) {
+        ctx.globalAlpha = Math.max(0, pt.life / pt.max);
+        ctx.fillStyle = pt.col;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    function updateHudUI() {
+      const u = auth.currentUser;
+      document.getElementById('hudPlayerName').textContent = getPlayerName();
+      const acctBtn = document.getElementById('hudAcctBtn');
+      acctBtn.classList.toggle('signed-in', !!u);
+      const av = document.getElementById('hudAvatar');
+      const sav = document.getElementById('startAvatar');
+      [av, sav].forEach((el) => {
+        if (!el) return;
+        if (u) {
+          el.style.background = u.color || '#38bdf8';
+          el.textContent = (u.name || 'G').charAt(0).toUpperCase();
+        } else {
+          el.style.background = 'rgba(255,255,255,0.14)';
+          el.textContent = '👤';
+        }
+      });
+      document.getElementById('startAcctName').textContent = u ? `${u.name}（Google 已登入）` : '訪客飛官';
+      document.getElementById('startAcctSub').textContent = u ? `${u.email} · 專屬星際機庫存檔` : '於遊戲綜合區登入即可自動同步帳號';
+      document.getElementById('startCoins').textContent = save.coins;
+
+      document.getElementById('hudWave').textContent = `WAVE ${state.wave}`;
+      document.getElementById('hudCoins').textContent = save.coins + (state.mode === 'playing' || state.mode === 'upgrade' ? state.runCoins : 0);
+      document.getElementById('hudScore').textContent = String(Math.floor(state.score)).padStart(5, '0');
+
+      const hpPct = Math.max(0, Math.min(100, (state.player.hp / state.player.maxHp) * 100));
+      document.getElementById('hpFill').style.width = hpPct.toFixed(0) + '%';
+      document.getElementById('hpText').textContent = Math.ceil(hpPct) + '%';
+
+      const bossRow = document.getElementById('bossBarRow');
+      bossRow.classList.toggle('show', !!state.boss);
+      if (state.boss) {
+        document.getElementById('bossFill').style.width = Math.max(0, (state.boss.hp / state.boss.maxHp) * 100).toFixed(1) + '%';
+      }
+
+      const novaPct = Math.min(100, Math.floor(state.novaCharge));
+      document.getElementById('novaFill').style.width = novaPct + '%';
+      document.getElementById('novaLabel').textContent = novaPct >= 100 ? '💥 發動超新星！' : `💥 超新星 ${novaPct}%`;
+      document.getElementById('btnNova').classList.toggle('ready', novaPct >= 100);
+    }
+
+    function renderShipGrid() {
+      const grid = document.getElementById('shipGrid');
+      grid.innerHTML = '';
+      SHIPS.forEach((s) => {
+        const owned = save.ownedShips.includes(s.id);
+        const eq = save.equippedShip === s.id;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ship-card' + (eq ? ' selected' : '');
+        const badge = eq ? '<span class="ship-status eq">出擊中</span>' : (owned ? '<span class="ship-status own">已擁有</span>' : `<span class="ship-status cost">🪙 ${s.price}</span>`);
+        btn.innerHTML = `<div class="ship-top"><span>${s.icon} ${s.name}</span>${badge}</div><div class="ship-desc">${s.desc}</div>`;
+        btn.addEventListener('click', () => {
+          if (owned) {
+            save.equippedShip = s.id;
+            persistSave();
+            SFX.coin();
+            showToast(`✈️ 已切換戰機：【${s.name}】`);
+          } else if (save.coins >= s.price) {
+            save.coins -= s.price;
+            save.ownedShips.push(s.id);
+            save.equippedShip = s.id;
+            persistSave();
+            SFX.upgrade();
+            showToast(`🎉 解鎖並裝備【${s.name}】！`);
+          } else {
+            showToast(`⚠️ 星幣不足（需要 ${s.price} 枚星幣）`);
+          }
+          renderShipGrid();
+          updateHudUI();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    // =========================================================================
+    // 5. INPUTS & ARCADE SSO LISTENERS
+    // =========================================================================
+    document.getElementById('btnStart').addEventListener('click', startGame);
+    document.getElementById('btnRetry').addEventListener('click', startGame);
+    document.getElementById('btnOverHangar').addEventListener('click', () => {
+      state.mode = 'menu';
+      document.getElementById('overOverlay').classList.add('hidden');
+      renderShipGrid(); updateHudUI();
+      document.getElementById('startOverlay').classList.remove('hidden');
+    });
+    document.getElementById('btnNova').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); activateNova(); });
+    document.getElementById('btnPause').addEventListener('click', () => {
+      if (state.mode === 'playing') { state.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
+      else if (state.mode === 'paused') { state.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+    });
+    document.getElementById('btnResume').addEventListener('click', () => { state.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); });
+    document.getElementById('btnBackMenu').addEventListener('click', () => {
+      state.mode = 'menu';
+      document.getElementById('pauseOverlay').classList.add('hidden');
+      document.getElementById('barsWrap').classList.add('hidden');
+      document.getElementById('novaBar').classList.add('hidden');
+      renderShipGrid(); updateHudUI();
+      document.getElementById('startOverlay').classList.remove('hidden');
+    });
+    document.getElementById('btnBgm').addEventListener('click', () => { SFX.bgmOn = !SFX.bgmOn; showToast(SFX.bgmOn ? '🎵 音樂：開' : '🔇 音樂：關'); });
+    document.getElementById('btnMute').addEventListener('click', () => { SFX.muted = !SFX.muted; document.getElementById('btnMute').textContent = SFX.muted ? '🔇' : '🔊'; });
+    document.getElementById('hudAcctBtn').addEventListener('click', () => {
+      if (IS_EMBEDDED) postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID });
+      else showToast('🔑 請從「遊戲綜合區」統一登入與切換 Google 帳號');
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.l = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.r = true;
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') state.keys.u = true;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') state.keys.d = true;
+      if ((e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') && state.mode === 'playing') { e.preventDefault(); activateNova(); }
+      if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (state.mode === 'playing') { state.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
+        else if (state.mode === 'paused') { state.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+      }
+      if (e.code === 'KeyB') { SFX.bgmOn = !SFX.bgmOn; }
+      if (e.code === 'KeyM') { SFX.muted = !SFX.muted; document.getElementById('btnMute').textContent = SFX.muted ? '🔇' : '🔊'; }
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.l = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.r = false;
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') state.keys.u = false;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') state.keys.d = false;
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (state.mode !== 'playing') return;
+      SFX.ensure();
+      state.pointer.active = true;
+      state.pointer.x = e.clientX;
+      state.pointer.y = e.clientY - (e.pointerType === 'touch' ? 42 : 0);
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!state.pointer.active) return;
+      state.pointer.x = e.clientX;
+      state.pointer.y = e.clientY - (e.pointerType === 'touch' ? 42 : 0);
+    });
+    window.addEventListener('pointerup', () => { state.pointer.active = false; });
+    window.addEventListener('pointercancel', () => { state.pointer.active = false; });
+
+    function applySso(incoming) {
+      const nextU = incoming && incoming.currentUser && incoming.currentUser.uid ? incoming.currentUser : null;
+      const prevUid = auth.currentUser ? auth.currentUser.uid : null;
+      const nextUid = nextU ? nextU.uid : null;
+      auth.currentUser = nextU;
+      if (prevUid !== nextUid) {
+        Object.assign(save, loadSave());
+        renderShipGrid();
+      }
+      updateHudUI();
+      postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: nextUid, stats: getSummaryStats() });
+    }
+    window.addEventListener('message', (e) => {
+      const d = e && e.data;
+      if (!d || typeof d !== 'object') return;
+      if (d.type === 'ARCADE_SSO_SYNC' && d.auth) applySso(d.auth);
+    });
+    window.addEventListener('storage', (e) => {
+      if (e.key === SSO_KEY && e.newValue) { try { applySso(JSON.parse(e.newValue)); } catch (_) {} }
+    });
+
+    // Boot
+    renderShipGrid();
+    updateHudUI();
+    postToHub({ type: 'ARCADE_GAME_READY', gameId: GAME_ID, stats: getSummaryStats() });
+
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+      last = now;
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>

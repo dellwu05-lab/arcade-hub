@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>霓虹立體方塊 · 遊戲綜合區 GAME #03</title>
+  <style>
+    :root {
+      --bg: #070615;
+      --surface: rgba(15, 16, 38, 0.82);
+      --surface-strong: rgba(13, 14, 34, 0.95);
+      --border: rgba(192, 132, 252, 0.25);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --cyan: #38bdf8;
+      --pink: #ec4899;
+      --gold: #fbbf24;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      touch-action: none;
+    }
+    .app-root {
+      position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      padding: max(8px, env(safe-area-inset-top, 0px) + 6px) 10px max(10px, env(safe-area-inset-bottom, 0px) + 8px);
+      background:
+        radial-gradient(ellipse 65% 45% at 20% 10%, rgba(236, 72, 153, 0.18), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 85%, rgba(56, 189, 248, 0.16), transparent 60%),
+        linear-gradient(180deg, #070615 0%, #110c2a 100%);
+    }
+
+    /* Top HUD */
+    .hud-top { width: 100%; max-width: 780px; display: flex; align-items: center; justify-content: space-between; gap: 6px; z-index: 15; flex-wrap: wrap; }
+    .hud-cluster { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px;
+      background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
+    }
+    .hud-btn {
+      cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 12px; font-weight: 800;
+    }
+    .hud-btn.signed-in { border-color: rgba(52, 211, 153, 0.55); }
+    .g-avatar {
+      width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10.5px; font-weight: 900; color: #fff; background: #ec4899; overflow: hidden; flex-shrink: 0;
+    }
+
+    /* Stage Layout */
+    .board-stage {
+      flex: 1; min-height: 0; width: 100%; max-width: 760px; display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding: 6px 0;
+    }
+    .side-col {
+      width: 128px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+    }
+    .side-box {
+      padding: 10px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border);
+      text-align: center; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    }
+    .side-label { font-size: 10.5px; font-weight: 800; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 6px; }
+    .side-val { font-size: 18px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+    .mini-cv { width: 96px; height: 64px; display: block; margin: 0 auto; }
+    .next-cv { width: 96px; height: 186px; display: block; margin: 0 auto; }
+
+    .board-frame {
+      position: relative; height: 100%; max-height: 580px; aspect-ratio: 10 / 20;
+      border-radius: 18px; padding: 6px; background: rgba(15, 23, 42, 0.85);
+      border: 2px solid rgba(192, 132, 252, 0.4); box-shadow: 0 0 40px rgba(236, 72, 153, 0.2), 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    #boardCanvas { width: 100%; height: 100%; display: block; border-radius: 12px; }
+
+    .combo-banner {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%) scale(0.9);
+      padding: 5px 14px; border-radius: 999px; background: linear-gradient(135deg, #ec4899, #f59e0b);
+      color: #fff; font-size: 13px; font-weight: 900; opacity: 0; pointer-events: none;
+      transition: all 0.18s ease; white-space: nowrap; box-shadow: 0 8px 22px rgba(236, 72, 153, 0.45);
+    }
+    .combo-banner.show { opacity: 1; transform: translateX(-50%) scale(1); }
+
+    /* Mobile / Touch Arcade Controls */
+    .touch-pad {
+      width: 100%; max-width: 520px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; z-index: 15;
+    }
+    .tbtn {
+      padding: 11px 4px; border-radius: 13px; border: 1px solid rgba(192, 132, 252, 0.3);
+      background: rgba(15, 16, 38, 0.85); color: #fff; font-size: 13px; font-weight: 900; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 3px;
+    }
+    .tbtn:active { transform: scale(0.94); background: rgba(236, 72, 153, 0.35); border-color: #ec4899; }
+    .tbtn.drop { background: linear-gradient(135deg, rgba(236, 72, 153, 0.78), rgba(168, 85, 247, 0.85)); border-color: #f472b6; }
+
+    /* Overlays */
+    .overlay {
+      position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
+      padding: 16px; background: rgba(7, 6, 21, 0.78); backdrop-filter: blur(8px);
+    }
+    .overlay.hidden { display: none; }
+    .panel {
+      width: 100%; max-width: 470px; max-height: 88dvh; overflow-y: auto; padding: 22px 20px 18px;
+      border-radius: 22px; background: var(--surface-strong); border: 1px solid rgba(192, 132, 252, 0.32);
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.7); text-align: center;
+    }
+    .tag {
+      display: inline-flex; padding: 4px 12px; border-radius: 999px; background: rgba(236, 72, 153, 0.16);
+      border: 1px solid rgba(236, 72, 153, 0.4); color: #f9a8d4; font-size: 11px; font-weight: 800; margin-bottom: 10px;
+    }
+    .panel h1, .panel h2 { font-size: 25px; font-weight: 900; margin-bottom: 7px; }
+    .sub { font-size: 12.5px; line-height: 1.6; color: var(--muted); margin-bottom: 13px; }
+    .sso-strip {
+      display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 12px; margin-bottom: 12px;
+      background: rgba(192, 132, 252, 0.12); border: 1px solid rgba(192, 132, 252, 0.32); text-align: left; font-size: 12px;
+    }
+    .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 13px; text-align: left; }
+    .theme-card {
+      padding: 9px 10px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04); color: #fff; cursor: pointer;
+    }
+    .theme-card.sel { border-color: #ec4899; background: rgba(236, 72, 153, 0.16); }
+    .theme-top { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; font-weight: 800; }
+    .swatches { display: flex; gap: 4px; margin-top: 6px; }
+    .sw { width: 14px; height: 14px; border-radius: 4px; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-primary {
+      flex: 1; padding: 11px 16px; border-radius: 13px; border: none;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; font-size: 14px; font-weight: 900; cursor: pointer;
+      box-shadow: 0 10px 24px rgba(236, 72, 153, 0.35);
+    }
+    .btn-secondary {
+      flex: 1; padding: 11px 14px; border-radius: 13px; border: 1px solid rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.15); color: #e0f2fe; font-size: 13.5px; font-weight: 800; cursor: pointer;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+    .stat-box { padding: 10px 6px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .stat-box .l { font-size: 10.5px; color: var(--muted); }
+    .stat-box .v { font-size: 18px; font-weight: 900; margin-top: 2px; }
+
+    .toast {
+      position: absolute; top: 56px; left: 50%; transform: translateX(-50%) translateY(-8px); z-index: 45;
+      padding: 7px 14px; border-radius: 999px; background: rgba(236, 72, 153, 0.92); color: #fff;
+      font-size: 12.5px; font-weight: 800; opacity: 0; pointer-events: none; transition: all 0.2s ease; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 680px) {
+      .side-col.left-col { display: none; }
+      .side-col.right-col { width: 82px; gap: 6px; }
+      .side-box { padding: 6px 5px; border-radius: 12px; }
+      .side-val { font-size: 14px; }
+      .next-cv { width: 66px; height: 132px; }
+      .board-stage { gap: 8px; }
+      .tbtn { padding: 12px 2px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <div class="hud-top">
+      <div class="hud-cluster">
+        <button class="hud-btn" id="hudAcctBtn" type="button">
+          <span class="g-avatar" id="hudAvatar">👤</span>
+          <span id="hudPlayerName">方塊玩家</span>
+        </button>
+        <div class="pill" style="color:#f9a8d4;"><span id="hudMode">♾️ 馬拉松</span></div>
+        <div class="pill" style="color:#fde68a;">🪙 <span id="hudCoins">40</span></div>
+      </div>
+      <div class="hud-cluster">
+        <div class="pill">SCORE <span id="hudScore" style="color:#38bdf8;">00000</span></div>
+        <button class="hud-btn" id="btnBgm" type="button" title="音樂 (B)">🎵</button>
+        <button class="hud-btn" id="btnMute" type="button" title="靜音 (M)">🔊</button>
+        <button class="hud-btn" id="btnPause" type="button" title="暫停 (P)">⏸</button>
+      </div>
+    </div>
+
+    <div class="board-stage">
+      <div class="side-col left-col">
+        <div class="side-box">
+          <div class="side-label">HOLD 暫存 (C)</div>
+          <canvas class="mini-cv" id="holdCanvas" width="96" height="64"></canvas>
+        </div>
+        <div class="side-box">
+          <div class="side-label">LEVEL 等級</div>
+          <div class="side-val" id="sideLevel" style="color:#38bdf8;">1</div>
+        </div>
+        <div class="side-box">
+          <div class="side-label">LINES 消除</div>
+          <div class="side-val" id="sideLines" style="color:#34d399;">0</div>
+        </div>
+        <div class="side-box" id="timerBox" style="display:none;">
+          <div class="side-label">⏱️ 剩餘時間</div>
+          <div class="side-val" id="sideTimer" style="color:#fbbf24;">120s</div>
+        </div>
+      </div>
+
+      <div class="board-frame">
+        <canvas id="boardCanvas" width="320" height="640"></canvas>
+        <div class="combo-banner" id="comboBanner">🔥 COMBO x2</div>
+      </div>
+
+      <div class="side-col right-col">
+        <div class="side-box">
+          <div class="side-label">NEXT 下三個</div>
+          <canvas class="next-cv" id="nextCanvas" width="96" height="186"></canvas>
+        </div>
+        <div class="side-box">
+          <div class="side-label">BEST 最高</div>
+          <div class="side-val" id="sideBest" style="color:#fbbf24;">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="touch-pad">
+      <button class="tbtn" id="tLeft" type="button">◀</button>
+      <button class="tbtn" id="tRight" type="button">▶</button>
+      <button class="tbtn" id="tRot" type="button">↻ 轉</button>
+      <button class="tbtn" id="tDown" type="button">⬇ 降</button>
+      <button class="tbtn drop" id="tDrop" type="button">⚡ 瞬落</button>
+      <button class="tbtn" id="tHold" type="button">📦 存</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Start Overlay -->
+    <div class="overlay" id="startOverlay">
+      <div class="panel">
+        <div class="tag">🧩 GAME #03 · 3D 霓虹立體消除</div>
+        <h1>霓虹立體方塊</h1>
+        <p class="sub">3D 立體斜角霓虹方塊搭配動態節奏電子 BGM！累積連擊 Combo 與 4 行 Tetris 消除賺取金幣，解鎖多款霓虹視覺主題！</p>
+
+        <div class="sso-strip">
+          <span class="g-avatar" id="startAvatar">👤</span>
+          <div style="flex:1;min-width:0;">
+            <div id="startAcctName" style="font-weight:800;color:#fff;">訪客玩家</div>
+            <div id="startAcctSub" style="font-size:10.5px;color:var(--muted);">全站 Google 帳號自動同步獨立存檔</div>
+          </div>
+          <span style="font-weight:800;color:#fde68a;">🪙 <span id="startCoins">40</span></span>
+        </div>
+
+        <div class="theme-grid" id="themeGrid"></div>
+
+        <p class="sub" style="font-size:11px;margin-bottom:12px;">
+          鍵盤：←→ 移動 · ↑ 旋轉 · ↓ 加速 · Space 瞬落 · C 暫存｜手機支援下方按鈕與滑動
+        </p>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="btnStartMarathon" type="button">♾️ 無盡馬拉松</button>
+          <button class="btn-secondary" id="btnStartBlitz" type="button">⚡ 2 分鐘極速衝分</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div class="overlay hidden" id="pauseOverlay">
+      <div class="panel">
+        <div class="tag">⏸ 暫停中</div>
+        <h2>霓虹暫停</h2>
+        <p class="sub">按 P 繼續消除，或返回主選單切換霓虹主題。</p>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnResume" type="button">繼續遊戲</button>
+          <button class="btn-secondary" id="btnMenu" type="button">返回選單</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay hidden" id="overOverlay">
+      <div class="panel">
+        <div class="tag" id="overTag">🏁 本局結算</div>
+        <h2 id="overTitle">方塊挑戰結束</h2>
+        <p class="sub" id="overSub">本次獲得的金幣已存入您的全站帳號！</p>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="l">最終分數</div><div class="v" id="overScore" style="color:#38bdf8;">0</div></div>
+          <div class="stat-box"><div class="l">消除行數</div><div class="v" id="overLines" style="color:#34d399;">0</div></div>
+          <div class="stat-box"><div class="l">獲得金幣</div><div class="v" id="overCoins" style="color:#fbbf24;">+0</div></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnRetry" type="button">⚡ 再來一局</button>
+          <button class="btn-secondary" id="btnOverMenu" type="button">🎨 更換主題</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // =========================================================================
+    // 1. UNIFIED ARCADE SSO & SAVE
+    // =========================================================================
+    const GAME_ID = 'neon_blocks_3d';
+    const SSO_KEY = 'arcade_hub_sso_v1';
+    const IS_EMBEDDED = (function () { try { return window.parent && window.parent !== window; } catch (e) { return false; } })();
+
+    function postToHub(msg) {
+      if (!IS_EMBEDDED) return;
+      try { window.parent.postMessage(msg, '*'); } catch (e) {}
+    }
+
+    function loadAuth() {
+      try {
+        const raw = localStorage.getItem(SSO_KEY);
+        if (raw) {
+          const p = JSON.parse(raw);
+          return { currentUser: p && p.currentUser && p.currentUser.uid ? p.currentUser : null };
+        }
+      } catch (e) {}
+      return { currentUser: null };
+    }
+    const auth = loadAuth();
+
+    const THEMES = [
+      { id: 'cyber',   name: '賽博電光藍', price: 0,   palette: ['#00f5ff', '#facc15', '#c084fc', '#34d399', '#fb7185', '#3b82f6', '#fb923c'] },
+      { id: 'sunset',  name: '落日蒸氣波', price: 90,  palette: ['#f472b6', '#fbbf24', '#a855f7', '#fb7185', '#38bdf8', '#f97316', '#e879f9'] },
+      { id: 'aurora',  name: '極光翡翠星', price: 180, palette: ['#34d399', '#22d3ee', '#a3e635', '#2dd4bf', '#818cf8', '#38bdf8', '#6ee7b7'] },
+      { id: 'royal',   name: '黃金皇家矩陣', price: 320, palette: ['#fde047', '#f59e0b', '#fb923c', '#fef08a', '#e879f9', '#38bdf8', '#f43f5e'] }
+    ];
+
+    function getSaveKey() {
+      return auth.currentUser ? `arcade_save_${GAME_ID}_acct_${auth.currentUser.uid}` : `arcade_save_${GAME_ID}_guest`;
+    }
+    function defaultSave() {
+      return { coins: 40, bestScore: 0, bestLines: 0, ownedThemes: ['cyber'], equippedTheme: 'cyber' };
+    }
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(getSaveKey());
+        if (!raw) return defaultSave();
+        const p = JSON.parse(raw);
+        return {
+          coins: Math.max(0, Math.floor(Number(p.coins) || 40)),
+          bestScore: Math.max(0, Math.floor(Number(p.bestScore) || 0)),
+          bestLines: Math.max(0, Math.floor(Number(p.bestLines) || 0)),
+          ownedThemes: Array.isArray(p.ownedThemes) && p.ownedThemes.length ? p.ownedThemes : ['cyber'],
+          equippedTheme: THEMES.some(t => t.id === p.equippedTheme) ? p.equippedTheme : 'cyber'
+        };
+      } catch (e) { return defaultSave(); }
+    }
+    const save = loadSave();
+
+    function getSummaryStats() {
+      const stars = Math.min(15, Math.floor(save.bestLines / 5));
+      return {
+        coins: save.coins, bestScore: save.bestScore, stars, maxStars: 15,
+        charsUnlocked: save.ownedThemes.length, charsTotal: THEMES.length, bestLines: save.bestLines
+      };
+    }
+    function persistSave() {
+      try { localStorage.setItem(getSaveKey(), JSON.stringify(save)); } catch (e) {}
+      postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
+    }
+    function getTheme() { return THEMES.find(t => t.id === save.equippedTheme) || THEMES[0]; }
+
+    // =========================================================================
+    // 2. SYNTH-RHYTHM AUDIO ENGINE
+    // =========================================================================
+    const SFX = {
+      ctx: null, muted: false, bgmOn: true, timer: null, step: 0,
+      ensure() {
+        if (this.muted) return null;
+        if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this.ctx = new AC(); }
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+        return this.ctx;
+      },
+      tone(type, f1, f2, dur, vol) {
+        const ac = this.ensure(); if (!ac) return;
+        const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+        o.type = type; o.frequency.setValueAtTime(f1, t);
+        if (f2 !== f1) o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur);
+      },
+      move() { this.tone('triangle', 320, 360, 0.035, 0.035); },
+      rotate() { this.tone('sine', 520, 680, 0.055, 0.05); },
+      drop() { this.tone('sawtooth', 180, 58, 0.11, 0.1); },
+      clear(lines, combo) {
+        const scale = [523.2, 587.3, 659.2, 784, 880, 1046.5, 1174.6];
+        const base = scale[Math.min(scale.length - 1, combo)];
+        for (let i = 0; i < Math.min(4, lines); i++) {
+          setTimeout(() => this.tone('triangle', base * (1 + i * 0.25), base * (1.25 + i * 0.25), 0.16, 0.09), i * 55);
+        }
+      },
+      over() { this.tone('sawtooth', 260, 75, 0.45, 0.11); },
+      startBgm() {
+        if (this.timer) return;
+        const notes = [130.8, 164.8, 196, 246.9, 146.8, 174.6, 220, 261.6];
+        this.timer = setInterval(() => {
+          if (this.muted || !this.bgmOn || game.mode !== 'playing') return;
+          const n = notes[this.step % notes.length];
+          this.tone('triangle', n, n, 0.15, 0.03);
+          if (this.step % 4 === 0) this.tone('sine', n * 2, n * 2, 0.1, 0.018);
+          this.step++;
+        }, 210);
+      }
+    };
+
+    // =========================================================================
+    // 3. TETRIS 3D NEON ENGINE
+    // =========================================================================
+    const COLS = 10, ROWS = 20, CELL = 32;
+    const SHAPES = [
+      [[1,1,1,1]],                     // I
+      [[1,1],[1,1]],                   // O
+      [[0,1,0],[1,1,1]],               // T
+      [[0,1,1],[1,1,0]],               // S
+      [[1,1,0],[0,1,1]],               // Z
+      [[1,0,0],[1,1,1]],               // J
+      [[0,0,1],[1,1,1]]                // L
+    ];
+
+    const boardCv = document.getElementById('boardCanvas');
+    const bctx = boardCv.getContext('2d');
+    const holdCv = document.getElementById('holdCanvas');
+    const hctx = holdCv.getContext('2d');
+    const nextCv = document.getElementById('nextCanvas');
+    const nctx = nextCv.getContext('2d');
+
+    const game = {
+      mode: 'menu', // 'menu' | 'playing' | 'paused' | 'over'
+      variant: 'marathon', // 'marathon' | 'blitz'
+      board: [],
+      cur: null,
+      hold: -1,
+      canHold: true,
+      bag: [],
+      queue: [],
+      score: 0, lines: 0, level: 1, combo: 0, runCoins: 0,
+      timeLeft: 120, dropAcc: 0, shake: 0,
+      particles: [], trails: [], flashRows: []
+    };
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg; el.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => el.classList.remove('show'), 2100);
+    }
+
+    function nextFromBag() {
+      if (game.bag.length === 0) {
+        game.bag = [0, 1, 2, 3, 4, 5, 6];
+        for (let i = game.bag.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [game.bag[i], game.bag[j]] = [game.bag[j], game.bag[i]];
+        }
+      }
+      return game.bag.pop();
+    }
+
+    function spawnPiece(typeIdx = null) {
+      while (game.queue.length < 5) game.queue.push(nextFromBag());
+      const t = typeIdx !== null ? typeIdx : game.queue.shift();
+      while (game.queue.length < 4) game.queue.push(nextFromBag());
+      const mat = SHAPES[t].map(r => r.slice());
+      const x = Math.floor((COLS - mat[0].length) / 2);
+      const y = 0;
+      game.cur = { t, mat, x, y };
+      if (collides(mat, x, y)) {
+        endGame(false);
+      }
+      drawSidePreviews();
+    }
+
+    function collides(mat, px, py) {
+      for (let r = 0; r < mat.length; r++) {
+        for (let c = 0; c < mat[r].length; c++) {
+          if (!mat[r][c]) continue;
+          const nx = px + c, ny = py + r;
+          if (nx < 0 || nx >= COLS || ny >= ROWS) return true;
+          if (ny >= 0 && game.board[ny][nx] !== -1) return true;
+        }
+      }
+      return false;
+    }
+
+    function rotateMat(mat) {
+      const R = mat.length, C = mat[0].length;
+      const out = Array.from({ length: C }, () => Array(R).fill(0));
+      for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) out[c][R - 1 - r] = mat[r][c];
+      return out;
+    }
+
+    function tryMove(dx, dy) {
+      if (!game.cur || game.mode !== 'playing') return false;
+      if (!collides(game.cur.mat, game.cur.x + dx, game.cur.y + dy)) {
+        game.cur.x += dx; game.cur.y += dy;
+        if (dx !== 0) SFX.move();
+        return true;
+      }
+      return false;
+    }
+
+    function tryRotate() {
+      if (!game.cur || game.mode !== 'playing') return;
+      const rot = rotateMat(game.cur.mat);
+      const kicks = [0, -1, 1, -2, 2];
+      for (const k of kicks) {
+        if (!collides(rot, game.cur.x + k, game.cur.y)) {
+          game.cur.mat = rot; game.cur.x += k;
+          SFX.rotate();
+          return;
+        }
+      }
+    }
+
+    function ghostY() {
+      let y = game.cur.y;
+      while (!collides(game.cur.mat, game.cur.x, y + 1)) y++;
+      return y;
+    }
+
+    function hardDrop() {
+      if (!game.cur || game.mode !== 'playing') return;
+      const startY = game.cur.y;
+      const gy = ghostY();
+      const dist = gy - startY;
+      game.score += dist * 2;
+      // Add vertical laser slam trail
+      const col = getTheme().palette[game.cur.t];
+      for (let c = 0; c < game.cur.mat[0].length; c++) {
+        game.trails.push({ x: (game.cur.x + c) * CELL, y: startY * CELL, h: Math.max(CELL, dist * CELL), col, alpha: 0.45 });
+      }
+      game.cur.y = gy;
+      game.shake = 0.16;
+      SFX.drop();
+      lockPiece();
+    }
+
+    function doHold() {
+      if (!game.cur || !game.canHold || game.mode !== 'playing') return;
+      game.canHold = false;
+      const curT = game.cur.t;
+      if (game.hold === -1) {
+        game.hold = curT;
+        spawnPiece();
+      } else {
+        const swapT = game.hold;
+        game.hold = curT;
+        spawnPiece(swapT);
+      }
+      SFX.rotate();
+    }
+
+    function lockPiece() {
+      const { mat, x, y, t } = game.cur;
+      for (let r = 0; r < mat.length; r++) {
+        for (let c = 0; c < mat[r].length; c++) {
+          if (mat[r][c] && y + r >= 0 && y + r < ROWS) {
+            game.board[y + r][x + c] = t;
+          }
+        }
+      }
+      game.canHold = true;
+
+      // Check full rows
+      const full = [];
+      for (let r = 0; r < ROWS; r++) {
+        if (game.board[r].every(v => v !== -1)) full.push(r);
+      }
+
+      if (full.length > 0) {
+        game.combo++;
+        const basePts = [0, 100, 300, 500, 900][full.length] || 1200;
+        const mult = 1 + (game.combo - 1) * 0.35;
+        game.score += Math.round(basePts * game.level * mult);
+        game.lines += full.length;
+        game.level = Math.min(18, 1 + Math.floor(game.lines / 8));
+        const earned = full.length * 3 + (full.length === 4 ? 10 : 0) + (game.combo >= 2 ? game.combo * 2 : 0);
+        game.runCoins += earned;
+        game.shake = full.length >= 3 ? 0.32 : 0.16;
+        SFX.clear(full.length, game.combo - 1);
+
+        // Spawn neon explosion particles along cleared rows
+        const pal = getTheme().palette;
+        full.forEach((rowIdx) => {
+          for (let c = 0; c < COLS; c++) {
+            const col = pal[game.board[rowIdx][c] % pal.length];
+            for (let k = 0; k < 4; k++) {
+              game.particles.push({
+                x: (c + 0.5) * CELL, y: (rowIdx + 0.5) * CELL,
+                vx: (Math.random() - 0.5) * 260, vy: (Math.random() - 0.7) * 240,
+                r: 2.5 + Math.random() * 3.5, col, life: 0.45 + Math.random() * 0.3
+              });
+            }
+          }
+        });
+
+        // Remove cleared rows & prepend empty rows
+        for (let i = full.length - 1; i >= 0; i--) game.board.splice(full[i], 1);
+        while (game.board.length < ROWS) game.board.unshift(Array(COLS).fill(-1));
+
+        // Banner callout
+        const cb = document.getElementById('comboBanner');
+        const label = full.length === 4 ? `💥 TETRIS 四連消！` : (game.combo >= 2 ? `🔥 COMBO x${game.combo} (+${earned}🪙)` : `✨ 消除 ${full.length} 行 (+${earned}🪙)`);
+        cb.textContent = label;
+        cb.classList.add('show');
+        clearTimeout(lockPiece._bt);
+        lockPiece._bt = setTimeout(() => cb.classList.remove('show'), 1400);
+      } else {
+        game.combo = 0;
+      }
+
+      spawnPiece();
+      updateHud();
+    }
+
+    function startGame(variant = 'marathon') {
+      SFX.ensure();
+      SFX.startBgm();
+      game.mode = 'playing';
+      game.variant = variant;
+      game.board = Array.from({ length: ROWS }, () => Array(COLS).fill(-1));
+      game.bag = []; game.queue = [];
+      game.hold = -1; game.canHold = true;
+      game.score = 0; game.lines = 0; game.level = 1; game.combo = 0; game.runCoins = 0;
+      game.timeLeft = 120; game.dropAcc = 0; game.shake = 0;
+      game.particles = []; game.trails = [];
+
+      document.getElementById('timerBox').style.display = variant === 'blitz' ? 'block' : 'none';
+      document.getElementById('hudMode').textContent = variant === 'blitz' ? '⚡ 2分極速' : '♾️ 馬拉松';
+      document.getElementById('startOverlay').classList.add('hidden');
+      document.getElementById('pauseOverlay').classList.add('hidden');
+      document.getElementById('overOverlay').classList.add('hidden');
+
+      spawnPiece();
+      updateHud();
+    }
+
+    function endGame(timeUp = false) {
+      game.mode = 'over';
+      SFX.over();
+      save.coins += game.runCoins;
+      if (game.score > save.bestScore) save.bestScore = Math.floor(game.score);
+      if (game.lines > save.bestLines) save.bestLines = game.lines;
+      persistSave();
+      document.getElementById('overTag').textContent = timeUp ? '⏱️ 時間到！衝分結算' : '🏁 本局結算';
+      document.getElementById('overTitle').textContent = timeUp ? '極速挑戰完成！' : '方塊堆疊達頂';
+      document.getElementById('overScore').textContent = Math.floor(game.score).toLocaleString();
+      document.getElementById('overLines').textContent = game.lines;
+      document.getElementById('overCoins').textContent = `+${game.runCoins}`;
+      document.getElementById('overOverlay').classList.remove('hidden');
+      updateHud();
+    }
+
+    // 3D Extruded Beveled Neon Block Renderer
+    function drawBlock3D(c, x, y, sz, color, alpha = 1) {
+      c.save();
+      c.globalAlpha = alpha;
+      const pad = 1.5;
+      const bx = x + pad, by = y + pad, bw = sz - pad * 2, bh = sz - pad * 2;
+
+      // Base neon body
+      c.fillStyle = color;
+      c.fillRect(bx, by, bw, bh);
+
+      // Top & Left 3D glossy bevel highlight
+      c.fillStyle = 'rgba(255, 255, 255, 0.42)';
+      c.beginPath();
+      c.moveTo(bx, by); c.lineTo(bx + bw, by); c.lineTo(bx + bw - 5, by + 5); c.lineTo(bx + 5, by + 5);
+      c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255, 255, 255, 0.22)';
+      c.beginPath();
+      c.moveTo(bx, by); c.lineTo(bx + 5, by + 5); c.lineTo(bx + 5, by + bh - 5); c.lineTo(bx, by + bh);
+      c.closePath(); c.fill();
+
+      // Bottom & Right 3D extruded shadow
+      c.fillStyle = 'rgba(0, 0, 0, 0.42)';
+      c.beginPath();
+      c.moveTo(bx, by + bh); c.lineTo(bx + 5, by + bh - 5); c.lineTo(bx + bw - 5, by + bh - 5); c.lineTo(bx + bw, by + bh);
+      c.closePath(); c.fill();
+      c.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      c.beginPath();
+      c.moveTo(bx + bw, by); c.lineTo(bx + bw, by + bh); c.lineTo(bx + bw - 5, by + bh - 5); c.lineTo(bx + bw - 5, by + 5);
+      c.closePath(); c.fill();
+
+      // Inner crystal gloss core
+      c.fillStyle = 'rgba(255, 255, 255, 0.14)';
+      c.fillRect(bx + 6, by + 6, bw - 12, bh - 12);
+      c.restore();
+    }
+
+    function drawSidePreviews() {
+      const pal = getTheme().palette;
+      hctx.clearRect(0, 0, 96, 64);
+      if (game.hold >= 0) {
+        const mat = SHAPES[game.hold];
+        const sz = 18, ox = (96 - mat[0].length * sz) / 2, oy = (64 - mat.length * sz) / 2;
+        mat.forEach((row, r) => row.forEach((v, c) => { if (v) drawBlock3D(hctx, ox + c * sz, oy + r * sz, sz, pal[game.hold], game.canHold ? 1 : 0.4); }));
+      }
+      nctx.clearRect(0, 0, 96, 186);
+      for (let i = 0; i < Math.min(3, game.queue.length); i++) {
+        const t = game.queue[i], mat = SHAPES[t], sz = 16;
+        const ox = (96 - mat[0].length * sz) / 2, oy = 12 + i * 58 + (42 - mat.length * sz) / 2;
+        mat.forEach((row, r) => row.forEach((v, c) => { if (v) drawBlock3D(nctx, ox + c * sz, oy + r * sz, sz, pal[t], 1); }));
+      }
+    }
+
+    function renderBoard() {
+      const pal = getTheme().palette;
+      bctx.save();
+      if (game.shake > 0) {
+        const m = game.shake * 10;
+        bctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+      }
+
+      // Dark 3D Perspective Grid Backdrop
+      bctx.fillStyle = '#08091a';
+      bctx.fillRect(0, 0, COLS * CELL, ROWS * CELL);
+      bctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+      bctx.lineWidth = 1;
+      for (let c = 1; c < COLS; c++) { bctx.beginPath(); bctx.moveTo(c * CELL, 0); bctx.lineTo(c * CELL, ROWS * CELL); bctx.stroke(); }
+      for (let r = 1; r < ROWS; r++) { bctx.beginPath(); bctx.moveTo(0, r * CELL); bctx.lineTo(COLS * CELL, r * CELL); bctx.stroke(); }
+
+      // Hard-Drop Laser Trails
+      for (const tr of game.trails) {
+        bctx.fillStyle = tr.col;
+        bctx.globalAlpha = tr.alpha;
+        bctx.fillRect(tr.x + 4, tr.y, CELL - 8, tr.h);
+      }
+      bctx.globalAlpha = 1;
+
+      // Locked Blocks
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const v = game.board[r] ? game.board[r][c] : -1;
+          if (v !== -1) drawBlock3D(bctx, c * CELL, r * CELL, CELL, pal[v % pal.length], 1);
+        }
+      }
+
+      // Active Piece + Ghost Preview
+      if (game.cur && (game.mode === 'playing' || game.mode === 'paused')) {
+        const gy = ghostY();
+        const col = pal[game.cur.t % pal.length];
+        game.cur.mat.forEach((row, r) => row.forEach((v, c) => {
+          if (v) {
+            bctx.strokeStyle = col; bctx.lineWidth = 2; bctx.globalAlpha = 0.38;
+            bctx.strokeRect((game.cur.x + c) * CELL + 3, (gy + r) * CELL + 3, CELL - 6, CELL - 6);
+            bctx.globalAlpha = 1;
+          }
+        }));
+        game.cur.mat.forEach((row, r) => row.forEach((v, c) => {
+          if (v) drawBlock3D(bctx, (game.cur.x + c) * CELL, (game.cur.y + r) * CELL, CELL, col, 1);
+        }));
+      }
+
+      // Neon Clear Particles
+      bctx.globalCompositeOperation = 'lighter';
+      for (const pt of game.particles) {
+        bctx.globalAlpha = Math.max(0, pt.life * 1.5);
+        bctx.fillStyle = pt.col;
+        bctx.beginPath(); bctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); bctx.fill();
+      }
+      bctx.globalCompositeOperation = 'source-over';
+      bctx.globalAlpha = 1;
+      bctx.restore();
+    }
+
+    function updateHud() {
+      const u = auth.currentUser;
+      document.getElementById('hudPlayerName').textContent = u && u.name ? u.name : '方塊玩家';
+      document.getElementById('hudAcctBtn').classList.toggle('signed-in', !!u);
+      [document.getElementById('hudAvatar'), document.getElementById('startAvatar')].forEach((el) => {
+        if (!el) return;
+        if (u) { el.style.background = u.color || '#ec4899'; el.textContent = (u.name || 'G').charAt(0).toUpperCase(); }
+        else { el.style.background = 'rgba(255,255,255,0.14)'; el.textContent = '👤'; }
+      });
+      document.getElementById('startAcctName').textContent = u ? `${u.name}（Google 已登入）` : '訪客玩家';
+      document.getElementById('startAcctSub').textContent = u ? `${u.email} · 獨立霓虹主題存檔` : '於遊戲綜合區登入即可全站通用';
+      document.getElementById('startCoins').textContent = save.coins;
+      document.getElementById('hudCoins').textContent = save.coins + (game.mode === 'playing' ? game.runCoins : 0);
+      document.getElementById('hudScore').textContent = String(Math.floor(game.score)).padStart(5, '0');
+      document.getElementById('sideLevel').textContent = game.level;
+      document.getElementById('sideLines').textContent = game.lines;
+      document.getElementById('sideBest').textContent = Math.max(save.bestScore, Math.floor(game.score)).toLocaleString();
+      if (game.variant === 'blitz') document.getElementById('sideTimer').textContent = Math.max(0, Math.ceil(game.timeLeft)) + 's';
+    }
+
+    function renderThemes() {
+      const grid = document.getElementById('themeGrid');
+      grid.innerHTML = '';
+      THEMES.forEach((th) => {
+        const own = save.ownedThemes.includes(th.id);
+        const eq = save.equippedTheme === th.id;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'theme-card' + (eq ? ' sel' : '');
+        const tag = eq ? '<span style="color:#6ee7b7;font-size:10.5px;">使用中</span>' : (own ? '<span style="color:#7dd3fc;font-size:10.5px;">已擁有</span>' : `<span style="color:#fde68a;font-size:10.5px;">🪙 ${th.price}</span>`);
+        btn.innerHTML = `<div class="theme-top"><span>${th.name}</span>${tag}</div><div class="swatches">${th.palette.slice(0, 6).map(c => `<span class="sw" style="background:${c}"></span>`).join('')}</div>`;
+        btn.addEventListener('click', () => {
+          if (own) { save.equippedTheme = th.id; persistSave(); SFX.rotate(); showToast(`🎨 已切換主題：【${th.name}】`); }
+          else if (save.coins >= th.price) { save.coins -= th.price; save.ownedThemes.push(th.id); save.equippedTheme = th.id; persistSave(); SFX.clear(3, 1); showToast(`🎉 解鎖並啟用【${th.name}】！`); }
+          else showToast(`⚠️ 金幣不足（需 ${th.price} 🪙）`);
+          renderThemes(); updateHud(); drawSidePreviews();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    // Controls
+    document.getElementById('btnStartMarathon').addEventListener('click', () => startGame('marathon'));
+    document.getElementById('btnStartBlitz').addEventListener('click', () => startGame('blitz'));
+    document.getElementById('btnRetry').addEventListener('click', () => startGame(game.variant));
+    document.getElementById('btnOverMenu').addEventListener('click', () => {
+      game.mode = 'menu'; document.getElementById('overOverlay').classList.add('hidden');
+      renderThemes(); updateHud(); document.getElementById('startOverlay').classList.remove('hidden');
+    });
+    document.getElementById('btnPause').addEventListener('click', () => {
+      if (game.mode === 'playing') { game.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
+      else if (game.mode === 'paused') { game.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+    });
+    document.getElementById('btnResume').addEventListener('click', () => { game.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); });
+    document.getElementById('btnMenu').addEventListener('click', () => {
+      game.mode = 'menu'; document.getElementById('pauseOverlay').classList.add('hidden');
+      renderThemes(); updateHud(); document.getElementById('startOverlay').classList.remove('hidden');
+    });
+    document.getElementById('btnBgm').addEventListener('click', () => { SFX.bgmOn = !SFX.bgmOn; showToast(SFX.bgmOn ? '🎵 音樂：開' : '🔇 音樂：關'); });
+    document.getElementById('btnMute').addEventListener('click', () => { SFX.muted = !SFX.muted; document.getElementById('btnMute').textContent = SFX.muted ? '🔇' : '🔊'; });
+    document.getElementById('hudAcctBtn').addEventListener('click', () => {
+      if (IS_EMBEDDED) postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID });
+      else showToast('🔑 請從「遊戲綜合區」統一管理 Google 帳號');
+    });
+
+    document.getElementById('tLeft').addEventListener('pointerdown', e => { e.preventDefault(); tryMove(-1, 0); });
+    document.getElementById('tRight').addEventListener('pointerdown', e => { e.preventDefault(); tryMove(1, 0); });
+    document.getElementById('tRot').addEventListener('pointerdown', e => { e.preventDefault(); tryRotate(); });
+    document.getElementById('tDown').addEventListener('pointerdown', e => { e.preventDefault(); if (tryMove(0, 1)) game.score += 1; });
+    document.getElementById('tDrop').addEventListener('pointerdown', e => { e.preventDefault(); hardDrop(); });
+    document.getElementById('tHold').addEventListener('pointerdown', e => { e.preventDefault(); doHold(); });
+
+    window.addEventListener('keydown', (e) => {
+      if (game.mode === 'playing') {
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); tryMove(-1, 0); }
+        else if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); tryMove(1, 0); }
+        else if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'KeyX') { e.preventDefault(); tryRotate(); }
+        else if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); if (tryMove(0, 1)) game.score += 1; }
+        else if (e.code === 'Space') { e.preventDefault(); hardDrop(); }
+        else if (e.code === 'KeyC' || e.code === 'ShiftLeft') { e.preventDefault(); doHold(); }
+      }
+      if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (game.mode === 'playing') { game.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
+        else if (game.mode === 'paused') { game.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+      }
+    });
+
+    // SSO Bridge
+    function applySso(incoming) {
+      const nextU = incoming && incoming.currentUser && incoming.currentUser.uid ? incoming.currentUser : null;
+      const prevUid = auth.currentUser ? auth.currentUser.uid : null;
+      const nextUid = nextU ? nextU.uid : null;
+      auth.currentUser = nextU;
+      if (prevUid !== nextUid) { Object.assign(save, loadSave()); renderThemes(); }
+      updateHud();
+      postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: nextUid, stats: getSummaryStats() });
+    }
+    window.addEventListener('message', (e) => {
+      const d = e && e.data;
+      if (d && d.type === 'ARCADE_SSO_SYNC' && d.auth) applySso(d.auth);
+    });
+    window.addEventListener('storage', (e) => {
+      if (e.key === SSO_KEY && e.newValue) { try { applySso(JSON.parse(e.newValue)); } catch (_) {} }
+    });
+
+    // Boot & Loop
+    game.board = Array.from({ length: ROWS }, () => Array(COLS).fill(-1));
+    renderThemes();
+    updateHud();
+    postToHub({ type: 'ARCADE_GAME_READY', gameId: GAME_ID, stats: getSummaryStats() });
+
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+      last = now;
+      if (game.shake > 0) game.shake = Math.max(0, game.shake - dt);
+      for (let i = game.particles.length - 1; i >= 0; i--) {
+        const pt = game.particles[i];
+        pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 420 * dt; pt.life -= dt;
+        if (pt.life <= 0) game.particles.splice(i, 1);
+      }
+      for (let i = game.trails.length - 1; i >= 0; i--) {
+        game.trails[i].alpha -= dt * 2.2;
+        if (game.trails[i].alpha <= 0) game.trails.splice(i, 1);
+      }
+      if (game.mode === 'playing') {
+        if (game.variant === 'blitz') {
+          game.timeLeft -= dt;
+          if (game.timeLeft <= 0) { game.timeLeft = 0; endGame(true); }
+        }
+        const interval = Math.max(0.11, 0.78 - (game.level - 1) * 0.055);
+        game.dropAcc += dt;
+        if (game.dropAcc >= interval) {
+          game.dropAcc = 0;
+          if (!tryMove(0, 1)) lockPiece();
+        }
+        updateHud();
+      }
+      renderBoard();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
