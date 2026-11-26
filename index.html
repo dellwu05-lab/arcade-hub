@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>遊戲綜合區 · ARCADE HUB（單一帳號暢玩全站 3D 遊戲）</title>
+  <script src="./shared/arcade-sso.js"></script>
+  <style>
+    :root {
+      --bg-0: #060913;
+      --bg-1: #0c1324;
+      --surface: rgba(15, 23, 42, 0.72);
+      --surface-strong: rgba(15, 23, 42, 0.94);
+      --border: rgba(148, 163, 184, 0.18);
+      --border-hi: rgba(96, 165, 250, 0.45);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #f59e0b;
+      --accent-2: #38bdf8;
+      --green: #34d399;
+      --pink: #fb7185;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      width: 100%;
+      min-height: 100dvh;
+      background: var(--bg-0);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      overflow-x: hidden;
+    }
+
+    body.in-game {
+      overflow: hidden;
+      height: 100dvh;
+    }
+
+    /* Ambient Neon Nebula Background */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 68% 48% at 14% 8%, rgba(56, 189, 248, 0.16), transparent 65%),
+        radial-gradient(ellipse 58% 46% at 86% 12%, rgba(245, 158, 11, 0.15), transparent 65%),
+        radial-gradient(ellipse 70% 55% at 50% 92%, rgba(139, 92, 246, 0.14), transparent 70%),
+        linear-gradient(180deg, #060913 0%, #0b1222 52%, #070b16 100%);
+    }
+
+    .grid-lines {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at 50% 25%, #000 18%, transparent 80%);
+      -webkit-mask-image: radial-gradient(circle at 50% 25%, #000 18%, transparent 80%);
+    }
+
+    /* ================= LOBBY VIEW ================= */
+    .hub-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: max(14px, env(safe-area-inset-top, 0px) + 10px) 20px max(40px, env(safe-area-inset-bottom, 0px) + 28px);
+    }
+
+    /* Top Nav */
+    .hub-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 16px;
+      border-radius: 18px;
+      background: rgba(12, 19, 36, 0.78);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+      position: sticky;
+      top: 12px;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f59e0b, #ea580c 55%, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.38);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 16.5px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.16);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      letter-spacing: 0.04em;
+    }
+
+    .brand-sub {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .btn-google-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 15px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #fff;
+      color: #1f2937;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+    .btn-google-nav:hover { filter: brightness(0.95); }
+    .btn-google-nav:active { transform: scale(0.97); }
+    .btn-google-nav svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+    .nav-account-pill {
+      display: none;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 13px 5px 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(52, 211, 153, 0.48);
+      color: #fff;
+      cursor: pointer;
+      transition: border-color 0.16s ease, background 0.16s ease;
+    }
+    .nav-account-pill.show { display: inline-flex; }
+    .nav-account-pill:hover { border-color: rgba(96, 165, 250, 0.8); background: rgba(30, 41, 59, 0.95); }
+
+    .g-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      background: #4285f4;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .g-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .g-avatar.sm { width: 22px; height: 22px; font-size: 11px; }
+    .g-avatar.lg { width: 46px; height: 46px; font-size: 20px; }
+
+    .acct-meta { text-align: left; line-height: 1.2; }
+    .acct-meta .am-name { font-size: 12.5px; font-weight: 800; color: #fff; }
+    .acct-meta .am-sub { font-size: 10px; color: #6ee7b7; font-weight: 700; }
+
+    /* Hero SSO & Global Stats Banner */
+    .hero-card {
+      margin-top: 20px;
+      padding: 24px 26px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(23, 37, 84, 0.62) 55%, rgba(67, 20, 7, 0.42) 100%);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: 0 22px 54px rgba(0, 0, 0, 0.42);
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 22px;
+      align-items: center;
+    }
+
+    .sso-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      background: rgba(52, 211, 153, 0.14);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      color: #6ee7b7;
+    }
+    .sso-pill.guest {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(251, 191, 36, 0.38);
+      color: #fde68a;
+    }
+
+    .hero-left h1 {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    .hero-left p {
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #cbd5e1;
+      max-width: 540px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn-primary {
+      padding: 11px 20px;
+      border-radius: 13px;
+      border: none;
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 24px rgba(234, 88, 12, 0.38);
+      transition: transform 0.1s ease, filter 0.16s ease;
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-primary:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      padding: 11px 16px;
+      border-radius: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.07);
+      color: #f1f5f9;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.16s ease, border-color 0.16s ease;
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.3); }
+
+    .global-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .gstat-box {
+      padding: 14px 15px;
+      border-radius: 16px;
+      background: rgba(9, 13, 24, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+    .gstat-label { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+    .gstat-val { font-size: 22px; font-weight: 900; margin-top: 4px; font-variant-numeric: tabular-nums; color: #fff; }
+    .gstat-val.gold { color: #fbbf24; }
+    .gstat-val.cyan { color: #38bdf8; }
+    .gstat-val.green { color: #34d399; }
+
+    /* Section Header */
+    .sec-head {
+      margin-top: 28px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .sec-head h2 {
+      font-size: 19px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-pills {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .fpill {
+      padding: 6px 13px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.65);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .fpill.active {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.6);
+      color: #e0f2fe;
+    }
+
+    /* Game Cards Grid */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .game-card {
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .game-card.live:hover {
+      transform: translateY(-3px);
+      border-color: rgba(245, 158, 11, 0.65);
+      box-shadow: 0 24px 52px rgba(245, 158, 11, 0.16);
+    }
+    .game-card.featured {
+      grid-column: span 2;
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr;
+    }
+    .game-card.soon {
+      opacity: 0.78;
+    }
+
+    .game-cover {
+      position: relative;
+      min-height: 210px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .game-card.featured .game-cover { min-height: 270px; }
+
+    .cover-canyon {
+      background:
+        radial-gradient(circle at 76% 24%, rgba(254, 240, 138, 0.85) 0%, rgba(251, 146, 60, 0.45) 18%, transparent 45%),
+        linear-gradient(180deg, #1d4ed8 0%, #38bdf8 34%, #f97316 68%, #7c2d12 100%);
+    }
+    .cover-space {
+      background:
+        radial-gradient(circle at 75% 28%, rgba(56, 189, 248, 0.45), transparent 46%),
+        linear-gradient(135deg, #090d1f 0%, #1e1b4b 55%, #312e81 100%);
+    }
+    .cover-puzzle {
+      background:
+        radial-gradient(circle at 25% 30%, rgba(236, 72, 153, 0.35), transparent 50%),
+        linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #3b0764 100%);
+    }
+    .cover-drift {
+      background:
+        radial-gradient(circle at 80% 20%, rgba(251, 146, 60, 0.4), transparent 45%),
+        linear-gradient(135deg, #18181b 0%, #431407 55%, #9a3412 100%);
+    }
+
+    .cover-art-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .cover-badges {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .cbadge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .cbadge.live { background: rgba(16, 185, 129, 0.9); color: #fff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+    .cbadge.soon { background: rgba(15, 23, 42, 0.78); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.2); }
+    .cbadge.tech { background: rgba(15, 23, 42, 0.68); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.18); }
+
+    .cover-order {
+      position: relative;
+      z-index: 2;
+      align-self: flex-start;
+      padding: 4px 10px;
+      border-radius: 10px;
+      background: rgba(9, 13, 22, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 11px;
+      font-weight: 800;
+      color: #fde68a;
+    }
+
+    .game-body {
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .game-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .game-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: #fff;
+    }
+    .game-card.featured .game-title { font-size: 22px; }
+    .game-genre {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #7dd3fc;
+      white-space: nowrap;
+    }
+    .game-desc {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-top: 6px;
+    }
+
+    .game-feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .ftag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: #cbd5e1;
+    }
+
+    .game-progress-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 10px;
+      border-radius: 14px;
+      background: rgba(9, 13, 24, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .gp-item { text-align: center; }
+    .gp-v { font-size: 14px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+    .gp-l { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    .game-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .sso-sync-hint {
+      font-size: 11.5px;
+      color: #6ee7b7;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .sso-sync-hint.guest { color: var(--muted); }
+
+    /* ================= FULLSCREEN GAME STAGE ================= */
+    .game-stage {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: #050811;
+      display: none;
+      flex-direction: column;
+    }
+    .game-stage.active { display: flex; }
+
+    .stage-topbar {
+      height: 44px;
+      flex-shrink: 0;
+      padding: 0 max(12px, env(safe-area-inset-right, 0px)) 0 max(12px, env(safe-area-inset-left, 0px));
+      background: rgba(9, 13, 24, 0.96);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .stage-back-btn {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.14s ease;
+    }
+    .stage-back-btn:hover { background: rgba(245, 158, 11, 0.25); border-color: rgba(245, 158, 11, 0.6); }
+
+    .stage-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    .stage-center span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stage-sso-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      flex-shrink: 0;
+    }
+
+    .stage-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .stage-acct-btn {
+      padding: 3px 10px 3px 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.06);
+      color: #f8fafc;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stage-acct-btn:hover { border-color: rgba(96, 165, 250, 0.7); }
+
+    .game-frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #000;
+      display: block;
+    }
+
+    /* ================= UNIFIED AUTH MODAL ================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(4, 7, 15, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .auth-panel {
+      width: 100%;
+      max-width: 500px;
+      max-height: 88dvh;
+      overflow-y: auto;
+      padding: 22px 22px 18px;
+      border-radius: 22px;
+      background: var(--surface-strong);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 28px 64px rgba(0, 0, 0, 0.65);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .modal-head h2 {
+      font-size: 19px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .close-btn:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .auth-section {
+      margin-top: 12px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+    .auth-sec-title {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .auth-note { font-size: 11.5px; line-height: 1.55; color: var(--muted); }
+    .status-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 800;
+    }
+    .status-pill.ok { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4); }
+    .status-pill.warn { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.35); }
+
+    .auth-input {
+      width: 100%;
+      padding: 9px 11px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(9, 13, 22, 0.68);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      margin-bottom: 8px;
+    }
+    .auth-input:focus { border-color: rgba(96, 165, 250, 0.85); }
+
+    .auth-check {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .btn-google-full {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: none;
+      background: #fff;
+      color: #1f2937;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    .btn-google-full:hover { filter: brightness(0.95); }
+    .btn-google-full svg { width: 18px; height: 18px; }
+
+    .auth-acct-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .auth-acct-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+    }
+    .auth-acct-item:hover { border-color: rgba(96, 165, 250, 0.65); background: rgba(59, 130, 246, 0.12); }
+
+    .auth-profile-hero {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(66, 133, 244, 0.18), rgba(16, 185, 129, 0.12));
+      border: 1px solid rgba(96, 165, 250, 0.38);
+    }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-danger-soft {
+      padding: 9px 14px;
+      border-radius: 11px;
+      border: 1px solid rgba(251, 113, 133, 0.45);
+      background: rgba(190, 18, 60, 0.24);
+      color: #fda4af;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-danger-soft:hover { background: rgba(190, 18, 60, 0.4); }
+
+    .auth-textarea {
+      width: 100%;
+      min-height: 62px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(9, 13, 22, 0.72);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      resize: vertical;
+      margin-top: 8px;
+    }
+    .gis-btn-slot {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 8px 0 4px;
+    }
+    .auth-details { margin-top: 8px; }
+    .auth-details summary { font-size: 12px; font-weight: 700; color: #93c5fd; cursor: pointer; }
+    .auth-details-body { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+
+    /* Toast */
+    .hub-toast {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      z-index: 120;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #f8fafc;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.48);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      max-width: 92vw;
+      text-align: center;
+    }
+    .hub-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .hero-card { grid-template-columns: 1fr; padding: 20px 18px; }
+      .game-card.featured { grid-column: span 1; grid-template-columns: 1fr; }
+      .games-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .hub-shell { padding: 10px 12px 28px; }
+      .hub-nav { padding: 10px 12px; }
+      .brand-sub, .brand-tag { display: none; }
+      .brand-title { font-size: 15px; }
+      .hero-left h1 { font-size: 22px; }
+      .game-progress-strip { grid-template-columns: repeat(2, 1fr); }
+      .stage-sso-tag, .hide-xs { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-bg"></div>
+  <div class="grid-lines"></div>
+
+  <!-- ================= GAME HUB LOBBY ================= -->
+  <div class="hub-shell" id="hubLobby">
+    <header class="hub-nav">
+      <div class="brand">
+        <div class="brand-icon">🎮</div>
+        <div>
+          <div class="brand-title">
+            <span>遊戲綜合區</span>
+            <span class="brand-tag">ARCADE HUB</span>
+          </div>
+          <div class="brand-sub">單一 Google 帳號登入 · 暢玩全站 3D 網頁遊戲</div>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <button class="btn-google-nav" id="btnNavGoogle" type="button">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Google 登入</span>
+        </button>
+
+        <button class="nav-account-pill" id="btnNavAccount" type="button" title="管理全站 Google 帳號與跨遊戲存檔">
+          <span class="g-avatar" id="navAvatar">G</span>
+          <div class="acct-meta">
+            <div class="am-name" id="navAcctName">玩家</div>
+            <div class="am-sub">● 全站單一登入中</div>
+          </div>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section class="hero-card">
+      <div class="hero-left">
+        <div class="sso-pill guest" id="heroSsoPill">🔑 訪客模式 · 登入一次即可全站通用</div>
+        <h1 id="heroTitle">歡迎來到遊戲綜合區！</h1>
+        <p id="heroSub">
+          只需在此登入一次 Google 帳號，進入《無盡峽谷 3D：極限跑酷》以及未來新增的每一款遊戲，皆會自動帶入您的身份、頭像與獨立存檔，完全無須重複登入。
+        </p>
+        <div class="hero-actions">
+          <button class="btn-primary" id="btnHeroPlayFirst" type="button">▶ 立即遊玩第 1 款：無盡峽谷 3D</button>
+          <button class="btn-secondary" id="btnHeroAccount" type="button">🔐 登入 / 管理全站帳號</button>
+        </div>
+      </div>
+
+      <div class="global-stats">
+        <div class="gstat-box">
+          <div class="gstat-label">已收錄可玩遊戲</div>
+          <div class="gstat-val cyan" id="statLiveGames">1 款</div>
+        </div>
+        <div class="gstat-box">
+          <div class="gstat-label">全站累積金幣</div>
+          <div class="gstat-val gold" id="statTotalCoins">40</div>
+        </div>
+        <div class="gstat-box">
+          <div class="gstat-label">跨遊戲最高紀錄</div>
+          <div class="gstat-val" id="statBestScore">0</div>
+        </div>
+        <div class="gstat-box">
+          <div class="gstat-label">總通關星數 / 角色</div>
+          <div class="gstat-val green" id="statStarsChars">0★ · 1角</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Games Catalog -->
+    <div class="sec-head">
+      <h2>🕹️ 精選遊戲館</h2>
+      <div class="filter-pills" id="filterPills">
+        <button class="fpill active" data-filter="all" type="button">全部遊戲 (4)</button>
+        <button class="fpill" data-filter="live" type="button">立即遊玩 (1)</button>
+        <button class="fpill" data-filter="soon" type="button">即將推出 (3)</button>
+      </div>
+    </div>
+
+    <div class="games-grid" id="gamesGrid"></div>
+  </div>
+
+  <!-- ================= FULLSCREEN GAME LAUNCHER STAGE ================= -->
+  <div class="game-stage" id="gameStage">
+    <div class="stage-topbar">
+      <button class="stage-back-btn" id="btnBackToHub" type="button">← 返回綜合區</button>
+      <div class="stage-center">
+        <span id="stageGameTitle">🏔️ 無盡峽谷 3D：極限跑酷</span>
+        <span class="stage-sso-tag" id="stageSsoBadge">SSO 帳號已同步</span>
+      </div>
+      <div class="stage-right">
+        <button class="stage-acct-btn" id="btnStageAccount" type="button" title="切換或管理全站 Google 帳號">
+          <span class="g-avatar sm" id="stageAvatar">👤</span>
+          <span class="hide-xs" id="stageAcctName">訪客模式</span>
+        </button>
+        <button class="stage-back-btn" id="btnStageFullscreen" type="button" title="切換全螢幕">⛶</button>
+      </div>
+    </div>
+    <iframe class="game-frame" id="gameFrame" title="遊戲遊玩視窗" allow="autoplay; fullscreen"></iframe>
+  </div>
+
+  <!-- ================= UNIFIED SSO ACCOUNT MODAL ================= -->
+  <div class="modal-backdrop" id="hubAuthModal">
+    <div class="auth-panel">
+      <div class="modal-head">
+        <div>
+          <h2>
+            <svg viewBox="0 0 48 48" style="width:22px;height:22px;flex-shrink:0;" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            <span>全站單一登入（SSO）帳號中心</span>
+          </h2>
+          <div class="modal-sub">登入一次即可暢玩綜合區內所有遊戲，存檔自動隔離並跨遊戲同步</div>
+        </div>
+        <button class="close-btn" id="btnCloseHubAuth" type="button" aria-label="關閉">✕</button>
+      </div>
+
+      <!-- Signed-In Profile -->
+      <div id="hubAuthSignedIn" style="display:none;">
+        <div class="auth-profile-hero">
+          <span class="g-avatar lg" id="hubProfileAvatar">G</span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+              <strong id="hubProfileName" style="font-size:15px;">玩家</strong>
+              <span class="status-pill ok" id="hubProviderBadge">Google 全站通行</span>
+            </div>
+            <div id="hubProfileEmail" style="font-size:12px;color:var(--muted);margin-top:2px;">player@gmail.com</div>
+          </div>
+        </div>
+
+        <div class="auth-section">
+          <div class="auth-sec-title"><span>🔄 帳號操作</span></div>
+          <div class="btn-row">
+            <button class="btn-secondary" id="btnHubSwitchView" type="button" style="flex:1;justify-content:center;padding:9px 12px;font-size:12.5px;">👥 切換其他帳號</button>
+            <button class="btn-danger-soft" id="btnHubSignOut" type="button">🚪 全站登出</button>
+          </div>
+        </div>
+
+        <div class="auth-section">
+          <div class="auth-sec-title"><span>☁️ 全站跨遊戲存檔備份（JSON）</span></div>
+          <div class="auth-note" style="margin-bottom:8px;">一次打包此帳號在綜合區所有遊戲的存檔進度，跨裝置貼上即可完整還原。</div>
+          <div class="btn-row">
+            <button class="btn-secondary" id="btnHubExportAll" type="button" style="flex:1;justify-content:center;padding:8px 12px;font-size:12.5px;">📤 匯出全站存檔</button>
+            <button class="btn-secondary" id="btnHubImportAll" type="button" style="flex:1;justify-content:center;padding:8px 12px;font-size:12.5px;">📥 匯入還原</button>
+          </div>
+          <textarea class="auth-textarea" id="hubBackupBox" placeholder="點擊「匯出全站存檔」產生完整 JSON 備份碼，或貼上備份碼後點擊「匯入還原」"></textarea>
+        </div>
+      </div>
+
+      <!-- Sign-In / Switch Account -->
+      <div id="hubAuthSignIn">
+        <div class="auth-section">
+          <div class="auth-sec-title">
+            <span>🔐 Google 官方 OAuth 2.0 登入</span>
+            <span class="status-pill warn" id="hubGisPill">尚未設定 Client ID</span>
+          </div>
+          <div class="auth-note" id="hubGisNote">
+            支援 Google Identity Services (GIS)。於 HTTP(S) 網域設定 OAuth Client ID 後，全站所有遊戲將自動共用該真實 Google 帳號。
+          </div>
+          <div class="gis-btn-slot" id="hubGisSlot" style="display:none;"></div>
+          <details class="auth-details">
+            <summary>⚙️ 設定真實 Google OAuth Client ID（3 步驟）</summary>
+            <div class="auth-details-body">
+              <div class="auth-note" style="margin-bottom:8px;">
+                1. 於 Google Cloud Console 建立「網頁應用程式 OAuth 用戶端 ID」。<br>
+                2. 將本網站網域加入「已授權的 JavaScript 來源」。<br>
+                3. 貼上 Client ID 並儲存，即可顯示官方 Google 登入鈕：
+              </div>
+              <input class="auth-input" id="hubGisClientId" type="text" autocomplete="off" placeholder="例：1234567890-xxxx.apps.googleusercontent.com" />
+              <div class="btn-row">
+                <button class="btn-primary" id="btnHubSaveGis" type="button" style="padding:8px 14px;font-size:12.5px;">儲存並載入</button>
+                <button class="btn-secondary" id="btnHubClearGis" type="button" style="padding:8px 14px;font-size:12.5px;">清除</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="auth-section">
+          <div class="auth-sec-title">
+            <span>⚡ 快速 Google 帳號登入（一次登入全站通行）</span>
+            <span class="status-pill ok">免設定立即可用</span>
+          </div>
+          <div id="hubSavedAccountsWrap" style="display:none;">
+            <div class="auth-note" style="margin-bottom:6px;">點選已登入過的帳號一鍵切換：</div>
+            <div class="auth-acct-list" id="hubSavedAccountsList"></div>
+          </div>
+          <input class="auth-input" id="hubDemoEmail" type="email" maxlength="48" autocomplete="off" placeholder="Google 信箱（例：player@gmail.com）" />
+          <input class="auth-input" id="hubDemoName" type="text" maxlength="16" autocomplete="off" placeholder="玩家暱稱（例：峽谷總司令）" />
+          <label class="auth-check">
+            <input type="checkbox" id="hubChkInherit" checked />
+            <span>首次登入時自動繼承訪客的現有遊戲進度</span>
+          </label>
+          <button class="btn-google-full" id="btnHubDemoLogin" type="button">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            <span>登入 Google 帳號 · 啟用全站單一登入</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hub-toast" id="hubToast"></div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const SSO = window.ArcadeSSO;
+    const DEFAULT_GOOGLE_CLIENT_ID = '';
+
+    // =========================================================================
+    // GAMES REGISTRY — 未來新增第 2、3、4 款遊戲只需在此加入一筆即可自動共用 SSO！
+    // =========================================================================
+    const GAMES_REGISTRY = [
+      {
+        id: 'canyon_parkour_3d',
+        order: 'GAME #01',
+        title: '無盡峽谷 3D：極限跑酷',
+        icon: '🏔️',
+        genre: '3D 橫向跑酷 · 動作闖關',
+        status: 'live',
+        featured: true,
+        url: './games/canyon-parkour-3d/index.html',
+        coverClass: 'cover-canyon',
+        badges: ['3D WebGL', '支援手機', '原創 BGM'],
+        desc: '穿梭 5 大動態日夜光影 3D 峽谷！內含 8 位 3D 角色（含竈門炭治郎、宵崎奏專屬大招）、磁鐵/無敵衝刺/彈跳墊、空中魔王戰、任務系統、光影分身競速與無盡極速模式。',
+        features: ['8 位 3D 角色大招', '5 大日夜循環場景', '空中魔王戰', '無盡極速模式', '光影分身競速']
+      },
+      {
+        id: 'star_blaster_3d',
+        order: 'GAME #02',
+        title: '星際彈幕射擊 3D',
+        icon: '🚀',
+        genre: '3D 太空射擊 · Roguelike',
+        status: 'soon',
+        featured: false,
+        url: '',
+        coverClass: 'cover-space',
+        badges: ['開發預留槽', 'SSO 就緒'],
+        desc: '駕駛星際戰機穿越小行星帶，蒐集武器模組並迎戰星系母艦。上線後自動共用您的全站 Google 帳號與金幣戰績。',
+        features: ['自動共用 SSO 帳號', '獨立存檔隔離']
+      },
+      {
+        id: 'neon_blocks_3d',
+        order: 'GAME #03',
+        title: '霓虹立體方塊',
+        icon: '🧩',
+        genre: '立體益智 · 節奏消除',
+        status: 'soon',
+        featured: false,
+        url: '',
+        coverClass: 'cover-puzzle',
+        badges: ['開發預留槽', 'SSO 就緒'],
+        desc: '結合合成器節奏音樂的 3D 空間消除挑戰，支援連擊倍率與全球排行榜。未來上線即享單一帳號無縫遊玩。',
+        features: ['自動共用 SSO 帳號', '跨遊戲排行整合']
+      },
+      {
+        id: 'canyon_drift_3d',
+        order: 'GAME #04',
+        title: '峽谷極速漂移 3D',
+        icon: '🏎️',
+        genre: '3D 街機競速 · 氮氣飄移',
+        status: 'soon',
+        featured: false,
+        url: '',
+        coverClass: 'cover-drift',
+        badges: ['開發預留槽', 'SSO 就緒'],
+        desc: '延續峽谷宇宙世界觀的 3D 街機甩尾競速，支援觸控與鍵盤操控，帳號登入一次即可雙遊戲暢玩。',
+        features: ['自動共用 SSO 帳號', '峽谷宇宙連動']
+      }
+    ];
+
+    let auth = SSO.loadAuth();
+    let activeFilter = 'all';
+    let activeGame = null;
+    let forceSwitchAccountView = false;
+    let gisState = 'idle';
+    let gisRenderedCid = '';
+    const liveStatsCache = {};
+
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('hubToast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function renderAvatar(el, user) {
+      if (!el) return;
+      if (!user) {
+        el.style.background = 'rgba(255,255,255,0.12)';
+        el.textContent = '👤';
+        return;
+      }
+      el.style.background = user.color || SSO.pickAvatarColor(user.email || user.name);
+      if (user.picture && /^https?:\/\//i.test(user.picture)) {
+        const img = document.createElement('img');
+        img.src = user.picture;
+        img.alt = user.name || 'Google';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = () => {
+          el.textContent = (user.name || user.email || 'G').trim().charAt(0).toUpperCase();
+        };
+        el.innerHTML = '';
+        el.appendChild(img);
+      } else {
+        el.textContent = (user.name || user.email || 'G').trim().charAt(0).toUpperCase();
+      }
+    }
+
+    function readStatsForGame(gameId) {
+      const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
+      const cacheKey = `${gameId}::${uid}`;
+      const raw = SSO.readGameSave(gameId, auth.currentUser);
+      if (raw && typeof raw === 'object') {
+        const stars = Object.values(raw.stageStars || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+        return {
+          coins: Number(raw.coins) || 0,
+          bestScore: Number(raw.bestScore) || 0,
+          stars,
+          maxStars: 15,
+          charsUnlocked: Array.isArray(raw.ownedChars) ? raw.ownedChars.length : 1,
+          charsTotal: 8,
+          unlockedStage: Number(raw.unlockedStage) || 1
+        };
+      }
+      if (liveStatsCache[cacheKey]) return liveStatsCache[cacheKey];
+      return { coins: 40, bestScore: 0, stars: 0, maxStars: 15, charsUnlocked: 1, charsTotal: 8, unlockedStage: 1 };
+    }
+
+    // =========================================================================
+    // SSO SYNC WITH CHILD GAME IFRAME
+    // =========================================================================
+    function pushSsoToActiveGame() {
+      const frame = document.getElementById('gameFrame');
+      if (!activeGame || !frame || !frame.contentWindow) return;
+      try {
+        frame.contentWindow.postMessage({
+          type: 'ARCADE_SSO_SYNC',
+          source: 'arcade_hub',
+          auth: SSO.sanitizeAuth(auth)
+        }, '*');
+      } catch (e) { /* ignore */ }
+    }
+
+    function signInAccount(profile, inheritGuest = true) {
+      if (!profile || !profile.email) return;
+      const email = String(profile.email).trim().toLowerCase();
+      const name = String(profile.name || email.split('@')[0] || 'Google 玩家').trim().slice(0, 16);
+      const uid = profile.uid || SSO.hashUid(email);
+
+      const userObj = {
+        uid,
+        name,
+        email,
+        picture: profile.picture || '',
+        color: profile.color || SSO.pickAvatarColor(email),
+        provider: profile.provider || 'google_demo',
+        signedInAt: Date.now()
+      };
+
+      // If first-time login for Game #1 and inheritGuest is checked, copy guest save to account save
+      if (inheritGuest) {
+        GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+          const existingAcctSave = SSO.readGameSave(g.id, userObj);
+          const guestSave = SSO.readGameSave(g.id, null);
+          if (!existingAcctSave && guestSave) {
+            const cloned = Object.assign({}, guestSave, { playerName: guestSave.playerName || name });
+            SSO.writeGameSave(g.id, userObj, cloned);
+          }
+        });
+      }
+
+      auth.currentUser = userObj;
+      auth.savedAccounts = [userObj].concat(auth.savedAccounts.filter(a => a.uid !== uid)).slice(0, 8);
+      auth = SSO.saveAuth(auth);
+      forceSwitchAccountView = false;
+
+      pushSsoToActiveGame();
+      renderHubUI();
+      renderAuthModal();
+      showToast(`✅ 已登入 ${userObj.name}！全站遊戲將自動帶入此帳號`);
+    }
+
+    function signOutAccount() {
+      if (!auth.currentUser) return;
+      const prev = auth.currentUser.name;
+      auth.currentUser = null;
+      auth = SSO.saveAuth(auth);
+      forceSwitchAccountView = false;
+      try {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          window.google.accounts.id.disableAutoSelect();
+        }
+      } catch (e) { /* ignore */ }
+
+      pushSsoToActiveGame();
+      renderHubUI();
+      renderAuthModal();
+      showToast(`👋 已全站登出 ${prev}，返回訪客模式`);
+    }
+
+    function handleGisCredential(response) {
+      const payload = SSO.decodeJwtPayload(response && response.credential);
+      if (!payload || !payload.sub) {
+        showToast('⚠️ Google 憑證解析失敗，請重試');
+        return;
+      }
+      const chk = document.getElementById('hubChkInherit');
+      signInAccount({
+        uid: 'g_' + payload.sub,
+        name: payload.name || payload.given_name || (payload.email ? payload.email.split('@')[0] : 'Google 玩家'),
+        email: payload.email || `${payload.sub}@google.user`,
+        picture: payload.picture || '',
+        provider: 'google_gis'
+      }, chk ? chk.checked : true);
+    }
+
+    function renderHubGisButton() {
+      const slot = document.getElementById('hubGisSlot');
+      const pill = document.getElementById('hubGisPill');
+      const note = document.getElementById('hubGisNote');
+      if (!slot || !pill || !note) return;
+
+      const cid = SSO.getClientId(auth, DEFAULT_GOOGLE_CLIENT_ID);
+      const httpOk = SSO.isHttpOriginForOAuth();
+
+      if (!cid) {
+        slot.style.display = 'none';
+        slot.innerHTML = '';
+        pill.className = 'status-pill warn';
+        pill.textContent = '尚未設定 Client ID';
+        note.textContent = '支援真實 Google Identity Services (GIS) 驗證。於 HTTP(S) 網域設定 OAuth Client ID 後，即可顯示官方 Google 登入按鈕，或直接使用下方免設定快速登入。';
+        return;
+      }
+      if (!httpOk) {
+        slot.style.display = 'none';
+        pill.className = 'status-pill warn';
+        pill.textContent = '需 HTTP(S) 網域';
+        note.textContent = `已儲存 Client ID，但 Google OAuth 不支援 ${window.location.protocol} 離線預覽；部署至 http://localhost 或 https:// 後即自動啟用。`;
+        return;
+      }
+      if (gisState === 'ready' && window.google && window.google.accounts && window.google.accounts.id) {
+        pill.className = 'status-pill ok';
+        pill.textContent = 'GIS OAuth 已就緒';
+        note.textContent = '點擊下方官方 Google 登入鈕，一次登入即可通行全站遊戲：';
+        slot.style.display = 'flex';
+        if (gisRenderedCid !== cid || !slot.childElementCount) {
+          slot.innerHTML = '';
+          window.google.accounts.id.initialize({ client_id: cid, callback: handleGisCredential, auto_select: false });
+          window.google.accounts.id.renderButton(slot, {
+            theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signin_with', locale: 'zh_TW', width: 310
+          });
+          gisRenderedCid = cid;
+        }
+        return;
+      }
+      if (gisState === 'error') {
+        slot.style.display = 'none';
+        pill.className = 'status-pill warn';
+        pill.textContent = '無法連線 Google SDK';
+        note.textContent = '目前環境無法載入 accounts.google.com/gsi/client，請改用下方快速 Google 帳號登入。';
+        return;
+      }
+      pill.className = 'status-pill warn';
+      pill.textContent = '載入 Google SDK 中…';
+      if (gisState === 'idle') {
+        gisState = 'loading';
+        const s = document.createElement('script');
+        s.src = 'https://accounts.google.com/gsi/client';
+        s.async = true;
+        s.defer = true;
+        s.onload = () => { gisState = 'ready'; renderHubGisButton(); };
+        s.onerror = () => { gisState = 'error'; renderHubGisButton(); };
+        document.head.appendChild(s);
+      }
+    }
+
+    // =========================================================================
+    // UI RENDERERS
+    // =========================================================================
+    function renderHubUI() {
+      const u = auth.currentUser;
+
+      // Top Navbar Account State
+      document.getElementById('btnNavGoogle').style.display = u ? 'none' : 'inline-flex';
+      const navPill = document.getElementById('btnNavAccount');
+      navPill.classList.toggle('show', !!u);
+      if (u) {
+        renderAvatar(document.getElementById('navAvatar'), u);
+        document.getElementById('navAcctName').textContent = u.name;
+      }
+
+      // Stage Topbar Account State
+      renderAvatar(document.getElementById('stageAvatar'), u);
+      document.getElementById('stageAcctName').textContent = u ? u.name : '訪客模式';
+      document.getElementById('stageSsoBadge').textContent = u ? `SSO：${u.name}` : '訪客遊玩中';
+
+      // Hero Greeting & Global Stats
+      const heroPill = document.getElementById('heroSsoPill');
+      if (u) {
+        heroPill.className = 'sso-pill';
+        heroPill.textContent = `✅ Google 單一登入已啟用 · ${u.email}`;
+        document.getElementById('heroTitle').textContent = `歡迎回來，${u.name}！`;
+        document.getElementById('heroSub').textContent =
+          '您已完成全站帳號登入。現在點擊任何一款遊戲皆會自動帶入您的身份、頭像與獨立存檔，完全無須二次登入！';
+        document.getElementById('btnHeroAccount').textContent = '👤 管理全站帳號與備份';
+      } else {
+        heroPill.className = 'sso-pill guest';
+        heroPill.textContent = '🔑 訪客模式 · 登入一次即可全站通用';
+        document.getElementById('heroTitle').textContent = '歡迎來到遊戲綜合區！';
+        document.getElementById('heroSub').textContent =
+          '只需在此登入一次 Google 帳號，進入《無盡峽谷 3D：極限跑酷》以及未來新增的每一款遊戲，皆會自動帶入您的身份、頭像與獨立存檔，完全無須重複登入。';
+        document.getElementById('btnHeroAccount').textContent = '🔐 立即登入 Google 帳號';
+      }
+
+      const g1Stats = readStatsForGame('canyon_parkour_3d');
+      const liveCount = GAMES_REGISTRY.filter(g => g.status === 'live').length;
+      document.getElementById('statLiveGames').textContent = `${liveCount} 款`;
+      document.getElementById('statTotalCoins').textContent = g1Stats.coins.toLocaleString();
+      document.getElementById('statBestScore').textContent = g1Stats.bestScore.toLocaleString();
+      document.getElementById('statStarsChars').textContent = `${g1Stats.stars}★ · ${g1Stats.charsUnlocked}角`;
+
+      renderGamesGrid();
+    }
+
+    function coverArtworkSvg(gameId) {
+      if (gameId === 'canyon_parkour_3d') {
+        return `<svg class="cover-art-svg" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <polygon points="0,320 0,210 95,120 190,210 265,145 360,235 450,115 560,215 600,190 600,320" fill="rgba(124,45,18,0.55)"/>
+          <polygon points="0,320 0,245 140,185 240,250 385,170 510,255 600,220 600,320" fill="rgba(67,20,7,0.78)"/>
+          <rect x="0" y="268" width="600" height="52" fill="rgba(245,158,11,0.32)"/>
+          <circle cx="445" cy="195" r="14" fill="#fde047" opacity="0.9"/>
+          <circle cx="485" cy="180" r="14" fill="#fde047" opacity="0.9"/>
+          <circle cx="525" cy="195" r="14" fill="#fde047" opacity="0.9"/>
+        </svg>`;
+      }
+      return `<svg class="cover-art-svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <circle cx="320" cy="56" r="78" fill="rgba(255,255,255,0.06)"/>
+        <circle cx="70" cy="170" r="95" fill="rgba(255,255,255,0.04)"/>
+      </svg>`;
+    }
+
+    function renderGamesGrid() {
+      const grid = document.getElementById('gamesGrid');
+      grid.innerHTML = '';
+
+      const items = GAMES_REGISTRY.filter(g => activeFilter === 'all' || g.status === activeFilter);
+      items.forEach((g) => {
+        const isLive = g.status === 'live';
+        const stats = isLive ? readStatsForGame(g.id) : null;
+        const card = document.createElement('article');
+        card.className = 'game-card' + (isLive ? ' live' : ' soon') + (g.featured ? ' featured' : '');
+
+        const badgesHtml = `
+          <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
+          ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
+        `;
+
+        const progressHtml = isLive && stats ? `
+          <div class="game-progress-strip">
+            <div class="gp-item"><div class="gp-v" style="color:#fbbf24;">🪙 ${stats.coins}</div><div class="gp-l">帳號金幣</div></div>
+            <div class="gp-item"><div class="gp-v">${stats.bestScore.toLocaleString()}</div><div class="gp-l">最高分數</div></div>
+            <div class="gp-item"><div class="gp-v" style="color:#34d399;">${stats.stars}/${stats.maxStars}★</div><div class="gp-l">關卡星數</div></div>
+            <div class="gp-item"><div class="gp-v" style="color:#7dd3fc;">${stats.charsUnlocked}/${stats.charsTotal}</div><div class="gp-l">3D 角色</div></div>
+          </div>
+        ` : '';
+
+        const ssoNoteHtml = auth.currentUser
+          ? `<div class="sso-sync-hint">✓ 自動帶入 ${escapeHtml(auth.currentUser.name)}</div>`
+          : `<div class="sso-sync-hint guest">👤 訪客可直接開玩</div>`;
+
+        card.innerHTML = `
+          <div class="game-cover ${g.coverClass}">
+            ${coverArtworkSvg(g.id)}
+            <div class="cover-badges">${badgesHtml}</div>
+            <div class="cover-order">${escapeHtml(g.order)} · ${g.icon}</div>
+          </div>
+          <div class="game-body">
+            <div>
+              <div class="game-title-row">
+                <div class="game-title">${g.icon} ${escapeHtml(g.title)}</div>
+                <div class="game-genre">${escapeHtml(g.genre)}</div>
+              </div>
+              <p class="game-desc">${escapeHtml(g.desc)}</p>
+              <div class="game-feature-tags">
+                ${g.features.map(f => `<span class="ftag">${escapeHtml(f)}</span>`).join('')}
+              </div>
+            </div>
+            ${progressHtml}
+            <div class="game-foot">
+              ${ssoNoteHtml}
+              ${isLive
+                ? `<button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button">▶ 立即遊玩</button>`
+                : `<button class="btn-secondary btn-soon-game" type="button" style="padding:9px 14px;font-size:12.5px;">敬請期待</button>`
+              }
+            </div>
+          </div>
+        `;
+
+        const launchBtn = card.querySelector('.btn-launch-game');
+        if (launchBtn) {
+          launchBtn.addEventListener('click', () => launchGame(g.id));
+        }
+        const soonBtn = card.querySelector('.btn-soon-game');
+        if (soonBtn) {
+          soonBtn.addEventListener('click', () => {
+            showToast(`🚀《${g.title}》開發預留槽已就緒，未來新增後將自動共用同一個 Google 帳號！`);
+          });
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    // =========================================================================
+    // GAME LAUNCHER
+    // =========================================================================
+    function launchGame(gameId) {
+      const game = GAMES_REGISTRY.find(g => g.id === gameId && g.status === 'live');
+      if (!game) return;
+      activeGame = game;
+      document.getElementById('stageGameTitle').textContent = `${game.icon} ${game.title}`;
+      const stage = document.getElementById('gameStage');
+      const frame = document.getElementById('gameFrame');
+      stage.classList.add('active');
+      document.body.classList.add('in-game');
+      frame.src = game.url;
+      renderHubUI();
+    }
+
+    function exitGameToHub() {
+      activeGame = null;
+      const stage = document.getElementById('gameStage');
+      const frame = document.getElementById('gameFrame');
+      stage.classList.remove('active');
+      document.body.classList.remove('in-game');
+      frame.src = 'about:blank';
+      auth = SSO.loadAuth();
+      renderHubUI();
+    }
+
+    // =========================================================================
+    // UNIFIED AUTH MODAL
+    // =========================================================================
+    function openAuthModal(forceSwitch = false) {
+      forceSwitchAccountView = !!forceSwitch;
+      renderAuthModal();
+      document.getElementById('hubAuthModal').classList.add('open');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('hubAuthModal').classList.remove('open');
+      forceSwitchAccountView = false;
+    }
+
+    function renderAuthModal() {
+      const u = auth.currentUser;
+      const showSignedIn = !!u && !forceSwitchAccountView;
+      document.getElementById('hubAuthSignedIn').style.display = showSignedIn ? 'block' : 'none';
+      document.getElementById('hubAuthSignIn').style.display = showSignedIn ? 'none' : 'block';
+
+      if (showSignedIn) {
+        renderAvatar(document.getElementById('hubProfileAvatar'), u);
+        document.getElementById('hubProfileName').textContent = u.name;
+        document.getElementById('hubProfileEmail').textContent = u.email;
+        document.getElementById('hubProviderBadge').textContent =
+          u.provider === 'google_gis' ? 'Google OAuth 已驗證' : 'Google 全站通行';
+      } else {
+        const cidInput = document.getElementById('hubGisClientId');
+        if (cidInput) cidInput.value = SSO.getClientId(auth, DEFAULT_GOOGLE_CLIENT_ID);
+        renderHubGisButton();
+
+        const wrap = document.getElementById('hubSavedAccountsWrap');
+        const list = document.getElementById('hubSavedAccountsList');
+        list.innerHTML = '';
+        if (auth.savedAccounts.length > 0) {
+          wrap.style.display = 'block';
+          auth.savedAccounts.forEach((acct) => {
+            const isCur = u && u.uid === acct.uid;
+            const item = document.createElement('div');
+            item.className = 'auth-acct-item';
+            item.innerHTML = `
+              <span class="g-avatar" style="background:${acct.color || SSO.pickAvatarColor(acct.email)}">${escapeHtml((acct.name || acct.email).charAt(0).toUpperCase())}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:800;color:#fff;">${escapeHtml(acct.name)} ${isCur ? '<span style="color:#6ee7b7;font-size:11px;">(目前)</span>' : ''}</div>
+                <div style="font-size:11px;color:var(--muted);">${escapeHtml(acct.email)}</div>
+              </div>
+              <span style="font-size:11.5px;font-weight:700;color:#93c5fd;">${isCur ? '使用中' : '切換'}</span>
+            `;
+            if (acct.picture) renderAvatar(item.querySelector('.g-avatar'), acct);
+            item.addEventListener('click', () => signInAccount(acct, false));
+            list.appendChild(item);
+          });
+        } else {
+          wrap.style.display = 'none';
+        }
+      }
+    }
+
+    // =========================================================================
+    // CROSS-IFRAME & CROSS-TAB SSO BRIDGE
+    // =========================================================================
+    window.addEventListener('message', (e) => {
+      const d = e && e.data;
+      if (!d || typeof d !== 'object') return;
+      if (d.type === 'ARCADE_GAME_READY') {
+        if (d.stats && d.gameId) {
+          const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
+          liveStatsCache[`${d.gameId}::${uid}`] = d.stats;
+        }
+        pushSsoToActiveGame();
+      } else if (d.type === 'ARCADE_GAME_STATS' && d.gameId && d.stats) {
+        const uid = d.uid || (auth.currentUser ? auth.currentUser.uid : 'guest');
+        liveStatsCache[`${d.gameId}::${uid}`] = d.stats;
+        if (!activeGame) renderHubUI();
+      } else if (d.type === 'ARCADE_SSO_SYNC' && d.source !== 'arcade_hub' && d.auth) {
+        auth = SSO.saveAuth(d.auth);
+        renderHubUI();
+      } else if (d.type === 'ARCADE_OPEN_AUTH') {
+        openAuthModal(false);
+      }
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === SSO.SSO_STORAGE_KEY && e.newValue) {
+        auth = SSO.loadAuth();
+        pushSsoToActiveGame();
+        renderHubUI();
+      }
+    });
+
+    // =========================================================================
+    // EVENT LISTENERS
+    // =========================================================================
+    document.getElementById('btnNavGoogle').addEventListener('click', () => openAuthModal(false));
+    document.getElementById('btnNavAccount').addEventListener('click', () => openAuthModal(false));
+    document.getElementById('btnHeroAccount').addEventListener('click', () => openAuthModal(false));
+    document.getElementById('btnStageAccount').addEventListener('click', () => openAuthModal(false));
+    document.getElementById('btnCloseHubAuth').addEventListener('click', closeAuthModal);
+    document.getElementById('hubAuthModal').addEventListener('click', (e) => {
+      if (e.target.id === 'hubAuthModal') closeAuthModal();
+    });
+
+    document.getElementById('btnHeroPlayFirst').addEventListener('click', () => launchGame('canyon_parkour_3d'));
+    document.getElementById('btnBackToHub').addEventListener('click', exitGameToHub);
+
+    document.getElementById('btnStageFullscreen').addEventListener('click', () => {
+      const stage = document.getElementById('gameStage');
+      if (!document.fullscreenElement) {
+        stage.requestFullscreen && stage.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen && document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    document.getElementById('btnHubSwitchView').addEventListener('click', () => openAuthModal(true));
+    document.getElementById('btnHubSignOut').addEventListener('click', signOutAccount);
+
+    document.getElementById('btnHubDemoLogin').addEventListener('click', () => {
+      const emailEl = document.getElementById('hubDemoEmail');
+      const nameEl = document.getElementById('hubDemoName');
+      const chkEl = document.getElementById('hubChkInherit');
+      let email = emailEl ? emailEl.value.trim() : '';
+      let name = nameEl ? nameEl.value.trim() : '';
+      if (!email) email = 'gamer@gmail.com';
+      else if (!email.includes('@')) email += '@gmail.com';
+      if (!name) name = email.split('@')[0].slice(0, 16) || 'Google 玩家';
+      signInAccount({ email, name, provider: 'google_demo' }, chkEl ? chkEl.checked : true);
+    });
+
+    document.getElementById('btnHubSaveGis').addEventListener('click', () => {
+      const val = document.getElementById('hubGisClientId').value.trim();
+      if (!val || !val.includes('.apps.googleusercontent.com')) {
+        showToast('⚠️ 請輸入正確的 Google OAuth Client ID（結尾為 .apps.googleusercontent.com）');
+        return;
+      }
+      auth.clientId = val;
+      auth = SSO.saveAuth(auth);
+      gisRenderedCid = '';
+      renderHubGisButton();
+      pushSsoToActiveGame();
+      showToast('✅ 已儲存全站 Google OAuth Client ID');
+    });
+
+    document.getElementById('btnHubClearGis').addEventListener('click', () => {
+      auth.clientId = '';
+      auth = SSO.saveAuth(auth);
+      gisRenderedCid = '';
+      document.getElementById('hubGisClientId').value = '';
+      renderHubGisButton();
+      pushSsoToActiveGame();
+      showToast('🗑️ 已清除全站 Client ID');
+    });
+
+    document.getElementById('btnHubExportAll').addEventListener('click', () => {
+      const saves = {};
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        const data = SSO.readGameSave(g.id, auth.currentUser);
+        if (data) saves[g.id] = data;
+      });
+      const payload = JSON.stringify({
+        hubVersion: 1,
+        exportedAt: new Date().toISOString(),
+        account: auth.currentUser ? { email: auth.currentUser.email, name: auth.currentUser.name } : null,
+        games: saves
+      });
+      const box = document.getElementById('hubBackupBox');
+      box.value = payload;
+      box.select();
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(payload).catch(() => {});
+        }
+      } catch (e) { /* ignore */ }
+      showToast('📤 已匯出全站所有遊戲存檔備份碼！');
+    });
+
+    document.getElementById('btnHubImportAll').addEventListener('click', () => {
+      const box = document.getElementById('hubBackupBox');
+      if (!box.value.trim()) {
+        showToast('⚠️ 請先貼上全站存檔 JSON 備份碼');
+        return;
+      }
+      try {
+        const parsed = JSON.parse(box.value.trim());
+        const gamesMap = parsed && parsed.games && typeof parsed.games === 'object' ? parsed.games : null;
+        if (!gamesMap) throw new Error('invalid');
+        let restored = 0;
+        Object.keys(gamesMap).forEach((gid) => {
+          if (gamesMap[gid] && typeof gamesMap[gid] === 'object') {
+            SSO.writeGameSave(gid, auth.currentUser, gamesMap[gid]);
+            restored++;
+          }
+        });
+        pushSsoToActiveGame();
+        renderHubUI();
+        showToast(`📥 成功還原 ${restored} 款遊戲的帳號存檔！`);
+      } catch (e) {
+        showToast('⚠️ 備份碼格式不正確，無法還原');
+      }
+    });
+
+    document.getElementById('filterPills').addEventListener('click', (e) => {
+      const btn = e.target.closest('.fpill');
+      if (!btn) return;
+      activeFilter = btn.dataset.filter || 'all';
+      document.querySelectorAll('.fpill').forEach(b => b.classList.toggle('active', b === btn));
+      renderGamesGrid();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape' && document.getElementById('hubAuthModal').classList.contains('open')) {
+        closeAuthModal();
+      }
+    });
+
+    // Boot Hub
+    renderHubUI();
+  })();
+  </script>
+</body>
+</html>
