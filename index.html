@@ -1246,8 +1246,8 @@
         coverClass: 'cover-canyon',
         itemLabel: '3D 角色',
         badges: ['3D WebGL', '支援手機', '原創 BGM'],
-        desc: '穿梭 5 大動態日夜光影 3D 峽谷！內含 8 位 3D 角色（含竈門炭治郎、宵崎奏專屬大招）、磁鐵/無敵衝刺/彈跳墊、空中魔王戰、任務系統、光影分身競速與無盡極速模式。',
-        features: ['8 位 3D 角色大招', '5 大日夜循環場景', '空中魔王戰', '無盡極速模式', '光影分身競速']
+        desc: '穿梭 5 大動態日夜光影 3D 峽谷！內含 12 位 3D 角色（含瑪利歐、時透無一郎、哆啦A夢、皮卡丘、炭治郎、宵崎奏專屬大招）、永久能力升級、空中魔王戰、光影分身競速與無盡極速模式。',
+        features: ['12 位 3D 角色大招', '5 大日夜循環場景', '空中魔王戰', '無盡極速模式', '永久強化工坊']
       },
       {
         id: 'star_blaster_3d',
@@ -1352,7 +1352,7 @@
       const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
       const cacheKey = `${gameId}::${uid}`;
       const raw = SSO.readGameSave(gameId, auth.currentUser);
-      const defaultTotal = gameId === 'canyon_parkour_3d' ? 8 : 4;
+      const defaultTotal = gameId === 'canyon_parkour_3d' ? 12 : 4;
       if (raw && typeof raw === 'object') {
         let stars = 0;
         if (gameId === 'canyon_parkour_3d') {
