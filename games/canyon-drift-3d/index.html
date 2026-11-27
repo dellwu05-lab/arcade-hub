@@ -878,19 +878,20 @@
         ctx.fillStyle = alt ? bm.ground1 : bm.ground2;
         ctx.fillRect(0, p1.y, W, p2.y - p1.y + 1.5);
 
+        const y2 = p2.y + 0.8;
         // Rumble shoulder
         const r1 = p1.w * 1.15, r2 = p2.w * 1.15;
         ctx.fillStyle = alt ? bm.rumble1 : bm.rumble2;
         ctx.beginPath();
         ctx.moveTo(p1.x - r1, p1.y); ctx.lineTo(p1.x + r1, p1.y);
-        ctx.lineTo(p2.x + r2, p2.y); ctx.lineTo(p2.x - r2, p2.y);
+        ctx.lineTo(p2.x + r2, y2); ctx.lineTo(p2.x - r2, y2);
         ctx.closePath(); ctx.fill();
 
         // Road surface
         ctx.fillStyle = alt ? bm.road1 : bm.road2;
         ctx.beginPath();
         ctx.moveTo(p1.x - p1.w, p1.y); ctx.lineTo(p1.x + p1.w, p1.y);
-        ctx.lineTo(p2.x + p2.w, p2.y); ctx.lineTo(p2.x - p2.w, p2.y);
+        ctx.lineTo(p2.x + p2.w, y2); ctx.lineTo(p2.x - p2.w, y2);
         ctx.closePath(); ctx.fill();
 
         // Lane dashes (batched single path)
