@@ -413,12 +413,18 @@
     // 2. SYNTH ARCADE BGM & PITCH-CLIMBING COMBO SFX
     // =========================================================================
     const SFX = {
-      ctx: null, muted: false, bgmOn: true, timer: null, step: 0,
+      ctx: null, muted: false, bgmOn: true, timer: null, step: 0, lastAt: {},
       ensure() {
         if (this.muted) return null;
         if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this.ctx = new AC(); }
         if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
         return this.ctx;
+      },
+      canPlay(tag, minMs = 35) {
+        const now = performance.now();
+        if (now - (this.lastAt[tag] || 0) < minMs) return false;
+        this.lastAt[tag] = now;
+        return true;
       },
       tone(type, f0, f1, dur, vol = 0.08) {
         const ctx = this.ensure(); if (!ctx) return;
@@ -429,11 +435,11 @@
         g.gain.setValueAtTime(vol, now); g.gain.exponentialRampToValueAtTime(0.001, now + dur);
         o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + dur + 0.02);
       },
-      paddle() { this.tone('triangle', 320, 480, 0.07, 0.07); },
-      brick(combo) { const f = Math.min(1150, 340 + combo * 42); this.tone('sine', f, f * 1.18, 0.07, 0.06); },
-      bomb() { this.tone('sawtooth', 160, 48, 0.22, 0.11); },
-      coin() { this.tone('sine', 920, 1420, 0.08, 0.06); },
-      power() { [523, 659, 784].forEach((f, i) => setTimeout(() => this.tone('triangle', f, f * 1.06, 0.1, 0.07), i * 50)); },
+      paddle() { if (this.canPlay('pad', 40)) this.tone('triangle', 320, 480, 0.07, 0.07); },
+      brick(combo) { if (this.canPlay('brk', 34)) { const f = Math.min(1150, 340 + combo * 42); this.tone('sine', f, f * 1.18, 0.07, 0.055); } },
+      bomb() { if (this.canPlay('bmb', 70)) this.tone('sawtooth', 160, 48, 0.22, 0.10); },
+      coin() { if (this.canPlay('coin', 45)) this.tone('sine', 920, 1420, 0.08, 0.06); },
+      power() { if (this.canPlay('pwr', 90)) [523, 659, 784].forEach((f, i) => setTimeout(() => this.tone('triangle', f, f * 1.06, 0.1, 0.07), i * 50)); },
       lose() { this.tone('sawtooth', 220, 80, 0.25, 0.09); },
       ult() { this.tone('sawtooth', 140, 740, 0.34, 0.12); setTimeout(() => this.tone('triangle', 740, 220, 0.36, 0.10), 110); },
       startBgm() {
@@ -513,13 +519,16 @@
       el.textContent = msg; el.classList.add('show');
       clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
     }
-    function addParticles(x, y, col, n = 10, spd = 220) {
-      for (let i = 0; i < n; i++) {
+    function addParticles(x, y, col, n = 8, spd = 200) {
+      const room = Math.max(0, 110 - st.particles.length);
+      const cnt = Math.min(n, room);
+      for (let i = 0; i < cnt; i++) {
         const a = Math.random() * Math.PI * 2, v = (0.3 + Math.random() * 0.8) * spd;
-        st.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 2.5 + Math.random() * 3.5, col, life: 0.35 + Math.random() * 0.25 });
+        st.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 2.5 + Math.random() * 3.5, col, life: 0.32 + Math.random() * 0.22 });
       }
     }
     function addFloat(x, y, txt, col = '#fde047', size = 15) {
+      if (st.floats.length >= 20) st.floats.shift();
       st.floats.push({ x, y, txt, col, size, life: 0.82 });
     }
 
@@ -538,12 +547,11 @@
       const topY = ARENA.y + 34;
 
       if (isBoss) {
-        // Giant Moving Boss Core + Escort Shield Bricks!
         const bossW = Math.min(240, ARENA.w * 0.34);
         const bossHp = Math.round(14 + stageNum * 6);
         st.bricks.push({
           x: ARENA.x + (ARENA.w - bossW) / 2, y: topY + 6, w: bossW, h: 48,
-          hp: bossHp, maxHp: bossHp, col: '#f43f5e', kind: 'boss', dir: 1, spd: 115 + stageNum * 10
+          hp: bossHp, maxHp: bossHp, col: '#f43f5e', kind: 'boss', dir: 1, spd: 115 + stageNum * 10, dead: false
         });
         for (let r = 0; r < 3; r++) {
           for (let c = 0; c < cols; c++) {
@@ -552,7 +560,7 @@
             const hp = kind === 'normal' ? (1 + Math.floor(stageNum / 3)) : 1;
             st.bricks.push({
               x: ARENA.x + gap + c * (bw + gap), y: topY + 72 + r * (bh + gap),
-              w: bw, h: bh, hp, maxHp: hp,
+              w: bw, h: bh, hp, maxHp: hp, dead: false,
               col: kind === 'gold' ? '#fbbf24' : (kind === 'bomb' ? '#ef4444' : ROW_COLORS[(r + stageNum) % ROW_COLORS.length]),
               kind
             });
@@ -573,7 +581,7 @@
             const hp = kind === 'normal' ? baseHp : 1;
             st.bricks.push({
               x: ARENA.x + gap + c * (bw + gap), y: topY + r * (bh + gap),
-              w: bw, h: bh, hp, maxHp: hp,
+              w: bw, h: bh, hp, maxHp: hp, dead: false,
               col: kind === 'gold' ? '#fbbf24' : (kind === 'bomb' ? '#ef4444' : ROW_COLORS[(r + stageNum) % ROW_COLORS.length]),
               kind
             });
@@ -583,8 +591,11 @@
     }
 
     function spawnBall(x, y, ang) {
+      if (st.balls.length >= 9) return;
       const spd = Math.min(620, 420 + st.stage * 18);
-      st.balls.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8.5, trail: [] });
+      let vx = Math.cos(ang) * spd, vy = Math.sin(ang) * spd;
+      if (Math.abs(vy) < 130) vy = vy < 0 ? -130 : 130;
+      st.balls.push({ x, y, vx, vy, r: 8.5, trail: [] });
     }
 
     function getBallDamage() {
@@ -625,6 +636,64 @@
       showToast(`${hero.icon} 【${hero.name}】出戰！專屬破壁奧義已 100% 就緒！`);
     }
 
+    // Safe, non-recursive brick damage queue (eliminates bomb-chain splice crashes forever!)
+    function applyBrickHits(initialHits) {
+      const queue = initialHits.slice();
+      let safety = 0;
+      const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
+      const syn = getHeroSynergy();
+      let needsCompact = false;
+
+      while (queue.length > 0 && safety < 240) {
+        safety++;
+        const { brick: b, dmg, fromUlt } = queue.shift();
+        if (!b || b.dead) continue;
+        b.hp -= dmg;
+        const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+        if (b.hp <= 0) {
+          b.dead = true;
+          needsCompact = true;
+          st.combo++;
+          const pts = Math.round((b.kind === 'boss' ? 600 : (b.kind === 'gold' ? 90 : 40)) * (1 + Math.min(20, st.combo) * 0.08));
+          st.score += pts;
+          if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + (b.kind === 'boss' ? 30 : 3.2) * (1 + (u.ult || 0) * 0.15) * syn.ultMult);
+          addParticles(cx, cy, b.col, b.kind === 'boss' ? 24 : 7, b.kind === 'boss' ? 300 : 180);
+
+          if (b.kind === 'gold') {
+            const c = Math.max(1, Math.round(2 * getCoinMult()));
+            st.runCoins += c; SFX.coin();
+            addFloat(cx, cy, `+${c}🪙`, '#fde047', 14);
+          } else if (b.kind === 'bomb') {
+            SFX.bomb(); st.shake = Math.max(st.shake, 0.25);
+            if (st.waves.length < 10) st.waves.push({ x: cx, y: cy, r: 10, maxR: 135, col: '#fb7185', alpha: 0.95 });
+            for (let j = 0; j < st.bricks.length; j++) {
+              const nb = st.bricks[j];
+              if (nb && !nb.dead && Math.hypot((nb.x + nb.w / 2) - cx, (nb.y + nb.h / 2) - cy) < 135) {
+                queue.push({ brick: nb, dmg: dmg * 2.2, fromUlt: true });
+              }
+            }
+          } else if (b.kind === 'boss') {
+            save.bossesDefeated++;
+            const c = Math.max(12, Math.round((14 + st.stage * 2) * getCoinMult()));
+            st.runCoins += c; SFX.bomb(); st.shake = Math.max(st.shake, 0.42);
+            addFloat(cx, cy, `👑 BOSS 擊破 +${c}🪙`, '#fde047', 19);
+            showToast(`🏆 擊破魔王磚牆！+${pts} 分 +${c} 金幣！`);
+          } else {
+            SFX.brick(st.combo);
+          }
+
+          if (b.kind !== 'gold' && st.drops.length < 14 && Math.random() < 0.15) {
+            const pool = ['multi', 'fire', 'laser', 'wide', 'barrier', 'coin'];
+            st.drops.push({ x: cx, y: cy, vy: 185, kind: pool[Math.floor(Math.random() * pool.length)] });
+          }
+        } else {
+          SFX.brick(Math.min(5, st.combo));
+          addParticles(cx, cy, '#ffffff', 3, 120);
+        }
+      }
+      if (needsCompact) st.bricks = st.bricks.filter(b => !b.dead);
+    }
+
     function activateUltimate() {
       if (st.mode !== 'playing') return;
       const hero = getHero();
@@ -633,7 +702,7 @@
         return;
       }
       st.ultCharge = 0;
-      st.shake = 0.42;
+      st.shake = 0.40;
       SFX.ult();
 
       const fl = document.getElementById('ultFlash');
@@ -642,11 +711,10 @@
         fl.classList.add('boom');
         requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove('boom')));
       }
-      st.waves.push({ x: st.pad.x, y: st.pad.y, r: 20, maxR: ARENA.w * 0.72, col: hero.color, alpha: 1 });
+      if (st.waves.length < 10) st.waves.push({ x: st.pad.x, y: st.pad.y, r: 20, maxR: ARENA.w * 0.72, col: hero.color, alpha: 1 });
       addFloat(ARENA.x + ARENA.w / 2, ARENA.y + ARENA.h * 0.52, `${hero.icon} ${hero.ultName}！`, '#fde047', 22);
       showToast(`${hero.icon} 奧義發動：【${hero.ultName}】！`);
 
-      // Hero-specific Ultimate effects!
       const k = hero.ultKind;
       if (k === 'multi' || k === 'gojo') {
         const ref = st.balls[0] || { x: st.pad.x, y: st.pad.y - 20 };
@@ -657,63 +725,16 @@
       if (k === 'laser' || k === 'gojo') st.buffs.laser = Math.max(st.buffs.laser, 9.0);
       if (k === 'shield' || k === 'gojo') { st.buffs.barrier = Math.max(st.buffs.barrier, 12.0); st.buffs.wide = Math.max(st.buffs.wide, 10.0); }
 
-      // Direct elemental blast damage to bricks!
       const blastDmg = getBallDamage() * (k === 'gojo' ? 5.0 : (k === 'blast' ? 3.8 : 2.2));
-      for (let i = st.bricks.length - 1; i >= 0; i--) {
+      const targets = [];
+      for (let i = 0; i < st.bricks.length; i++) {
         const b = st.bricks[i];
-        if (k === 'gojo' || k === 'blast' || Math.random() < 0.55) {
-          hitBrick(i, blastDmg, true);
+        if (!b.dead && (k === 'gojo' || k === 'blast' || Math.random() < 0.55)) {
+          targets.push({ brick: b, dmg: blastDmg, fromUlt: true });
         }
       }
+      applyBrickHits(targets);
       updateHudUI();
-    }
-
-    function hitBrick(idx, dmg, fromUlt = false) {
-      const b = st.bricks[idx];
-      if (!b) return;
-      b.hp -= dmg;
-      const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-      if (b.hp <= 0) {
-        st.bricks.splice(idx, 1);
-        st.combo++;
-        const pts = Math.round((b.kind === 'boss' ? 600 : (b.kind === 'gold' ? 90 : 40)) * (1 + Math.min(20, st.combo) * 0.08));
-        st.score += pts;
-        const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
-        const syn = getHeroSynergy();
-        if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + (b.kind === 'boss' ? 30 : 3.2) * (1 + (u.ult || 0) * 0.15) * syn.ultMult);
-        addParticles(cx, cy, b.col, b.kind === 'boss' ? 34 : 10, b.kind === 'boss' ? 320 : 190);
-
-        if (b.kind === 'gold') {
-          const c = Math.max(1, Math.round(2 * getCoinMult()));
-          st.runCoins += c; SFX.coin();
-          addFloat(cx, cy, `+${c}🪙`, '#fde047', 14);
-        } else if (b.kind === 'bomb') {
-          SFX.bomb(); st.shake = 0.25;
-          st.waves.push({ x: cx, y: cy, r: 10, maxR: 135, col: '#fb7185', alpha: 0.95 });
-          for (let j = st.bricks.length - 1; j >= 0; j--) {
-            const nb = st.bricks[j];
-            if (Math.hypot((nb.x + nb.w / 2) - cx, (nb.y + nb.h / 2) - cy) < 135) hitBrick(j, dmg * 2.2, true);
-          }
-        } else if (b.kind === 'boss') {
-          save.bossesDefeated++;
-          const c = Math.max(12, Math.round((14 + st.stage * 2) * getCoinMult()));
-          st.runCoins += c; SFX.bomb(); st.shake = 0.45;
-          addFloat(cx, cy, `👑 BOSS 擊破 +${c}🪙`, '#fde047', 19);
-          showToast(`🏆 擊破魔王磚牆！+${pts} 分 +${c} 金幣！`);
-        } else {
-          SFX.brick(st.combo);
-        }
-
-        // Power-up drops
-        if (b.kind !== 'gold' && Math.random() < 0.15) {
-          const pool = ['multi', 'fire', 'laser', 'wide', 'barrier', 'coin'];
-          const pk = pool[Math.floor(Math.random() * pool.length)];
-          st.drops.push({ x: cx, y: cy, vy: 185, kind: pk });
-        }
-      } else {
-        SFX.brick(Math.min(5, st.combo));
-        addParticles(cx, cy, '#ffffff', 4, 120);
-      }
     }
 
     function nextStage() {
@@ -725,6 +746,7 @@
       SFX.power();
       buildStage(st.stage);
       st.balls = [];
+      st.lasers = [];
       spawnBall(st.pad.x, st.pad.y - 18, -Math.PI / 2 + (Math.random() - 0.5) * 0.45);
       showToast(`🎉 通關獎勵 +${clearCoins} 🪙 ＋ ❤️ 生命回復！進入第 ${st.stage} 關`);
     }
@@ -757,104 +779,108 @@
       st.pad.w = st.buffs.wide > 0 ? Math.min(ARENA.w * 0.42, baseW * 1.38) : baseW;
       st.pad.y = ARENA.y + ARENA.h - 24;
 
-      // Keyboard paddle movement
       const dir = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
-      if (dir !== 0) {
-        st.pad.x += dir * 640 * dt;
-      }
+      if (dir !== 0) st.pad.x += dir * 640 * dt;
       const halfP = st.pad.w * 0.5;
       st.pad.x = Math.max(ARENA.x + halfP, Math.min(ARENA.x + ARENA.w - halfP, st.pad.x));
 
-      // Buff timers + Auto Laser Cannons
       for (const k in st.buffs) if (st.buffs[k] > 0) st.buffs[k] = Math.max(0, st.buffs[k] - dt);
       st.ultCharge = Math.min(100, st.ultCharge + dt * 2.4 * syn.ultMult);
 
       if (st.buffs.laser > 0) {
         st.laserCd -= dt;
-        if (st.laserCd <= 0) {
+        if (st.laserCd <= 0 && st.lasers.length < 30) {
           st.laserCd = 0.24;
           st.lasers.push({ x: st.pad.x - halfP + 10, y: st.pad.y - 10, vy: -720 });
           st.lasers.push({ x: st.pad.x + halfP - 10, y: st.pad.y - 10, vy: -720 });
-          SFX.tone('square', 680, 960, 0.04, 0.025);
+          if (SFX.canPlay('lsr', 90)) SFX.tone('square', 680, 960, 0.04, 0.022);
         }
       }
 
-      // Move Boss Brick
       for (const b of st.bricks) {
-        if (b.kind === 'boss') {
+        if (b.kind === 'boss' && !b.dead) {
           b.x += b.dir * b.spd * dt;
           if (b.x < ARENA.x + 12) { b.x = ARENA.x + 12; b.dir = 1; }
           if (b.x + b.w > ARENA.x + ARENA.w - 12) { b.x = ARENA.x + ARENA.w - 12 - b.w; b.dir = -1; }
         }
       }
 
-      // Update Lasers
+      // Collect all laser & ball hits safely, then process in one batch!
       const dmg = getBallDamage();
+      const pendingHits = [];
+
       for (let i = st.lasers.length - 1; i >= 0; i--) {
         const l = st.lasers[i];
         l.y += l.vy * dt;
         let hit = false;
         for (let j = st.bricks.length - 1; j >= 0; j--) {
           const b = st.bricks[j];
-          if (l.x >= b.x && l.x <= b.x + b.w && l.y >= b.y && l.y <= b.y + b.h) {
-            hitBrick(j, dmg * 0.75); hit = true; break;
+          if (!b.dead && l.x >= b.x && l.x <= b.x + b.w && l.y >= b.y && l.y <= b.y + b.h) {
+            pendingHits.push({ brick: b, dmg: dmg * 0.75, fromUlt: false });
+            hit = true; break;
           }
         }
         if (hit || l.y < ARENA.y) st.lasers.splice(i, 1);
       }
 
-      // Update Balls
       for (let i = st.balls.length - 1; i >= 0; i--) {
         const bl = st.balls[i];
         bl.trail.push({ x: bl.x, y: bl.y });
-        if (bl.trail.length > 8) bl.trail.shift();
+        if (bl.trail.length > 7) bl.trail.shift();
         bl.x += bl.vx * dt;
         bl.y += bl.vy * dt;
 
-        // Walls
+        // Walls + anti-horizontal-stuck guard
         if (bl.x - bl.r < ARENA.x) { bl.x = ARENA.x + bl.r; bl.vx = Math.abs(bl.vx); }
         if (bl.x + bl.r > ARENA.x + ARENA.w) { bl.x = ARENA.x + ARENA.w - bl.r; bl.vx = -Math.abs(bl.vx); }
         if (bl.y - bl.r < ARENA.y) { bl.y = ARENA.y + bl.r; bl.vy = Math.abs(bl.vy); }
+        if (Math.abs(bl.vy) < 115) bl.vy = bl.vy < 0 ? -115 : 115;
 
-        // Safety Energy Barrier
         if (st.buffs.barrier > 0 && bl.y + bl.r > ARENA.y + ARENA.h - 4) {
           bl.y = ARENA.y + ARENA.h - 4 - bl.r;
           bl.vy = -Math.abs(bl.vy);
           SFX.paddle();
         }
 
-        // Paddle Bounce
         if (bl.vy > 0 && bl.y + bl.r >= st.pad.y - st.pad.h / 2 && bl.y - bl.r <= st.pad.y + st.pad.h / 2 &&
             bl.x >= st.pad.x - halfP - bl.r && bl.x <= st.pad.x + halfP + bl.r) {
-          const rel = Math.max(-0.92, Math.min(0.92, (bl.x - st.pad.x) / halfP));
-          const spd = Math.min(680, Math.hypot(bl.vx, bl.vy) * 1.015);
-          const ang = -Math.PI / 2 + rel * 1.12;
+          const rel = Math.max(-0.90, Math.min(0.90, (bl.x - st.pad.x) / halfP));
+          const spd = Math.min(660, Math.hypot(bl.vx, bl.vy) * 1.012);
+          const ang = -Math.PI / 2 + rel * 1.08;
           bl.vx = Math.cos(ang) * spd;
           bl.vy = Math.sin(ang) * spd;
           bl.y = st.pad.y - st.pad.h / 2 - bl.r;
           st.combo = 0;
           SFX.paddle();
-          addParticles(bl.x, st.pad.y - 6, hero.accent, 6, 130);
+          addParticles(bl.x, st.pad.y - 6, hero.accent, 5, 130);
         }
 
-        // Brick Collisions
         for (let j = st.bricks.length - 1; j >= 0; j--) {
           const b = st.bricks[j];
+          if (b.dead) continue;
           const nx = Math.max(b.x, Math.min(bl.x, b.x + b.w));
           const ny = Math.max(b.y, Math.min(bl.y, b.y + b.h));
           const dx = bl.x - nx, dy = bl.y - ny;
           if (dx * dx + dy * dy <= bl.r * bl.r) {
             if (st.buffs.fire <= 0 || b.kind === 'boss') {
-              if (Math.abs(dx) > Math.abs(dy)) bl.vx = -bl.vx; else bl.vy = -bl.vy;
+              if (Math.abs(dx) > Math.abs(dy)) {
+                bl.vx = dx >= 0 ? Math.abs(bl.vx) : -Math.abs(bl.vx);
+              } else {
+                bl.vy = dy >= 0 ? Math.abs(bl.vy) : -Math.abs(bl.vy);
+              }
+              if (b.kind === 'boss') {
+                bl.y = bl.y > b.y + b.h / 2 ? (b.y + b.h + bl.r + 2) : (b.y - bl.r - 2);
+              }
             }
-            hitBrick(j, dmg);
+            pendingHits.push({ brick: b, dmg, fromUlt: false });
             break;
           }
         }
 
-        // Lost Ball
         if (bl.y - bl.r > ARENA.y + ARENA.h + 18) st.balls.splice(i, 1);
       }
+
+      if (pendingHits.length > 0) applyBrickHits(pendingHits);
 
       if (st.balls.length === 0) {
         st.lives--;
@@ -873,7 +899,7 @@
           st.drops.splice(i, 1);
           SFX.power();
           if (d.kind === 'multi') {
-            const cur = st.balls.slice(0, 3);
+            const cur = st.balls.slice(0, 2);
             cur.forEach(b => { spawnBall(b.x, b.y, -Math.PI * 0.35); spawnBall(b.x, b.y, -Math.PI * 0.65); });
             addFloat(st.pad.x, st.pad.y - 24, '⚡ 三球分裂！', '#38bdf8', 16);
           } else if (d.kind === 'fire') { st.buffs.fire = 7.5; addFloat(st.pad.x, st.pad.y - 24, '🔥 火球貫穿 7.5s!', '#fb923c', 16); }
@@ -886,10 +912,8 @@
         if (d.y > ARENA.y + ARENA.h + 24) st.drops.splice(i, 1);
       }
 
-      // Stage Clear check
       if (st.bricks.length === 0) nextStage();
 
-      // VFX timers
       for (let i = st.particles.length - 1; i >= 0; i--) {
         const p = st.particles[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.95; p.vy *= 0.95; p.life -= dt;
         if (p.life <= 0) st.particles.splice(i, 1);
@@ -1216,11 +1240,15 @@
 
     let last = performance.now();
     function loop(now) {
-      const dt = Math.min(0.035, (now - last) / 1000);
-      last = now;
-      update(dt);
-      render();
       requestAnimationFrame(loop);
+      const dt = Math.min(0.035, Math.max(0, (now - last) / 1000));
+      last = now;
+      try {
+        update(dt);
+        render();
+      } catch (err) {
+        console.error('BrickBreaker loop error:', err);
+      }
     }
     requestAnimationFrame(loop);
   })();
