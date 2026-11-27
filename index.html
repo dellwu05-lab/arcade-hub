@@ -535,6 +535,12 @@
         radial-gradient(circle at 25% 75%, rgba(236, 72, 153, 0.42), transparent 48%),
         linear-gradient(135deg, #060b24 0%, #0f172a 50%, #3b0764 100%);
     }
+    .cover-slash {
+      background:
+        radial-gradient(circle at 68% 32%, rgba(244, 63, 94, 0.50), transparent 50%),
+        radial-gradient(circle at 22% 72%, rgba(251, 146, 60, 0.44), transparent 48%),
+        linear-gradient(135deg, #11061c 0%, #2a0a24 52%, #450a0a 100%);
+    }
 
     .cover-art-svg {
       position: absolute;
@@ -1042,7 +1048,7 @@
         </div>
         <div class="gstat-box">
           <div class="gstat-label">已收錄可玩遊戲</div>
-          <div class="gstat-val cyan" id="statLiveGames">6 款</div>
+          <div class="gstat-val cyan" id="statLiveGames">7 款</div>
         </div>
         <div class="gstat-box">
           <div class="gstat-label">全站累積金幣</div>
@@ -1054,7 +1060,7 @@
         </div>
         <div class="gstat-box">
           <div class="gstat-label">全站英雄圖鑑 / 強化</div>
-          <div class="gstat-val green" id="statStarsChars">6/80 英雄 · ⚡Lv.0</div>
+          <div class="gstat-val green" id="statStarsChars">7/91 英雄 · ⚡Lv.0</div>
         </div>
       </div>
     </section>
@@ -1063,8 +1069,8 @@
     <div class="sec-head">
       <h2>🕹️ 精選遊戲館</h2>
       <div class="filter-pills" id="filterPills">
-        <button class="fpill active" data-filter="all" type="button">全部遊戲 (6)</button>
-        <button class="fpill" data-filter="action" type="button">動作 / 射擊 (3)</button>
+        <button class="fpill active" data-filter="all" type="button">全部遊戲 (7)</button>
+        <button class="fpill" data-filter="action" type="button">動作 / 射擊 (4)</button>
         <button class="fpill" data-filter="arcade" type="button">益智 / 競速 (3)</button>
       </div>
     </div>
@@ -1219,13 +1225,14 @@
 
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">💰 中獎金幣匯入目標：</div>
       <div class="spin-targets" id="spinTargets">
-        <button class="starget-btn active" data-target="all" type="button">🌐 6 款遊戲均分</button>
+        <button class="starget-btn active" data-target="all" type="button">🌐 7 款遊戲均分</button>
         <button class="starget-btn" data-target="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
         <button class="starget-btn" data-target="star_blaster_3d" type="button">🚀 射擊</button>
         <button class="starget-btn" data-target="neon_blocks_3d" type="button">🧩 方塊</button>
         <button class="starget-btn" data-target="canyon_drift_3d" type="button">🏎️ 漂移</button>
         <button class="starget-btn" data-target="hero_arena_3d" type="button">⚔️ 無雙</button>
         <button class="starget-btn" data-target="brick_breaker_3d" type="button">🧱 破壁</button>
+        <button class="starget-btn" data-target="hero_slash_3d" type="button">🗡️ 斬擊</button>
       </div>
 
       <button class="btn-primary" id="btnDoSpin" type="button" style="width:100%;justify-content:center;padding:13px 18px;font-size:15px;">
@@ -1342,6 +1349,22 @@
         badges: ['NEW 新上架', '多球＋雷射', 'BOSS 磚牆'],
         desc: '3D 斜角霓虹彈珠破壁對決！11 位全明星專屬能量板，狂炸 💣 爆裂磚與 ⭐ 金幣磚，接取三球分裂／火球貫穿／雙雷射砲，每 3 關挑戰巨型移動魔王磚牆！',
         features: ['11 位全明星球板', '⚡ 多球＋🔥 火球＋🔫 雷射', '每 3 關移動魔王牆', '開局滿氣專屬奧義']
+      },
+      {
+        id: 'hero_slash_3d',
+        order: 'GAME #07',
+        title: '全明星極速斬擊 3D',
+        icon: '🗡️',
+        genre: '極速刀光斬擊 · 魔王連斬',
+        category: 'action',
+        status: 'live',
+        featured: false,
+        url: './games/hero-slash-3d/index.html',
+        coverClass: 'cover-slash',
+        itemLabel: '極速劍豪',
+        badges: ['NEW 新上架', '一刀多斬', 'BOSS 連斬'],
+        desc: '化身 11 位全明星劍豪揮出專屬元素刀光！滑動螢幕一刀多斬觸發超爽連擊、切開 ❄️ 時停冰晶與 ⭐ 黃金寶果、避開 💣 暗黑爆彈，並於魔王降臨時狂斬決戰！',
+        features: ['11 位全明星元素刀光', '❄️ 時停緩速＋多連斬', '👑 限時魔王連斬戰', '開局滿氣全場一閃']
       }
     ];
 
@@ -1398,12 +1421,12 @@
       const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
       const cacheKey = `${gameId}::${uid}`;
       const raw = SSO.readGameSave(gameId, auth.currentUser);
-      const defaultTotal = gameId === 'canyon_parkour_3d' ? 16 : ((gameId === 'hero_arena_3d' || gameId === 'brick_breaker_3d') ? 11 : 14);
+      const defaultTotal = gameId === 'canyon_parkour_3d' ? 16 : ((gameId === 'hero_arena_3d' || gameId === 'brick_breaker_3d' || gameId === 'hero_slash_3d') ? 11 : 14);
       if (raw && typeof raw === 'object') {
         let stars = 0;
         if (gameId === 'canyon_parkour_3d') {
           stars = Object.values(raw.stageStars || {}).reduce((a, b) => a + (Number(b) || 0), 0);
-        } else if (gameId === 'star_blaster_3d' || gameId === 'hero_arena_3d' || gameId === 'brick_breaker_3d') {
+        } else if (gameId === 'star_blaster_3d' || gameId === 'hero_arena_3d' || gameId === 'brick_breaker_3d' || gameId === 'hero_slash_3d') {
           const prog = Number(raw.bestWave || raw.bestStage) || 1;
           stars = Math.min(15, Math.floor(prog * 1.5) + (Number(raw.bossesDefeated) || 0) * 3);
         } else if (false) {
@@ -1482,7 +1505,7 @@
       pushSsoToActiveGame();
       renderHubUI();
       renderAuthModal();
-      showToast(`✅ 已登入 ${userObj.name}！全站 6 款遊戲皆已自動同步帳號`);
+      showToast(`✅ 已登入 ${userObj.name}！全站 7 款遊戲皆已自動同步帳號`);
     }
 
     function signOutAccount() {
@@ -1606,14 +1629,14 @@
         heroPill.textContent = `✅ Google 單一登入已啟用 · ${u.email}`;
         document.getElementById('heroTitle').textContent = `歡迎回來，${u.name}！`;
         document.getElementById('heroSub').textContent =
-          '您已完成全站帳號登入。現在點擊下方 6 款 3D 遊戲皆會自動帶入您的身份、頭像與獨立存檔，完全無須二次登入！';
+          '您已完成全站帳號登入。現在點擊下方 7 款 3D 遊戲皆會自動帶入您的身份、頭像與獨立存檔，完全無須二次登入！';
         document.getElementById('btnHeroAccount').textContent = '👤 管理全站帳號與備份';
       } else {
         heroPill.className = 'sso-pill guest';
-        heroPill.textContent = '🔑 訪客模式 · 登入一次即可暢玩全站 6 款遊戲';
+        heroPill.textContent = '🔑 訪客模式 · 登入一次即可暢玩全站 7 款遊戲';
         document.getElementById('heroTitle').textContent = '歡迎來到 Dell 設計的遊戲綜合區！';
         document.getElementById('heroSub').textContent =
-          '只需在此登入一次 Google 帳號，暢玩《無盡峽谷 3D》、《星際彈幕射擊 3D》、《霓虹立體方塊》、《峽谷極速漂移 3D》、《全明星無雙競技場 3D》與《全明星霓虹打磚塊 3D》，皆會自動帶入您的身份與獨立存檔！';
+          '只需在此登入一次 Google 帳號，暢玩《無盡峽谷 3D》、《星際彈幕射擊 3D》、《霓虹立體方塊》、《峽谷極速漂移 3D》、《全明星無雙競技場 3D》、《全明星霓虹打磚塊 3D》與《全明星極速斬擊 3D》，皆會自動帶入您的身份與獨立存檔！';
         document.getElementById('btnHeroAccount').textContent = '🔐 立即登入 Google 帳號';
       }
 
@@ -1636,7 +1659,7 @@
 
       // Arcade Rank & XP Bar
       const spinMeta = getDailySpinState();
-      const totalXp = sumStars * 120 + Math.max(0, sumItems - 6) * 160 + sumUpgrades * 75 + Math.floor(sumBestScores / 100) + (spinMeta.totalSpins || 0) * 80;
+      const totalXp = sumStars * 120 + Math.max(0, sumItems - 7) * 160 + sumUpgrades * 75 + Math.floor(sumBestScores / 100) + (spinMeta.totalSpins || 0) * 80;
       const level = Math.min(20, 1 + Math.floor(totalXp / 300));
       const curLevelXp = totalXp % 300;
       const pct = level >= 20 ? 100 : Math.max(8, Math.round((curLevelXp / 300) * 100));
@@ -1728,6 +1751,16 @@
             <circle cx="195" cy="144" r="6" fill="#fb923c" opacity="0.7"/>
             <rect x="148" y="176" width="124" height="16" rx="8" fill="#38bdf8" stroke="#fde047" stroke-width="2"/>
           </g>
+        </svg>`;
+      }
+      if (gameId === 'hero_slash_3d') {
+        return `<svg class="cover-art-svg" viewBox="0 0 420 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <line x1="36" y1="184" x2="386" y2="34" stroke="#f43f5e" stroke-width="14" stroke-linecap="round" opacity="0.65"/>
+          <line x1="36" y1="184" x2="386" y2="34" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.95"/>
+          <line x1="65" y1="54" x2="355" y2="176" stroke="#fde047" stroke-width="9" stroke-linecap="round" opacity="0.6"/>
+          <circle cx="152" cy="118" r="24" fill="#fb7185" stroke="#34d399" stroke-width="4" opacity="0.88"/>
+          <circle cx="272" cy="86" r="22" fill="#fbbf24" stroke="#fef08a" stroke-width="4" opacity="0.92"/>
+          <circle cx="242" cy="156" r="18" fill="#38bdf8" stroke="#e0f2fe" stroke-width="3" opacity="0.88"/>
         </svg>`;
       }
       return `<svg class="cover-art-svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>`;
@@ -2192,7 +2225,7 @@
       pushSsoToActiveGame();
       renderHubUI();
       const targetName = spinTarget === 'all'
-        ? `全站 6 款遊戲（每款 +${perGame} 🪙）`
+        ? `全站 7 款遊戲（每款 +${perGame} 🪙）`
         : (GAMES_REGISTRY.find(g => g.id === spinTarget)?.title || spinTarget);
       document.getElementById('spinResult').textContent = `🎉 恭喜獲得 +${totalCoins} 🪙！已匯入 ${targetName}`;
       showToast(`🎡 幸運轉盤中獎！+${totalCoins} 🪙 已存入存檔！`);
