@@ -1372,7 +1372,7 @@
     document.getElementById('btnMute').addEventListener('click', toggleMute);
     document.getElementById('btnBgm').addEventListener('click', toggleBgm);
     document.getElementById('btnUlt').addEventListener('click', activateUltimate);
-    document.getElementById('hudAcctBtn').addEventListener('click', () => postToHub({ type: 'ARCADE_REQUEST_ACCOUNT' }));
+    document.getElementById('hudAcctBtn').addEventListener('click', () => postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID }));
     ['btnMenu', 'btnOverMenu'].forEach((id) => {
       document.getElementById(id).addEventListener('click', () => {
         st.mode = 'menu';
@@ -1390,11 +1390,14 @@
       if (!msg || typeof msg !== 'object') return;
       if (msg.type === 'ARCADE_SSO_SYNC') {
         const prev = auth.currentUser ? auth.currentUser.uid : null;
-        auth.currentUser = msg.user && msg.user.uid ? msg.user : null;
+        const incoming = (msg.auth && msg.auth.currentUser) || msg.user || null;
+        auth.currentUser = incoming && incoming.uid ? incoming : null;
         const next = auth.currentUser ? auth.currentUser.uid : null;
         if (prev !== next) { save = loadSave(); renderHeroGrid(); }
         updateAccountUI(); updateHudUI();
         postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: next, stats: getSummaryStats() });
+      } else if (msg.type === 'ARCADE_REQUEST_STATS') {
+        postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
       }
     });
     window.addEventListener('storage', (ev) => {
@@ -1406,7 +1409,7 @@
     updateAccountUI();
     renderHeroGrid();
     updateHudUI();
-    postToHub({ type: 'ARCADE_GAME_READY', gameId: GAME_ID });
+    postToHub({ type: 'ARCADE_GAME_READY', gameId: GAME_ID, stats: getSummaryStats() });
     postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
 
     let last = performance.now();
