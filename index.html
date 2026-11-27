@@ -1042,7 +1042,7 @@
         </div>
         <div class="gstat-box">
           <div class="gstat-label">全站英雄圖鑑 / 強化</div>
-          <div class="gstat-val green" id="statStarsChars">4/42 英雄 · ⚡Lv.0</div>
+          <div class="gstat-val green" id="statStarsChars">4/58 英雄 · ⚡Lv.0</div>
         </div>
       </div>
     </section>
@@ -1246,8 +1246,8 @@
         coverClass: 'cover-canyon',
         itemLabel: '3D 角色',
         badges: ['3D WebGL', '支援手機', '原創 BGM'],
-        desc: '穿梭 5 大動態日夜光影 3D 峽谷！內含 12 位 3D 角色（含瑪利歐、時透無一郎、哆啦A夢、皮卡丘、炭治郎、宵崎奏專屬大招）、永久能力升級、空中魔王戰、光影分身競速與無盡極速模式。',
-        features: ['12 位 3D 角色大招', '5 大日夜循環場景', '空中魔王戰', '無盡極速模式', '永久強化工坊']
+        desc: '穿梭 5 大動態日夜光影 3D 峽谷！內含 16 位 3D 角色（含五條悟、魯夫、利姆路、里維兵長、瑪利歐、無一郎、哆啦A夢、皮卡丘、炭治郎、宵崎奏專屬大招）、永久能力升級、空中魔王戰、光影分身競速與無盡極速模式。',
+        features: ['16 位 3D 角色大招', '5 大日夜循環場景', '空中魔王戰', '無盡極速模式', '永久強化工坊']
       },
       {
         id: 'star_blaster_3d',
@@ -1263,7 +1263,7 @@
         itemLabel: '3D 戰機',
         badges: ['Roguelike', '擦彈 Graze', 'BOSS 戰'],
         desc: '駕駛 3D 星際戰機穿梭星雲與小行星帶！支援驚險擦彈集氣、戰場過載/量子護盾/黑洞磁鐵掉落、連擊倍率與每波三選一強化，激戰巨型星系母艦 BOSS！',
-        features: ['10 架全明星戰機', '瑪利歐/皮卡丘/哆啦A夢', '專屬超新星大招', '擦彈 Graze＋連擊', '星系母艦 BOSS']
+        features: ['14 架全明星戰機', '五條悟/魯夫/利姆路/里維', '專屬超新星大招', '擦彈 Graze＋連擊', '星系母艦 BOSS']
       },
       {
         id: 'neon_blocks_3d',
@@ -1279,7 +1279,7 @@
         itemLabel: '霓虹主題',
         badges: ['炸彈/金幣方塊', 'FEVER 2x', '雙模式'],
         desc: '3D 立體斜角霓虹方塊搭配電子合成節奏！全新加入 💣 炸彈連鎖爆破方塊、⭐ 金幣方塊與連消觸發的 🌈 FEVER 彩虹雙倍狂熱模式，無盡馬拉松與 2 分極速衝分雙玩法！',
-        features: ['10 款全明星夥伴主題', '💣 炸彈＋⭐ 金幣方塊', '🌈 FEVER 2x 彩虹模式', '無盡馬拉松 / 2分極速']
+        features: ['14 款全明星夥伴主題', '💣 炸彈＋⭐ 金幣方塊', '🌈 FEVER 2x 彩虹模式', '無盡馬拉松 / 2分極速']
       },
       {
         id: 'canyon_drift_3d',
@@ -1295,7 +1295,7 @@
         itemLabel: '3D 超跑',
         badges: ['甩尾小噴射', '⏩ 加速帶', '氮氣飄移'],
         desc: '延續峽谷宇宙 5 大場景的 3D 街機甩尾競速！長按飄移累積 GOOD→LEGEND 評價，放開瞬間觸發甩尾小噴射，壓過公路發光加速帶與極限超車衝破 1200m 檢查點！',
-        features: ['10 台全明星痛車超跑', 'LEGEND 甩尾小噴射', '⏩ 3D 公路加速帶', '擦身超車連擊']
+        features: ['14 台全明星痛車超跑', 'LEGEND 甩尾小噴射', '⏩ 3D 公路加速帶', '擦身超車連擊']
       }
     ];
 
@@ -1352,7 +1352,7 @@
       const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
       const cacheKey = `${gameId}::${uid}`;
       const raw = SSO.readGameSave(gameId, auth.currentUser);
-      const defaultTotal = gameId === 'canyon_parkour_3d' ? 12 : 10;
+      const defaultTotal = gameId === 'canyon_parkour_3d' ? 16 : 14;
       if (raw && typeof raw === 'object') {
         let stars = 0;
         if (gameId === 'canyon_parkour_3d') {
