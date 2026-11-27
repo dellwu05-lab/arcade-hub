@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>全明星霓虹打磚塊 3D — 遊戲綜合區</title>
+  <style>
+    :root {
+      --bg: #060918;
+      --panel: rgba(11, 15, 36, 0.91);
+      --border: rgba(255, 255, 255, 0.14);
+      --text: #f8fafc;
+      --muted: #9eb0cf;
+      --cyan: #38bdf8;
+      --gold: #fbbf24;
+      --pink: #ec4899;
+      --green: #34d399;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    }
+    .app-root { position: relative; width: 100%; height: 100%; overflow: hidden; touch-action: none; }
+    #gameCanvas { display: block; width: 100%; height: 100%; cursor: none; }
+
+    /* Top HUD — z-index 35 above overlays (30) */
+    .hud-top {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 35;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; gap: 8px; flex-wrap: wrap; pointer-events: none;
+    }
+    .hud-cluster { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; pointer-events: auto; }
+    .pill, .hud-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px;
+      background: rgba(10, 14, 32, 0.82); border: 1px solid var(--border);
+      backdrop-filter: blur(10px); color: var(--text);
+      font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .hud-btn { cursor: pointer; transition: transform 0.14s ease, border-color 0.14s ease; }
+    .hud-btn:hover { transform: translateY(-1px); border-color: rgba(56, 189, 248, 0.65); }
+    .hud-acct { padding: 4px 11px 4px 5px; }
+    .g-avatar {
+      width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 900; color: #fff; background: #0ea5e9; overflow: hidden;
+    }
+    .g-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Active Buffs Strip */
+    .buff-strip {
+      position: absolute; top: 56px; left: 50%; transform: translateX(-50%); z-index: 12;
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; pointer-events: none;
+    }
+    .buff-tag {
+      padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800;
+      background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.5); color: #7dd3fc;
+    }
+
+    /* Bottom-Center Ultimate Button (no scale jitter) */
+    .ult-bar {
+      position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 25;
+      display: flex; align-items: center; justify-content: center; pointer-events: auto;
+    }
+    .ult-btn {
+      position: relative; overflow: hidden; min-width: 246px; padding: 9px 20px; border-radius: 15px;
+      border: 2px solid rgba(56, 189, 248, 0.55); background: rgba(11, 16, 38, 0.90);
+      color: #fff; font-weight: 900; font-size: 13.5px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    .ult-btn .fill {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 100%;
+      background: linear-gradient(90deg, rgba(14, 165, 233, 0.58), rgba(236, 72, 153, 0.65), rgba(250, 204, 21, 0.58));
+      transition: width 0.12s linear;
+    }
+    .ult-btn .lbl { position: relative; z-index: 2; }
+    .ult-btn .sub-lbl { position: relative; z-index: 2; font-size: 10.5px; color: #fde68a; font-weight: 700; }
+    .ult-btn.ready {
+      border-color: #fde047;
+      box-shadow: 0 0 26px rgba(250, 204, 21, 0.72), 0 0 54px rgba(56, 189, 248, 0.45);
+      animation: ultPulse 1.15s ease-in-out infinite alternate;
+    }
+    .ult-btn.ready .fill {
+      background: linear-gradient(90deg, rgba(14, 165, 233, 0.9), rgba(236, 72, 153, 0.92), rgba(250, 204, 21, 0.9));
+    }
+    @keyframes ultPulse {
+      0% { filter: brightness(1.0); box-shadow: 0 0 22px rgba(250, 204, 21, 0.65), 0 0 44px rgba(56, 189, 248, 0.4); }
+      100% { filter: brightness(1.16); box-shadow: 0 0 36px rgba(250, 204, 21, 0.95), 0 0 66px rgba(236, 72, 153, 0.65); }
+    }
+    .ult-flash { position: fixed; inset: 0; z-index: 19; pointer-events: none; opacity: 0; transition: opacity 0.48s ease-out; }
+    .ult-flash.boom { opacity: 0.7; transition: none; }
+
+    /* Overlays & Panels */
+    .overlay {
+      position: absolute; inset: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: center;
+      padding: 62px 16px 16px;
+      background: radial-gradient(circle at 50% 25%, rgba(56, 189, 248, 0.16), rgba(5, 8, 22, 0.88));
+      backdrop-filter: blur(8px);
+    }
+    .hidden { display: none !important; }
+    .panel {
+      width: min(590px, 100%); max-height: 90vh; overflow-y: auto;
+      padding: 20px 22px; border-radius: 22px;
+      background: var(--panel); border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65); text-align: center;
+    }
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px;
+      background: rgba(56, 189, 248, 0.16); border: 1px solid rgba(56, 189, 248, 0.42);
+      color: #7dd3fc; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+    }
+    .panel h1 {
+      margin: 10px 0 6px; font-size: 27px; font-weight: 900;
+      background: linear-gradient(90deg, #fff, #7dd3fc, #f472b6, #fde047);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .panel h2 { margin: 8px 0 6px; font-size: 22px; font-weight: 900; }
+    .sub { margin: 0 0 12px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    .sso-strip {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 13px;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 10px; text-align: left; font-size: 12.5px;
+    }
+
+    /* Hero Synergy Banner */
+    .synergy-bar {
+      margin: 0 0 10px; padding: 9px 12px; border-radius: 13px; text-align: left;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(56, 189, 248, 0.16), rgba(236, 72, 153, 0.16));
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      box-shadow: 0 6px 18px rgba(250, 204, 21, 0.12);
+    }
+    .syn-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
+    .syn-title { font-size: 12px; font-weight: 900; color: #fde047; }
+    .syn-count { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(250, 204, 21, 0.2); color: #fef08a; border: 1px solid rgba(250, 204, 21, 0.45); }
+    .syn-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .syn-chip { font-size: 11px; color: #e2e8f0; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 7px; padding: 2px 7px; }
+    .syn-chip b { color: #86efac; }
+    .syn-hint { font-size: 10.5px; color: #cbd5e1; margin-top: 5px; line-height: 1.35; }
+
+    /* Hero Selector Grid */
+    .hero-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+      max-height: 224px; overflow-y: auto; padding-right: 4px; margin-bottom: 12px;
+    }
+    .hero-card {
+      padding: 9px 10px; border-radius: 13px; text-align: left; cursor: pointer;
+      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text); transition: all 0.14s ease;
+    }
+    .hero-card:hover { border-color: rgba(56, 189, 248, 0.55); background: rgba(56, 189, 248, 0.09); }
+    .hero-card.sel { border-color: #7dd3fc; background: rgba(56, 189, 248, 0.18); box-shadow: 0 0 18px rgba(56, 189, 248, 0.28); }
+    .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 800; font-size: 12.5px; }
+    .hero-desc { font-size: 10.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+    .char-av {
+      width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+      margin-right: 6px; border: 1.5px solid rgba(255, 255, 255, 0.45);
+    }
+
+    /* Permanent Upgrade Workshop */
+    .perm-upg-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 7px; font-size: 12px; font-weight: 800; color: #cbd5e1; }
+    .perm-upg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 12px; }
+    .perm-btn {
+      padding: 8px 9px; border-radius: 12px; text-align: left; cursor: pointer;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.13);
+      color: var(--text); transition: all 0.14s ease;
+    }
+    .perm-btn:hover:not(:disabled) { border-color: rgba(251, 191, 36, 0.65); background: rgba(251, 191, 36, 0.11); }
+    .perm-btn:disabled { opacity: 0.6; cursor: default; }
+    .perm-top { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: 800; }
+    .perm-bars { display: flex; gap: 2px; margin: 5px 0 4px; }
+    .perm-seg { flex: 1; height: 4px; border-radius: 99px; background: rgba(255, 255, 255, 0.12); }
+    .perm-seg.on { background: linear-gradient(90deg, #38bdf8, #ec4899); }
+    .perm-foot { display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; color: var(--muted); }
+    .perm-cost { color: #fde68a; font-weight: 800; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+    .stat-box { padding: 10px 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .stat-box .l { font-size: 11px; color: var(--muted); }
+    .stat-box .v { font-size: 19px; font-weight: 900; margin-top: 3px; }
+
+    .btn-row { display: flex; gap: 9px; flex-wrap: wrap; }
+    .btn-primary {
+      flex: 1; padding: 12px 18px; border-radius: 13px; border: none;
+      background: linear-gradient(135deg, #0ea5e9, #ec4899); color: #fff;
+      font-size: 14.5px; font-weight: 900; cursor: pointer;
+      box-shadow: 0 10px 26px rgba(14, 165, 233, 0.38);
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-secondary {
+      padding: 12px 15px; border-radius: 13px; border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.07); color: #f8fafc; font-size: 13.5px; font-weight: 800; cursor: pointer;
+    }
+
+    .toast {
+      position: absolute; top: 94px; left: 50%; transform: translateX(-50%) translateY(-10px); z-index: 40;
+      padding: 8px 16px; border-radius: 999px; background: linear-gradient(135deg, #0ea5e9, #ec4899); color: #fff;
+      font-size: 13px; font-weight: 800; opacity: 0; pointer-events: none; transition: all 0.2s ease; white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .perm-upg-grid { grid-template-columns: 1fr; }
+      .panel { padding: 16px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <canvas id="gameCanvas" aria-label="全明星霓虹打磚塊 3D 畫布"></canvas>
+
+    <div class="hud-top">
+      <div class="hud-cluster">
+        <button class="hud-btn hud-acct" id="hudAcctBtn" type="button" title="全站 Google 帳號">
+          <span class="g-avatar" id="hudAvatar">👤</span>
+          <span id="hudPlayerName">破壁勇者</span>
+        </button>
+        <div class="pill" style="color:#7dd3fc;"><span>🧱</span><span id="hudStage">STAGE 1</span></div>
+        <div class="pill" style="color:#fb7185;"><span id="hudLives">❤️❤️❤️</span></div>
+        <div class="pill" style="color:#fde68a;"><span>🪙</span><span id="hudCoins">40</span></div>
+      </div>
+      <div class="hud-cluster">
+        <div class="pill"><span>COMBO</span><span id="hudCombo" style="color:#f472b6;">x0</span></div>
+        <div class="pill"><span>SCORE</span><span id="hudScore" style="color:#38bdf8;">00000</span></div>
+        <button class="hud-btn" id="btnBgm" type="button" title="背景音樂 (B)">🎵</button>
+        <button class="hud-btn" id="btnMute" type="button" title="靜音 (M)">🔊</button>
+        <button class="hud-btn" id="btnPause" type="button" title="暫停 (P)">⏸</button>
+      </div>
+    </div>
+
+    <div class="buff-strip hidden" id="buffStrip"></div>
+    <div class="ult-flash" id="ultFlash"></div>
+
+    <div class="ult-bar hidden" id="ultBar">
+      <button class="ult-btn" id="btnUlt" type="button">
+        <div class="fill" id="ultFill"></div>
+        <div class="lbl" id="ultLabel">💥 破壁奧義大招</div>
+        <div class="sub-lbl" id="ultSub">點擊 / 右鍵 / Space / F</div>
+      </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Start & Hero Select Overlay -->
+    <div class="overlay" id="startOverlay">
+      <div class="panel">
+        <div class="tag">🧱 GAME #06 · 3D 霓虹彈珠破壁 × 魔王關卡</div>
+        <h1>全明星霓虹打磚塊 3D</h1>
+        <p class="sub">操控 11 位全明星專屬霓虹能量板！反彈超能光球狂炸 💣 爆裂磚與 ⭐ 金幣磚，接取多球分裂／火球貫穿／雙雷射砲道具，每 3 關激戰移動巨型魔王磚牆！</p>
+
+        <div class="sso-strip">
+          <span class="g-avatar" id="startAvatar">👤</span>
+          <div style="flex:1;min-width:0;">
+            <div id="startAcctName" style="font-weight:800;color:#fff;">訪客玩家</div>
+            <div id="startAcctSub" style="font-size:10.5px;color:var(--muted);">由遊戲綜合區統一登入 · 獨立帳號存檔</div>
+          </div>
+          <span style="font-weight:800;color:#fde68a;">🪙 <span id="startCoins">40</span></span>
+        </div>
+
+        <div class="synergy-bar" id="heroSynergy"></div>
+        <div class="hero-grid" id="heroGrid"></div>
+
+        <div class="perm-upg-head"><span>🔧 能量球板永久改裝（點擊強化）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
+        <div class="perm-upg-grid" id="permUpgGrid"></div>
+
+        <p class="sub" style="font-size:11.5px;margin-bottom:12px;">
+          操控：滑鼠移動 / 手機滑動 / 鍵盤 ←→ AD｜<strong>破壁奧義（開局滿氣！）：點擊下方鈕 / 右鍵 / Space / F / Enter</strong>
+        </p>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="btnStart" type="button">🧱 發射能量球！挑戰第 1 關</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div class="overlay hidden" id="pauseOverlay">
+      <div class="panel">
+        <div class="tag">⏸ 遊戲暫停</div>
+        <h2>能量板待機中</h2>
+        <p class="sub">按 P 繼續破壁，或返回大廳切換全明星英雄與強化。</p>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnResume" type="button">繼續破壁</button>
+          <button class="btn-secondary" id="btnMenu" type="button">返回大廳</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay hidden" id="overOverlay">
+      <div class="panel">
+        <div class="tag">🏆 破壁結算</div>
+        <h2>本局挑戰結束！</h2>
+        <p class="sub">沿途擊碎金幣磚與過關獲得的金幣已全數匯入帳號！</p>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="l">最終分數</div><div class="v" id="overScore" style="color:#38bdf8;">0</div></div>
+          <div class="stat-box"><div class="l">抵達關卡</div><div class="v" id="overStage" style="color:#34d399;">STAGE 1</div></div>
+          <div class="stat-box"><div class="l">獲得金幣</div><div class="v" id="overCoins" style="color:#fbbf24;">+0</div></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnRetry" type="button">🧱 再次挑戰</button>
+          <button class="btn-secondary" id="btnOverMenu" type="button">返回英雄大廳</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // =========================================================================
+    // 1. UNIFIED SSO & SAVE SYSTEM (GAME #06: brick_breaker_3d)
+    // =========================================================================
+    const GAME_ID = 'brick_breaker_3d';
+    const SSO_KEY = 'arcade_hub_sso_v1';
+
+    function loadAuth() {
+      try {
+        const raw = localStorage.getItem(SSO_KEY);
+        if (raw) { const p = JSON.parse(raw); if (p && typeof p === 'object') return { currentUser: p.currentUser && p.currentUser.uid ? p.currentUser : null }; }
+      } catch (e) {}
+      return { currentUser: null };
+    }
+    let auth = loadAuth();
+    function getSaveKey() {
+      return auth.currentUser && auth.currentUser.uid
+        ? `arcade_save_${GAME_ID}_acct_${auth.currentUser.uid}`
+        : `arcade_save_${GAME_ID}_guest`;
+    }
+
+    // 11 All-Star Heroes — strictly tiered 200..800 by power!
+    const HEROES = [
+      { id: 'neon_v',   name: '霓虹破壁者',   icon: '🧱', price: 0,   color: '#38bdf8', accent: '#7dd3fc', padW: 124, dmg: 1.0,  coinMult: 1.0,  ultName: '霓虹三連分裂波',     ultFlash: '56,189,248',  ultKind: 'multi', desc: '均衡霓虹球板：穩定反彈＋三球分裂奧義' },
+      { id: 'tanjiro',  name: '竈門炭治郎',   icon: '🌊', avatar: 'data:image/jpeg;base64,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',  price: 200, color: '#14b8a6', accent: '#38bdf8', padW: 132, dmg: 1.15, coinMult: 1.10, ultName: '水之呼吸・生生流轉', ultFlash: '20,184,166',  ultKind: 'laser', desc: '水刃雙雷射球板＋球傷 +15%＋金幣 +10%' },
+      { id: 'kanade',   name: '宵崎奏',       icon: '🎧', avatar: 'data:image/jpeg;base64,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',   price: 240, color: '#a855f7', accent: '#e879f9', padW: 138, dmg: 1.15, coinMult: 1.15, ultName: '深夜旋律護盾場',     ultFlash: '192,132,252', ultKind: 'shield',desc: '寬幅旋律板＋底部防護光幕＋金幣 +15%' },
+      { id: 'mario',    name: '瑪利歐',       icon: '🍄', avatar: 'data:image/jpeg;base64,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',    price: 300, color: '#ef4444', accent: '#facc15', padW: 136, dmg: 1.25, coinMult: 1.15, ultName: '無敵星火焰貫穿球',   ultFlash: '239,68,68',   ultKind: 'fire',  desc: '火焰貫穿球＋球傷 +25%＋金幣 +15%' },
+      { id: 'muichiro', name: '時透無一郎',   icon: '🌫️', avatar: 'data:image/jpeg;base64,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', price: 360, color: '#2dd4bf', accent: '#99f6e4', padW: 140, dmg: 1.32, coinMult: 1.18, ultName: '霞之呼吸・多球朧陣', ultFlash: '94,234,212',  ultKind: 'multi', desc: '霞霧高速連球＋球傷 +32%＋金幣 +18%' },
+      { id: 'doraemon', name: '哆啦A夢',      icon: '🔔', avatar: 'data:image/jpeg;base64,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', price: 420, color: '#0ea5e9', accent: '#fbbf24', padW: 148, dmg: 1.35, coinMult: 1.20, ultName: '四次元百寶大放送',   ultFlash: '14,165,233',  ultKind: 'shield',desc: '超寬百寶球板＋全道具爆發＋金幣 +20%' },
+      { id: 'pikachu',  name: '皮卡丘',       icon: '⚡', avatar: 'data:image/jpeg;base64,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',  price: 480, color: '#facc15', accent: '#fef08a', padW: 144, dmg: 1.45, coinMult: 1.22, ultName: '十萬伏特全場雷擊',   ultFlash: '250,204,21',  ultKind: 'blast', desc: '電光高速球＋全場落雷轟碎磚塊＋金幣 +22%' },
+      { id: 'levi',     name: '里維兵長',     icon: '⚔️', avatar: 'data:image/jpeg;base64,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',     price: 560, color: '#16a34a', accent: '#86efac', padW: 146, dmg: 1.55, coinMult: 1.25, ultName: '立體機動・雙刃連斬', ultFlash: '74,222,128',  ultKind: 'laser', desc: '超高傷害球體 +55%＋雙刃雷射連發＋金幣 +25%' },
+      { id: 'rimuru',   name: '利姆路',       icon: '💧', avatar: 'data:image/jpeg;base64,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',   price: 640, color: '#38bdf8', accent: '#fde047', padW: 154, dmg: 1.60, coinMult: 1.28, ultName: '暴食之王・神之怒',   ultFlash: '56,189,248',  ultKind: 'blast', desc: '超寬魔素板＋神之怒橫掃全牆＋金幣 +28%' },
+      { id: 'luffy',    name: '魯夫',         icon: '👒', avatar: 'data:image/jpeg;base64,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',    price: 720, color: '#dc2626', accent: '#fde047', padW: 158, dmg: 1.72, coinMult: 1.30, ultName: '二檔・橡膠火拳貫穿', ultFlash: '239,68,68',   ultKind: 'fire',  desc: '橡膠超寬板＋火球狂暴貫穿＋金幣 +30%' },
+      { id: 'gojo',     name: '五條悟',       icon: '♾️', avatar: 'data:image/jpeg;base64,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',     price: 800, color: '#a855f7', accent: '#38bdf8', padW: 164, dmg: 1.90, coinMult: 1.35, ultName: '虛式「茈」無量空處', ultFlash: '168,85,247',  ultKind: 'gojo',  desc: '最強無下限球板＋虛式茈湮滅全場＋金幣 +35%' }
+    ];
+
+    const avatarCache = {};
+    HEROES.forEach((h) => { if (h.avatar) { const im = new Image(); im.src = h.avatar; avatarCache[h.id] = im; } });
+
+    const PERM_UPGRADES = [
+      { id: 'pwr',  name: '能量球威', icon: '💥', desc: '傷害 +18%', baseCost: 55, stepCost: 55, maxLv: 5 },
+      { id: 'wide', name: '超寬護板', icon: '🛡️', desc: '寬度 +14px', baseCost: 55, stepCost: 55, maxLv: 5 },
+      { id: 'ult',  name: '充能核心', icon: '⚡', desc: '集氣+15%金+8%', baseCost: 60, stepCost: 60, maxLv: 5 }
+    ];
+
+    function defaultSave() {
+      return { coins: 40, bestScore: 0, bestStage: 1, bossesDefeated: 0, ownedHeroes: ['neon_v'], equippedHero: 'neon_v', upgrades: { pwr: 0, wide: 0, ult: 0 } };
+    }
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(getSaveKey());
+        if (raw) {
+          const p = JSON.parse(raw);
+          const u = (p && p.upgrades && typeof p.upgrades === 'object') ? p.upgrades : {};
+          return Object.assign(defaultSave(), p, {
+            ownedHeroes: Array.isArray(p.ownedHeroes) && p.ownedHeroes.length ? p.ownedHeroes : ['neon_v'],
+            upgrades: { pwr: Math.min(5, Number(u.pwr) || 0), wide: Math.min(5, Number(u.wide) || 0), ult: Math.min(5, Number(u.ult) || 0) }
+          });
+        }
+      } catch (e) {}
+      return defaultSave();
+    }
+    let save = loadSave();
+
+    function getHero() { return HEROES.find(h => h.id === save.equippedHero) || HEROES[0]; }
+    function getHeroSynergy() {
+      const count = (save.ownedHeroes && save.ownedHeroes.length) || 1;
+      const extra = Math.max(0, count - 1);
+      return {
+        count, total: HEROES.length, extra,
+        dmgMult: 1 + extra * 0.10,
+        wideMult: 1 + extra * 0.04,
+        ultMult: 1 + extra * 0.08,
+        coinMult: 1 + extra * 0.05
+      };
+    }
+
+    function getSummaryStats() {
+      const stars = Math.min(15, Math.floor((save.bestStage || 1) * 1.5) + (save.bossesDefeated || 0) * 3);
+      const upgTotal = Object.values(save.upgrades || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+      return {
+        coins: save.coins, bestScore: save.bestScore, stars, maxStars: 15,
+        charsUnlocked: save.ownedHeroes.length, charsTotal: HEROES.length,
+        upgradeLevel: upgTotal, upgradeMax: 15, bestStage: save.bestStage
+      };
+    }
+    function postToHub(payload) { try { if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*'); } catch (e) {} }
+    function persistSave() {
+      try { localStorage.setItem(getSaveKey(), JSON.stringify(save)); } catch (e) {}
+      postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
+    }
+    function getPlayerName() { return (auth.currentUser && auth.currentUser.name) ? auth.currentUser.name : '破壁勇者'; }
+
+    // =========================================================================
+    // 2. SYNTH ARCADE BGM & PITCH-CLIMBING COMBO SFX
+    // =========================================================================
+    const SFX = {
+      ctx: null, muted: false, bgmOn: true, timer: null, step: 0,
+      ensure() {
+        if (this.muted) return null;
+        if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this.ctx = new AC(); }
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+        return this.ctx;
+      },
+      tone(type, f0, f1, dur, vol = 0.08) {
+        const ctx = this.ensure(); if (!ctx) return;
+        const now = ctx.currentTime;
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f0, now);
+        if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), now + dur);
+        g.gain.setValueAtTime(vol, now); g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + dur + 0.02);
+      },
+      paddle() { this.tone('triangle', 320, 480, 0.07, 0.07); },
+      brick(combo) { const f = Math.min(1150, 340 + combo * 42); this.tone('sine', f, f * 1.18, 0.07, 0.06); },
+      bomb() { this.tone('sawtooth', 160, 48, 0.22, 0.11); },
+      coin() { this.tone('sine', 920, 1420, 0.08, 0.06); },
+      power() { [523, 659, 784].forEach((f, i) => setTimeout(() => this.tone('triangle', f, f * 1.06, 0.1, 0.07), i * 50)); },
+      lose() { this.tone('sawtooth', 220, 80, 0.25, 0.09); },
+      ult() { this.tone('sawtooth', 140, 740, 0.34, 0.12); setTimeout(() => this.tone('triangle', 740, 220, 0.36, 0.10), 110); },
+      startBgm() {
+        if (this.timer || this.muted || !this.bgmOn) return;
+        const seq = [261.6, 329.6, 392.0, 523.3, 440.0, 392.0, 329.6, 293.7];
+        this.timer = setInterval(() => {
+          if (this.muted || !this.bgmOn || st.mode !== 'playing') return;
+          const n = seq[this.step % seq.length];
+          this.tone('sine', n, n * 1.01, 0.12, 0.022);
+          if (this.step % 2 === 0) this.tone('triangle', n * 0.5, n * 0.49, 0.14, 0.026);
+          this.step++;
+        }, 185);
+      },
+      stopBgm() { if (this.timer) { clearInterval(this.timer); this.timer = null; } }
+    };
+
+    // =========================================================================
+    // 3. CANVAS, ARENA BOUNDS & GAME STATE
+    // =========================================================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    let W = 1280, H = 720, DPR = 1;
+    let ARENA = { x: 160, y: 66, w: 960, h: 580 };
+
+    function resize() {
+      DPR = Math.min(1.5, window.devicePixelRatio || 1);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = Math.floor(W * DPR); canvas.height = Math.floor(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      const aw = Math.min(920, W - 28);
+      ARENA = { x: (W - aw) / 2, y: 66, w: aw, h: H - 134 };
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const st = {
+      mode: 'menu', time: 0, stage: 1, lives: 3, score: 0, runCoins: 0, combo: 0,
+      ultCharge: 100, shake: 0,
+      pad: { x: 640, w: 130, y: 600, h: 18 },
+      buffs: { fire: 0, laser: 0, wide: 0, barrier: 0 },
+      laserCd: 0,
+      balls: [], bricks: [], drops: [], lasers: [], particles: [], waves: [], floats: []
+    };
+
+    const keys = { l: false, r: false };
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.l = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.r = true;
+      if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+      if (e.code === 'KeyM') toggleMute();
+      if (e.code === 'KeyB') toggleBgm();
+      if (['Space', 'KeyF', 'KeyE', 'KeyX', 'Enter', 'ShiftLeft', 'ShiftRight'].includes(e.code) && st.mode === 'playing') {
+        activateUltimate();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.l = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.r = false;
+    });
+
+    function movePaddleTo(clientX) {
+      if (st.mode !== 'playing') return;
+      const half = st.pad.w * 0.5;
+      st.pad.x = Math.max(ARENA.x + half, Math.min(ARENA.x + ARENA.w - half, clientX));
+    }
+    canvas.addEventListener('pointermove', (e) => movePaddleTo(e.clientX));
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.button === 2) { if (st.mode === 'playing') activateUltimate(); return; }
+      movePaddleTo(e.clientX);
+    });
+    canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); if (st.mode === 'playing') activateUltimate(); });
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg; el.classList.add('show');
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+    }
+    function addParticles(x, y, col, n = 10, spd = 220) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2, v = (0.3 + Math.random() * 0.8) * spd;
+        st.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 2.5 + Math.random() * 3.5, col, life: 0.35 + Math.random() * 0.25 });
+      }
+    }
+    function addFloat(x, y, txt, col = '#fde047', size = 15) {
+      st.floats.push({ x, y, txt, col, size, life: 0.82 });
+    }
+
+    // =========================================================================
+    // 4. STAGE GENERATOR, BOSS BRICKS, POWER-UPS & HERO ULTIMATES
+    // =========================================================================
+    const ROW_COLORS = ['#f43f5e', '#fb923c', '#facc15', '#34d399', '#38bdf8', '#a855f7', '#ec4899'];
+
+    function buildStage(stageNum) {
+      st.bricks = [];
+      const isBoss = stageNum % 3 === 0;
+      const cols = Math.min(11, Math.max(8, Math.floor(ARENA.w / 82)));
+      const gap = 6;
+      const bw = (ARENA.w - gap * (cols + 1)) / cols;
+      const bh = 26;
+      const topY = ARENA.y + 34;
+
+      if (isBoss) {
+        // Giant Moving Boss Core + Escort Shield Bricks!
+        const bossW = Math.min(240, ARENA.w * 0.34);
+        const bossHp = Math.round(14 + stageNum * 6);
+        st.bricks.push({
+          x: ARENA.x + (ARENA.w - bossW) / 2, y: topY + 6, w: bossW, h: 48,
+          hp: bossHp, maxHp: bossHp, col: '#f43f5e', kind: 'boss', dir: 1, spd: 115 + stageNum * 10
+        });
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < cols; c++) {
+            if ((r + c) % 2 === 1) continue;
+            const kind = Math.random() < 0.14 ? 'bomb' : (Math.random() < 0.22 ? 'gold' : 'normal');
+            const hp = kind === 'normal' ? (1 + Math.floor(stageNum / 3)) : 1;
+            st.bricks.push({
+              x: ARENA.x + gap + c * (bw + gap), y: topY + 72 + r * (bh + gap),
+              w: bw, h: bh, hp, maxHp: hp,
+              col: kind === 'gold' ? '#fbbf24' : (kind === 'bomb' ? '#ef4444' : ROW_COLORS[(r + stageNum) % ROW_COLORS.length]),
+              kind
+            });
+          }
+        }
+        showToast(`👑 第 ${stageNum} 關・魔王磚牆 BOSS 降臨！`);
+      } else {
+        const rows = Math.min(7, 4 + Math.floor(stageNum / 2));
+        const pattern = stageNum % 4;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (pattern === 1 && (r === 2 && (c === 0 || c === cols - 1))) continue;
+            if (pattern === 2 && Math.abs(c - (cols - 1) / 2) > rows - r + 1.5) continue;
+            if (pattern === 3 && (r + c) % 3 === 0 && r > 0) continue;
+            const roll = Math.random();
+            const kind = roll < 0.09 ? 'bomb' : (roll < 0.20 ? 'gold' : 'normal');
+            const baseHp = (r === 0 ? 2 : 1) + Math.floor((stageNum - 1) / 3);
+            const hp = kind === 'normal' ? baseHp : 1;
+            st.bricks.push({
+              x: ARENA.x + gap + c * (bw + gap), y: topY + r * (bh + gap),
+              w: bw, h: bh, hp, maxHp: hp,
+              col: kind === 'gold' ? '#fbbf24' : (kind === 'bomb' ? '#ef4444' : ROW_COLORS[(r + stageNum) % ROW_COLORS.length]),
+              kind
+            });
+          }
+        }
+      }
+    }
+
+    function spawnBall(x, y, ang) {
+      const spd = Math.min(620, 420 + st.stage * 18);
+      st.balls.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8.5, trail: [] });
+    }
+
+    function getBallDamage() {
+      const hero = getHero(), syn = getHeroSynergy();
+      const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
+      return hero.dmg * (1 + (u.pwr || 0) * 0.18) * syn.dmgMult * (st.buffs.fire > 0 ? 1.8 : 1);
+    }
+
+    function getCoinMult() {
+      const hero = getHero(), syn = getHeroSynergy();
+      const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
+      return hero.coinMult * (1 + (u.ult || 0) * 0.08) * syn.coinMult;
+    }
+
+    function startGame() {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      SFX.ensure(); SFX.startBgm();
+      const hero = getHero(), syn = getHeroSynergy();
+      const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
+
+      st.mode = 'playing'; st.time = 0; st.stage = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.combo = 0;
+      st.ultCharge = 100; st.shake = 0;
+      st.buffs = { fire: 0, laser: 0, wide: 0, barrier: 0 };
+      st.drops = []; st.lasers = []; st.particles = []; st.waves = []; st.floats = []; st.balls = [];
+      st.pad.w = Math.round((hero.padW + (u.wide || 0) * 14) * syn.wideMult);
+      st.pad.x = ARENA.x + ARENA.w / 2;
+      st.pad.y = ARENA.y + ARENA.h - 24;
+
+      buildStage(1);
+      spawnBall(st.pad.x, st.pad.y - 18, -Math.PI / 2 + (Math.random() - 0.5) * 0.45);
+
+      document.getElementById('startOverlay').classList.add('hidden');
+      document.getElementById('overOverlay').classList.add('hidden');
+      document.getElementById('pauseOverlay').classList.add('hidden');
+      document.getElementById('buffStrip').classList.remove('hidden');
+      document.getElementById('ultBar').classList.remove('hidden');
+      updateHudUI();
+      showToast(`${hero.icon} 【${hero.name}】出戰！專屬破壁奧義已 100% 就緒！`);
+    }
+
+    function activateUltimate() {
+      if (st.mode !== 'playing') return;
+      const hero = getHero();
+      if (st.ultCharge < 100) {
+        showToast(`⚡ 奧義充能中 ${Math.floor(st.ultCharge)}%（擊碎磚塊加速集氣！）`);
+        return;
+      }
+      st.ultCharge = 0;
+      st.shake = 0.42;
+      SFX.ult();
+
+      const fl = document.getElementById('ultFlash');
+      if (fl) {
+        fl.style.background = `radial-gradient(circle at 50% 60%, rgba(${hero.ultFlash}, 0.82), rgba(${hero.ultFlash}, 0.18) 70%, transparent)`;
+        fl.classList.add('boom');
+        requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove('boom')));
+      }
+      st.waves.push({ x: st.pad.x, y: st.pad.y, r: 20, maxR: ARENA.w * 0.72, col: hero.color, alpha: 1 });
+      addFloat(ARENA.x + ARENA.w / 2, ARENA.y + ARENA.h * 0.52, `${hero.icon} ${hero.ultName}！`, '#fde047', 22);
+      showToast(`${hero.icon} 奧義發動：【${hero.ultName}】！`);
+
+      // Hero-specific Ultimate effects!
+      const k = hero.ultKind;
+      if (k === 'multi' || k === 'gojo') {
+        const ref = st.balls[0] || { x: st.pad.x, y: st.pad.y - 20 };
+        spawnBall(ref.x, ref.y, -Math.PI * 0.35);
+        spawnBall(ref.x, ref.y, -Math.PI * 0.65);
+      }
+      if (k === 'fire' || k === 'gojo') st.buffs.fire = Math.max(st.buffs.fire, 8.0);
+      if (k === 'laser' || k === 'gojo') st.buffs.laser = Math.max(st.buffs.laser, 9.0);
+      if (k === 'shield' || k === 'gojo') { st.buffs.barrier = Math.max(st.buffs.barrier, 12.0); st.buffs.wide = Math.max(st.buffs.wide, 10.0); }
+
+      // Direct elemental blast damage to bricks!
+      const blastDmg = getBallDamage() * (k === 'gojo' ? 5.0 : (k === 'blast' ? 3.8 : 2.2));
+      for (let i = st.bricks.length - 1; i >= 0; i--) {
+        const b = st.bricks[i];
+        if (k === 'gojo' || k === 'blast' || Math.random() < 0.55) {
+          hitBrick(i, blastDmg, true);
+        }
+      }
+      updateHudUI();
+    }
+
+    function hitBrick(idx, dmg, fromUlt = false) {
+      const b = st.bricks[idx];
+      if (!b) return;
+      b.hp -= dmg;
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      if (b.hp <= 0) {
+        st.bricks.splice(idx, 1);
+        st.combo++;
+        const pts = Math.round((b.kind === 'boss' ? 600 : (b.kind === 'gold' ? 90 : 40)) * (1 + Math.min(20, st.combo) * 0.08));
+        st.score += pts;
+        const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
+        const syn = getHeroSynergy();
+        if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + (b.kind === 'boss' ? 30 : 3.2) * (1 + (u.ult || 0) * 0.15) * syn.ultMult);
+        addParticles(cx, cy, b.col, b.kind === 'boss' ? 34 : 10, b.kind === 'boss' ? 320 : 190);
+
+        if (b.kind === 'gold') {
+          const c = Math.max(1, Math.round(2 * getCoinMult()));
+          st.runCoins += c; SFX.coin();
+          addFloat(cx, cy, `+${c}🪙`, '#fde047', 14);
+        } else if (b.kind === 'bomb') {
+          SFX.bomb(); st.shake = 0.25;
+          st.waves.push({ x: cx, y: cy, r: 10, maxR: 135, col: '#fb7185', alpha: 0.95 });
+          for (let j = st.bricks.length - 1; j >= 0; j--) {
+            const nb = st.bricks[j];
+            if (Math.hypot((nb.x + nb.w / 2) - cx, (nb.y + nb.h / 2) - cy) < 135) hitBrick(j, dmg * 2.2, true);
+          }
+        } else if (b.kind === 'boss') {
+          save.bossesDefeated++;
+          const c = Math.max(12, Math.round((14 + st.stage * 2) * getCoinMult()));
+          st.runCoins += c; SFX.bomb(); st.shake = 0.45;
+          addFloat(cx, cy, `👑 BOSS 擊破 +${c}🪙`, '#fde047', 19);
+          showToast(`🏆 擊破魔王磚牆！+${pts} 分 +${c} 金幣！`);
+        } else {
+          SFX.brick(st.combo);
+        }
+
+        // Power-up drops
+        if (b.kind !== 'gold' && Math.random() < 0.15) {
+          const pool = ['multi', 'fire', 'laser', 'wide', 'barrier', 'coin'];
+          const pk = pool[Math.floor(Math.random() * pool.length)];
+          st.drops.push({ x: cx, y: cy, vy: 185, kind: pk });
+        }
+      } else {
+        SFX.brick(Math.min(5, st.combo));
+        addParticles(cx, cy, '#ffffff', 4, 120);
+      }
+    }
+
+    function nextStage() {
+      const clearCoins = Math.max(8, Math.round((10 + st.stage * 2) * getCoinMult()));
+      st.runCoins += clearCoins;
+      st.stage++;
+      if (st.stage > save.bestStage) save.bestStage = st.stage;
+      st.lives = Math.min(5, st.lives + 1);
+      SFX.power();
+      buildStage(st.stage);
+      st.balls = [];
+      spawnBall(st.pad.x, st.pad.y - 18, -Math.PI / 2 + (Math.random() - 0.5) * 0.45);
+      showToast(`🎉 通關獎勵 +${clearCoins} 🪙 ＋ ❤️ 生命回復！進入第 ${st.stage} 關`);
+    }
+
+    function triggerGameOver() {
+      st.mode = 'over';
+      SFX.lose();
+      save.coins += st.runCoins;
+      if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
+      if (st.stage > save.bestStage) save.bestStage = st.stage;
+      persistSave();
+      document.getElementById('overScore').textContent = Math.floor(st.score).toLocaleString();
+      document.getElementById('overStage').textContent = `STAGE ${st.stage}`;
+      document.getElementById('overCoins').textContent = `+${st.runCoins}`;
+      document.getElementById('overOverlay').classList.remove('hidden');
+      document.getElementById('buffStrip').classList.add('hidden');
+      document.getElementById('ultBar').classList.add('hidden');
+      renderHeroGrid();
+      updateHudUI();
+    }
+
+    function update(dt) {
+      if (st.mode !== 'playing') return;
+      st.time += dt;
+      if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 1.8);
+
+      const hero = getHero(), syn = getHeroSynergy();
+      const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
+      const baseW = Math.round((hero.padW + (u.wide || 0) * 14) * syn.wideMult);
+      st.pad.w = st.buffs.wide > 0 ? Math.min(ARENA.w * 0.42, baseW * 1.38) : baseW;
+      st.pad.y = ARENA.y + ARENA.h - 24;
+
+      // Keyboard paddle movement
+      const dir = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
+      if (dir !== 0) {
+        st.pad.x += dir * 640 * dt;
+      }
+      const halfP = st.pad.w * 0.5;
+      st.pad.x = Math.max(ARENA.x + halfP, Math.min(ARENA.x + ARENA.w - halfP, st.pad.x));
+
+      // Buff timers + Auto Laser Cannons
+      for (const k in st.buffs) if (st.buffs[k] > 0) st.buffs[k] = Math.max(0, st.buffs[k] - dt);
+      st.ultCharge = Math.min(100, st.ultCharge + dt * 2.4 * syn.ultMult);
+
+      if (st.buffs.laser > 0) {
+        st.laserCd -= dt;
+        if (st.laserCd <= 0) {
+          st.laserCd = 0.24;
+          st.lasers.push({ x: st.pad.x - halfP + 10, y: st.pad.y - 10, vy: -720 });
+          st.lasers.push({ x: st.pad.x + halfP - 10, y: st.pad.y - 10, vy: -720 });
+          SFX.tone('square', 680, 960, 0.04, 0.025);
+        }
+      }
+
+      // Move Boss Brick
+      for (const b of st.bricks) {
+        if (b.kind === 'boss') {
+          b.x += b.dir * b.spd * dt;
+          if (b.x < ARENA.x + 12) { b.x = ARENA.x + 12; b.dir = 1; }
+          if (b.x + b.w > ARENA.x + ARENA.w - 12) { b.x = ARENA.x + ARENA.w - 12 - b.w; b.dir = -1; }
+        }
+      }
+
+      // Update Lasers
+      const dmg = getBallDamage();
+      for (let i = st.lasers.length - 1; i >= 0; i--) {
+        const l = st.lasers[i];
+        l.y += l.vy * dt;
+        let hit = false;
+        for (let j = st.bricks.length - 1; j >= 0; j--) {
+          const b = st.bricks[j];
+          if (l.x >= b.x && l.x <= b.x + b.w && l.y >= b.y && l.y <= b.y + b.h) {
+            hitBrick(j, dmg * 0.75); hit = true; break;
+          }
+        }
+        if (hit || l.y < ARENA.y) st.lasers.splice(i, 1);
+      }
+
+      // Update Balls
+      for (let i = st.balls.length - 1; i >= 0; i--) {
+        const bl = st.balls[i];
+        bl.trail.push({ x: bl.x, y: bl.y });
+        if (bl.trail.length > 8) bl.trail.shift();
+        bl.x += bl.vx * dt;
+        bl.y += bl.vy * dt;
+
+        // Walls
+        if (bl.x - bl.r < ARENA.x) { bl.x = ARENA.x + bl.r; bl.vx = Math.abs(bl.vx); }
+        if (bl.x + bl.r > ARENA.x + ARENA.w) { bl.x = ARENA.x + ARENA.w - bl.r; bl.vx = -Math.abs(bl.vx); }
+        if (bl.y - bl.r < ARENA.y) { bl.y = ARENA.y + bl.r; bl.vy = Math.abs(bl.vy); }
+
+        // Safety Energy Barrier
+        if (st.buffs.barrier > 0 && bl.y + bl.r > ARENA.y + ARENA.h - 4) {
+          bl.y = ARENA.y + ARENA.h - 4 - bl.r;
+          bl.vy = -Math.abs(bl.vy);
+          SFX.paddle();
+        }
+
+        // Paddle Bounce
+        if (bl.vy > 0 && bl.y + bl.r >= st.pad.y - st.pad.h / 2 && bl.y - bl.r <= st.pad.y + st.pad.h / 2 &&
+            bl.x >= st.pad.x - halfP - bl.r && bl.x <= st.pad.x + halfP + bl.r) {
+          const rel = Math.max(-0.92, Math.min(0.92, (bl.x - st.pad.x) / halfP));
+          const spd = Math.min(680, Math.hypot(bl.vx, bl.vy) * 1.015);
+          const ang = -Math.PI / 2 + rel * 1.12;
+          bl.vx = Math.cos(ang) * spd;
+          bl.vy = Math.sin(ang) * spd;
+          bl.y = st.pad.y - st.pad.h / 2 - bl.r;
+          st.combo = 0;
+          SFX.paddle();
+          addParticles(bl.x, st.pad.y - 6, hero.accent, 6, 130);
+        }
+
+        // Brick Collisions
+        for (let j = st.bricks.length - 1; j >= 0; j--) {
+          const b = st.bricks[j];
+          const nx = Math.max(b.x, Math.min(bl.x, b.x + b.w));
+          const ny = Math.max(b.y, Math.min(bl.y, b.y + b.h));
+          const dx = bl.x - nx, dy = bl.y - ny;
+          if (dx * dx + dy * dy <= bl.r * bl.r) {
+            if (st.buffs.fire <= 0 || b.kind === 'boss') {
+              if (Math.abs(dx) > Math.abs(dy)) bl.vx = -bl.vx; else bl.vy = -bl.vy;
+            }
+            hitBrick(j, dmg);
+            break;
+          }
+        }
+
+        // Lost Ball
+        if (bl.y - bl.r > ARENA.y + ARENA.h + 18) st.balls.splice(i, 1);
+      }
+
+      if (st.balls.length === 0) {
+        st.lives--;
+        st.combo = 0;
+        SFX.lose();
+        if (st.lives <= 0) { triggerGameOver(); return; }
+        spawnBall(st.pad.x, st.pad.y - 18, -Math.PI / 2 + (Math.random() - 0.5) * 0.4);
+        showToast(`💔 能量球漏接！剩餘 ${st.lives} 條命`);
+      }
+
+      // Power-Up Drops
+      for (let i = st.drops.length - 1; i >= 0; i--) {
+        const d = st.drops[i];
+        d.y += d.vy * dt;
+        if (Math.abs(d.y - st.pad.y) < 22 && Math.abs(d.x - st.pad.x) < halfP + 16) {
+          st.drops.splice(i, 1);
+          SFX.power();
+          if (d.kind === 'multi') {
+            const cur = st.balls.slice(0, 3);
+            cur.forEach(b => { spawnBall(b.x, b.y, -Math.PI * 0.35); spawnBall(b.x, b.y, -Math.PI * 0.65); });
+            addFloat(st.pad.x, st.pad.y - 24, '⚡ 三球分裂！', '#38bdf8', 16);
+          } else if (d.kind === 'fire') { st.buffs.fire = 7.5; addFloat(st.pad.x, st.pad.y - 24, '🔥 火球貫穿 7.5s!', '#fb923c', 16); }
+          else if (d.kind === 'laser') { st.buffs.laser = 8.5; addFloat(st.pad.x, st.pad.y - 24, '🔫 雙雷射砲 8.5s!', '#f472b6', 16); }
+          else if (d.kind === 'wide') { st.buffs.wide = 10.0; addFloat(st.pad.x, st.pad.y - 24, '🛡️ 超寬能量板!', '#34d399', 16); }
+          else if (d.kind === 'barrier') { st.buffs.barrier = 11.0; addFloat(st.pad.x, st.pad.y - 24, '✨ 底部防護盾!', '#a855f7', 16); }
+          else if (d.kind === 'coin') { const c = Math.max(2, Math.round(3 * getCoinMult())); st.runCoins += c; addFloat(st.pad.x, st.pad.y - 24, `🪙 +${c} 金幣!`, '#fde047', 16); }
+          continue;
+        }
+        if (d.y > ARENA.y + ARENA.h + 24) st.drops.splice(i, 1);
+      }
+
+      // Stage Clear check
+      if (st.bricks.length === 0) nextStage();
+
+      // VFX timers
+      for (let i = st.particles.length - 1; i >= 0; i--) {
+        const p = st.particles[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.95; p.vy *= 0.95; p.life -= dt;
+        if (p.life <= 0) st.particles.splice(i, 1);
+      }
+      for (let i = st.waves.length - 1; i >= 0; i--) {
+        const w = st.waves[i]; w.r += (w.maxR - w.r) * Math.min(1, dt * 8); w.alpha -= dt * 2.2;
+        if (w.alpha <= 0) st.waves.splice(i, 1);
+      }
+      for (let i = st.floats.length - 1; i >= 0; i--) {
+        const f = st.floats[i]; f.y -= 44 * dt; f.life -= dt;
+        if (f.life <= 0) st.floats.splice(i, 1);
+      }
+      updateHudUI();
+    }
+
+    // =========================================================================
+    // 5. RENDER 3D-BEVEL NEON ARENA
+    // =========================================================================
+    function render() {
+      ctx.fillStyle = '#060918';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save();
+      if (st.shake > 0) {
+        const m = st.shake * 10;
+        ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+      }
+
+      // Arena Frame
+      ctx.fillStyle = 'rgba(13, 18, 42, 0.86)';
+      ctx.fillRect(ARENA.x, ARENA.y, ARENA.w, ARENA.h);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(ARENA.x, ARENA.y, ARENA.w, ARENA.h);
+
+      // Subtle Neon Grid
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = ARENA.x + 48; x < ARENA.x + ARENA.w; x += 48) { ctx.moveTo(x, ARENA.y); ctx.lineTo(x, ARENA.y + ARENA.h); }
+      for (let y = ARENA.y + 48; y < ARENA.y + ARENA.h; y += 48) { ctx.moveTo(ARENA.x, y); ctx.lineTo(ARENA.x + ARENA.w, y); }
+      ctx.stroke();
+
+      // Safety Barrier
+      if (st.buffs.barrier > 0) {
+        ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(ARENA.x, ARENA.y + ARENA.h - 4); ctx.lineTo(ARENA.x + ARENA.w, ARENA.y + ARENA.h - 4); ctx.stroke();
+      }
+
+      // Shockwaves
+      st.waves.forEach((w) => {
+        ctx.save(); ctx.globalAlpha = Math.max(0, w.alpha); ctx.strokeStyle = w.col; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      });
+
+      // 3D-Bevel Neon Bricks
+      for (const b of st.bricks) {
+        ctx.fillStyle = b.col;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        // 3D top/left highlight & bottom/right bevel shadow
+        ctx.fillStyle = 'rgba(255,255,255,0.30)';
+        ctx.fillRect(b.x, b.y, b.w, 4);
+        ctx.fillStyle = 'rgba(0,0,0,0.28)';
+        ctx.fillRect(b.x, b.y + b.h - 4, b.w, 4);
+        if (b.kind === 'boss') {
+          ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2.5;
+          ctx.strokeRect(b.x, b.y, b.w, b.h);
+          ctx.fillStyle = '#fff'; ctx.font = '900 14px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(`👑 BOSS HP ${Math.ceil(b.hp)}/${b.maxHp}`, b.x + b.w / 2, b.y + b.h / 2);
+        } else if (b.kind === 'bomb' || b.kind === 'gold') {
+          ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(b.kind === 'bomb' ? '💣' : '⭐', b.x + b.w / 2, b.y + b.h / 2 + 1);
+        } else if (b.hp > 1) {
+          ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = '900 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(Math.ceil(b.hp), b.x + b.w / 2, b.y + b.h / 2);
+        }
+      }
+
+      // Power-Up Drops
+      const dropIcons = { multi: '⚡', fire: '🔥', laser: '🔫', wide: '🛡️', barrier: '✨', coin: '🪙' };
+      for (const d of st.drops) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.beginPath(); ctx.arc(d.x, d.y, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(dropIcons[d.kind] || '✨', d.x, d.y + 1);
+      }
+
+      // Lasers
+      ctx.fillStyle = '#f472b6';
+      for (const l of st.lasers) ctx.fillRect(l.x - 2.5, l.y - 12, 5, 16);
+
+      // Glowing Hero Paddle + Real Portrait
+      const hero = getHero();
+      const px = st.pad.x - st.pad.w / 2, py = st.pad.y - st.pad.h / 2;
+      ctx.save();
+      ctx.fillStyle = hero.color;
+      ctx.shadowColor = hero.color; ctx.shadowBlur = 18;
+      ctx.beginPath(); ctx.roundRect(px, py, st.pad.w, st.pad.h, 9); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillRect(px + 10, py + 2, st.pad.w - 20, 3);
+      if (st.buffs.laser > 0) {
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(px + 6, py - 7, 6, 8);
+        ctx.fillRect(px + st.pad.w - 12, py - 7, 6, 8);
+      }
+      const img = avatarCache[hero.id];
+      if (img && img.complete && img.naturalWidth > 0) {
+        const r = 15;
+        ctx.save(); ctx.beginPath(); ctx.arc(st.pad.x, st.pad.y, r, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(img, st.pad.x - r, st.pad.y - r, r * 2, r * 2); ctx.restore();
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(st.pad.x, st.pad.y, r, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+
+      // Energy Balls + Trails
+      const fireOn = st.buffs.fire > 0;
+      for (const bl of st.balls) {
+        for (let k = 0; k < bl.trail.length; k++) {
+          const t = bl.trail[k];
+          ctx.globalAlpha = (k / bl.trail.length) * 0.45;
+          ctx.fillStyle = fireOn ? '#fb923c' : hero.accent;
+          ctx.beginPath(); ctx.arc(t.x, t.y, bl.r * (0.4 + 0.5 * k / bl.trail.length), 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = fireOn ? '#fde047' : '#ffffff';
+        ctx.shadowColor = fireOn ? '#ef4444' : hero.color; ctx.shadowBlur = 14;
+        ctx.beginPath(); ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // Particles & Floats
+      for (const p of st.particles) {
+        ctx.globalAlpha = Math.max(0, p.life * 2.2);
+        ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      for (const f of st.floats) {
+        ctx.save(); ctx.globalAlpha = Math.max(0, f.life * 1.4);
+        ctx.font = `900 ${f.size}px "Noto Sans TC", sans-serif`; ctx.textAlign = 'center';
+        ctx.fillStyle = f.col; ctx.fillText(f.txt, f.x, f.y); ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 6. UI, SYNERGY BANNER & UNIFIED HUB SSO SYNC
+    // =========================================================================
+    function renderHeroSynergy() {
+      const el = document.getElementById('heroSynergy');
+      if (!el) return;
+      const syn = getHeroSynergy();
+      el.innerHTML = `
+        <div class="syn-head">
+          <span class="syn-title">🌟 破壁英雄羈絆（全英雄球板數值永久加成）</span>
+          <span class="syn-count">已解鎖 ${syn.count} / ${syn.total} 位</span>
+        </div>
+        <div class="syn-chips">
+          <span class="syn-chip">💥 球傷 <b>+${syn.extra * 10}%</b></span>
+          <span class="syn-chip">🛡️ 板寬 <b>+${syn.extra * 4}%</b></span>
+          <span class="syn-chip">⚡ 集氣 <b>+${syn.extra * 8}%</b></span>
+          <span class="syn-chip">🪙 金幣 <b>+${syn.extra * 5}%</b></span>
+        </div>
+        <div class="syn-hint">每多解鎖 1 位英雄，全體永久追加：球體傷害 +10%、球板寬度 +4%、大招集氣 +8%、金幣 +5%</div>
+      `;
+    }
+
+    function renderHeroGrid() {
+      renderHeroSynergy();
+      const grid = document.getElementById('heroGrid');
+      grid.innerHTML = '';
+      HEROES.forEach((h) => {
+        const own = save.ownedHeroes.includes(h.id);
+        const eq = save.equippedHero === h.id;
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'hero-card' + (eq ? ' sel' : '');
+        const tag = eq ? '<span style="color:#6ee7b7;font-size:10.5px;">使用中</span>' : (own ? '<span style="color:#7dd3fc;font-size:10.5px;">已擁有</span>' : `<span style="color:#fde68a;font-size:10.5px;">🪙 ${h.price}</span>`);
+        const avHtml = h.avatar ? `<img class="char-av" src="${h.avatar}" alt="">` : `${h.icon} `;
+        btn.innerHTML = `<div class="hero-top"><span style="display:inline-flex;align-items:center;">${avHtml}${h.name}</span>${tag}</div><div class="hero-desc">${h.desc}</div>`;
+        btn.addEventListener('click', () => {
+          if (own) { save.equippedHero = h.id; persistSave(); SFX.coin(); showToast(`🧱 已切換英雄：【${h.name}】`); }
+          else if (save.coins >= h.price) {
+            save.coins -= h.price; save.ownedHeroes.push(h.id); save.equippedHero = h.id; persistSave(); SFX.power();
+            const syn = getHeroSynergy();
+            showToast(`🎉 解鎖【${h.name}】！全體永久加成：球傷+${syn.extra * 10}% 板寬+${syn.extra * 4}%！`);
+          } else { showToast(`⚠️ 金幣不足（需 ${h.price} 🪙）`); }
+          renderHeroGrid(); updateHudUI();
+        });
+        grid.appendChild(btn);
+      });
+      renderPermUpgrades();
+    }
+
+    function renderPermUpgrades() {
+      const grid = document.getElementById('permUpgGrid');
+      const lbl = document.getElementById('permUpgLvl');
+      if (!grid) return;
+      if (!save.upgrades) save.upgrades = { pwr: 0, wide: 0, ult: 0 };
+      const totalLv = Object.values(save.upgrades).reduce((a, b) => a + (Number(b) || 0), 0);
+      if (lbl) lbl.textContent = `總等級 Lv.${totalLv}/15`;
+      grid.innerHTML = '';
+      PERM_UPGRADES.forEach((u) => {
+        const lv = save.upgrades[u.id] || 0;
+        const maxed = lv >= u.maxLv;
+        const cost = u.baseCost + lv * u.stepCost;
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'perm-btn'; btn.disabled = maxed;
+        let segs = ''; for (let i = 0; i < u.maxLv; i++) segs += `<span class="perm-seg ${i < lv ? 'on' : ''}"></span>`;
+        btn.innerHTML = `<div class="perm-top"><span>${u.icon} ${u.name}</span><span style="color:#7dd3fc;">Lv.${lv}</span></div><div class="perm-bars">${segs}</div><div class="perm-foot"><span>${u.desc}</span><span class="perm-cost">${maxed ? 'MAX' : `🪙 ${cost}`}</span></div>`;
+        btn.addEventListener('click', () => {
+          if (maxed) return;
+          if (save.coins < cost) { showToast(`⚠️ 金幣不足（需要 ${cost} 🪙）`); return; }
+          save.coins -= cost; save.upgrades[u.id] = lv + 1; persistSave(); SFX.power();
+          showToast(`⚡ ${u.name} 升至 Lv.${lv + 1}！`);
+          renderHeroGrid(); updateHudUI();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    function updateAccountUI() {
+      const u = auth.currentUser;
+      document.getElementById('hudPlayerName').textContent = getPlayerName();
+      document.getElementById('startAcctName').textContent = u ? u.name : '訪客玩家';
+      document.getElementById('startAcctSub').textContent = u ? `已登入 ${u.email} · 獨立雲端存檔` : '於遊戲綜合區登入即可自動同步帳號';
+      ['hudAvatar', 'startAvatar'].forEach((id) => {
+        const el = document.getElementById(id); if (!el) return;
+        if (u && u.picture && /^https?:\/\//i.test(u.picture)) { el.innerHTML = `<img src="${u.picture}" referrerpolicy="no-referrer" alt="" />`; }
+        else if (u) { el.textContent = (u.name || 'G')[0].toUpperCase(); el.style.background = u.color || '#0ea5e9'; }
+        else { el.textContent = '👤'; el.style.background = '#475569'; }
+      });
+    }
+
+    function updateHudUI() {
+      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      document.getElementById('startCoins').textContent = save.coins;
+      document.getElementById('hudStage').textContent = `STAGE ${st.stage}`;
+      document.getElementById('hudLives').textContent = '❤️'.repeat(Math.max(0, st.lives)) || '💔';
+      document.getElementById('hudCombo').textContent = `x${st.combo}`;
+      document.getElementById('hudScore').textContent = String(Math.floor(st.score)).padStart(5, '0');
+
+      const bs = document.getElementById('buffStrip');
+      if (bs && st.mode === 'playing') {
+        let html = '';
+        if (st.buffs.fire > 0) html += `<span class="buff-tag">🔥 火球 ${st.buffs.fire.toFixed(1)}s</span>`;
+        if (st.buffs.laser > 0) html += `<span class="buff-tag">🔫 雷射 ${st.buffs.laser.toFixed(1)}s</span>`;
+        if (st.buffs.wide > 0) html += `<span class="buff-tag">🛡️ 寬板 ${st.buffs.wide.toFixed(1)}s</span>`;
+        if (st.buffs.barrier > 0) html += `<span class="buff-tag">✨ 防護盾 ${st.buffs.barrier.toFixed(1)}s</span>`;
+        bs.innerHTML = html;
+      }
+
+      const hero = getHero();
+      const pct = Math.floor(st.ultCharge);
+      document.getElementById('ultFill').style.width = pct + '%';
+      document.getElementById('ultLabel').textContent = pct >= 100 ? `${hero.icon} ${hero.ultName}！` : `${hero.icon} 奧義充能 ${pct}%`;
+      document.getElementById('ultSub').textContent = pct >= 100 ? '點擊 / 右鍵 / Space / F 立即發動' : '擊碎磚塊加速充能';
+      document.getElementById('btnUlt').classList.toggle('ready', pct >= 100);
+    }
+
+    function togglePause() {
+      if (st.mode === 'playing') { st.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
+      else if (st.mode === 'paused') { st.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+    }
+    function toggleMute() {
+      SFX.muted = !SFX.muted;
+      document.getElementById('btnMute').textContent = SFX.muted ? '🔇' : '🔊';
+      if (SFX.muted) SFX.stopBgm(); else if (SFX.bgmOn) SFX.startBgm();
+    }
+    function toggleBgm() {
+      SFX.bgmOn = !SFX.bgmOn;
+      document.getElementById('btnBgm').textContent = SFX.bgmOn ? '🎵' : '🔕';
+      if (SFX.bgmOn) SFX.startBgm(); else SFX.stopBgm();
+    }
+
+    document.getElementById('btnStart').addEventListener('click', startGame);
+    document.getElementById('btnRetry').addEventListener('click', startGame);
+    document.getElementById('btnResume').addEventListener('click', togglePause);
+    document.getElementById('btnPause').addEventListener('click', togglePause);
+    document.getElementById('btnMute').addEventListener('click', toggleMute);
+    document.getElementById('btnBgm').addEventListener('click', toggleBgm);
+    document.getElementById('btnUlt').addEventListener('click', activateUltimate);
+    document.getElementById('hudAcctBtn').addEventListener('click', () => postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID }));
+    ['btnMenu', 'btnOverMenu'].forEach((id) => {
+      document.getElementById(id).addEventListener('click', () => {
+        st.mode = 'menu';
+        document.getElementById('pauseOverlay').classList.add('hidden');
+        document.getElementById('overOverlay').classList.add('hidden');
+        document.getElementById('buffStrip').classList.add('hidden');
+        document.getElementById('ultBar').classList.add('hidden');
+        document.getElementById('startOverlay').classList.remove('hidden');
+        renderHeroGrid(); updateHudUI();
+      });
+    });
+
+    window.addEventListener('message', (ev) => {
+      const msg = ev.data;
+      if (!msg || typeof msg !== 'object') return;
+      if (msg.type === 'ARCADE_SSO_SYNC') {
+        const prev = auth.currentUser ? auth.currentUser.uid : null;
+        const incoming = (msg.auth && msg.auth.currentUser) || msg.user || null;
+        auth.currentUser = incoming && incoming.uid ? incoming : null;
+        const next = auth.currentUser ? auth.currentUser.uid : null;
+        if (prev !== next) { save = loadSave(); renderHeroGrid(); }
+        updateAccountUI(); updateHudUI();
+        postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: next, stats: getSummaryStats() });
+      } else if (msg.type === 'ARCADE_REQUEST_STATS') {
+        postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
+      }
+    });
+    window.addEventListener('storage', (ev) => {
+      if (ev.key === SSO_KEY || ev.key === getSaveKey()) {
+        auth = loadAuth(); save = loadSave(); updateAccountUI(); renderHeroGrid(); updateHudUI();
+      }
+    });
+
+    updateAccountUI();
+    renderHeroGrid();
+    updateHudUI();
+    postToHub({ type: 'ARCADE_GAME_READY', gameId: GAME_ID, stats: getSummaryStats() });
+    postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
+
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.035, (now - last) / 1000);
+      last = now;
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
