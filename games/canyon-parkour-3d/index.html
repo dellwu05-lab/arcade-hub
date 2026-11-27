@@ -596,6 +596,63 @@
       margin-top: 2px;
     }
 
+    .synergy-bar {
+      margin: 10px 16px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(56, 189, 248, 0.14), rgba(168, 85, 247, 0.16));
+      border: 1px solid rgba(250, 204, 21, 0.42);
+      box-shadow: 0 6px 20px rgba(250, 204, 21, 0.12);
+      text-align: left;
+    }
+    .synergy-bar.compact {
+      margin: 0 0 12px;
+      padding: 9px 12px;
+    }
+    .syn-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .syn-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: #fde047;
+      letter-spacing: 0.3px;
+    }
+    .syn-count {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(250, 204, 21, 0.2);
+      color: #fef08a;
+      border: 1px solid rgba(250, 204, 21, 0.45);
+    }
+    .syn-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .syn-chip {
+      font-size: 11px;
+      color: #e2e8f0;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 3px 7px;
+    }
+    .syn-chip b { color: #86efac; }
+    .syn-hint {
+      font-size: 10.5px;
+      color: #cbd5e1;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
     .shop-list {
       padding: 14px 16px;
       display: grid;
@@ -1803,6 +1860,7 @@
           <input id="playerNameInput" class="name-input" type="text" maxlength="16" autocomplete="off" placeholder="輸入你的名字（預設：峽谷跑者）" />
         </div>
 
+        <div class="synergy-bar compact" id="startSynergy"></div>
         <div class="stage-strip" id="stageStrip"></div>
 
         <div class="controls-grid">
@@ -1918,6 +1976,7 @@
           </div>
           <button class="hud-btn icon-only" id="btnCloseShop" type="button" aria-label="關閉商店">✕</button>
         </div>
+        <div class="synergy-bar" id="shopSynergy"></div>
         <div class="shop-list" id="shopList"></div>
         <div class="shop-footer">
           <div class="shop-selected-info">
@@ -5689,14 +5748,47 @@
       return 1.0;
     }
 
+    function getHeroSynergy() {
+      const count = (save.ownedChars && save.ownedChars.length) || 1;
+      const extra = Math.max(0, count - 1);
+      return {
+        count,
+        total: CHARACTERS.length,
+        extra,
+        coinMult: 1 + extra * 0.08,
+        scoreMult: 1 + extra * 0.10,
+        ultMult: 1 + extra * 0.06,
+        magnetAdd: extra * 0.18
+      };
+    }
+
+    function renderHeroSynergyBanner(el) {
+      if (!el) return;
+      const syn = getHeroSynergy();
+      el.innerHTML = `
+        <div class="syn-head">
+          <span class="syn-title">🌟 英雄圖鑑羈絆（全體角色數值永久加成）</span>
+          <span class="syn-count">已解鎖 ${syn.count} / ${syn.total} 位</span>
+        </div>
+        <div class="syn-chips">
+          <span class="syn-chip">🪙 金幣 <b>+${syn.extra * 8}%</b></span>
+          <span class="syn-chip">⭐ 分數 <b>+${syn.extra * 10}%</b></span>
+          <span class="syn-chip">⚡ 集氣 <b>+${syn.extra * 6}%</b></span>
+          <span class="syn-chip">🧲 吸金 <b>+${syn.magnetAdd.toFixed(2)}m</b></span>
+        </div>
+        <div class="syn-hint">每多新增解鎖 1 位英雄，全體角色永久追加：金幣 +8%、分數 +10%、大招集氣 +6%、吸金範圍 +0.18m</div>
+      `;
+    }
+
     function addSkillCharge(amt) {
       if (state.skillCharge >= 100) return;
       const energyLv = (save.upgrades && save.upgrades.energy) || 0;
+      const syn = getHeroSynergy();
       const prev = state.skillCharge;
-      state.skillCharge = Math.min(100, state.skillCharge + amt * (1 + energyLv * 0.18));
+      state.skillCharge = Math.min(100, state.skillCharge + amt * (1 + energyLv * 0.18) * syn.ultMult);
       if (prev < 100 && state.skillCharge >= 100) {
         const sk = CHAR_SKILLS[save.equippedChar] || CHAR_SKILLS.rex;
-        showToast(`${sk.icon} 大招就緒！【${sk.name}】(按 Shift / E)`);
+        showToast(`${sk.icon} 大招就緒！【${sk.name}】(按 F / Enter / Shift)`);
         AudioFX.playPowerup();
       }
     }
@@ -5705,8 +5797,9 @@
       const sx = ob.x - state.distance;
       spawnCrashBurst(sx, ob.y + ob.h * 0.5, false);
       obstacles.splice(idx, 1);
-      const coinGain = state.buffs.double > 0 ? 6 : 3;
-      const pts = Math.round(140 * getComboMult() * (state.buffs.double > 0 ? 2 : 1));
+      const syn = getHeroSynergy();
+      const coinGain = Math.max(1, Math.round((state.buffs.double > 0 ? 6 : 3) * syn.coinMult));
+      const pts = Math.round(140 * getComboMult() * (state.buffs.double > 0 ? 2 : 1) * syn.scoreMult);
       state.stageCoins += coinGain;
       save.stats.totalCoins += coinGain;
       state.score += pts;
@@ -5801,15 +5894,17 @@
       spawnFireworks(b.x, b.y);
       spawnFireworks(b.x - 1.5, b.y + 0.8);
       AudioFX.playStageClear();
-      const bonusCoins = state.buffs.double > 0 ? 60 : 30;
+      const synB = getHeroSynergy();
+      const bonusCoins = Math.round((state.buffs.double > 0 ? 60 : 30) * synB.coinMult);
       state.stageCoins += bonusCoins;
       save.stats.totalCoins += bonusCoins;
       save.stats.bossesDefeated += 1;
-      state.score += 450;
+      const bossPts = Math.round(450 * synB.scoreMult);
+      state.score += bossPts;
       persistSave();
       refreshMissionDots();
-      showToast(`💥 擊退空中魔王！+450 分 +${bonusCoins} 金幣！`);
-      spawnFloatText(b.x - 2, b.y, `💥 擊退魔王 +450`, '#fde047');
+      showToast(`💥 擊退空中魔王！+${bossPts} 分 +${bonusCoins} 金幣！`);
+      spawnFloatText(b.x - 2, b.y, `💥 擊退魔王 +${bossPts}`, '#fde047');
     }
 
     function update(dt) {
@@ -5941,7 +6036,8 @@
 
       const stepDist = state.speed * dt;
       state.distance += stepDist;
-      const scoreMult = (state.buffs.double > 0 ? 2 : 1) * (1 + (getComboMult() - 1) * 0.25);
+      const synDist = getHeroSynergy();
+      const scoreMult = (state.buffs.double > 0 ? 2 : 1) * (1 + (getComboMult() - 1) * 0.25) * synDist.scoreMult;
       state.score += stepDist * 8.5 * scoreMult;
       addSkillCharge(dt * 9.5);
 
@@ -6111,10 +6207,11 @@
         }
       }
 
-      // Coin Pickup (Character Magnet + Upgrade Magnet + Super Magnet Buff + Combo Multiplier!)
+      // Coin Pickup (Character Magnet + Upgrade Magnet + Hero Synergy + Super Magnet Buff + Combo Multiplier!)
       const magLvC = (save.upgrades && save.upgrades.magnet) || 0;
       const goldLvC = (save.upgrades && save.upgrades.gold) || 0;
-      const activeMagnet = state.buffs.magnet > 0 ? (12.5 + magLvC * 0.8) : (ch.magnetRange + magLvC * 0.45);
+      const synC = getHeroSynergy();
+      const activeMagnet = state.buffs.magnet > 0 ? (12.5 + magLvC * 0.8 + synC.magnetAdd) : (ch.magnetRange + magLvC * 0.45 + synC.magnetAdd);
       for (let i = 0; i < coins.length; i++) {
         const c = coins[i];
         if (c.collected) continue;
@@ -6136,8 +6233,8 @@
           if (state.combo > save.stats.maxCombo) save.stats.maxCombo = state.combo;
 
           const dbl = state.buffs.double > 0 ? 2 : 1;
-          const gained = Math.max(1, Math.round(c.value * ch.coinMult * (1 + goldLvC * 0.2) * dbl));
-          const pts = Math.round((c.isGem ? 120 : 25) * getComboMult() * (1 + goldLvC * 0.12) * dbl);
+          const gained = Math.max(1, Math.round(c.value * ch.coinMult * (1 + goldLvC * 0.2) * synC.coinMult * dbl));
+          const pts = Math.round((c.isGem ? 120 : 25) * getComboMult() * (1 + goldLvC * 0.12) * synC.scoreMult * dbl);
           state.stageCoins += gained;
           save.stats.totalCoins += gained;
           state.score += pts;
@@ -6499,6 +6596,7 @@
       const stage = getCurrentStage();
       document.getElementById('hudPlayerName').textContent = getPlayerName();
       if (typeof updateAccountUI === 'function') updateAccountUI();
+      if (typeof renderHeroSynergyBanner === 'function') renderHeroSynergyBanner(document.getElementById('startSynergy'));
       document.getElementById('hudStageNum').textContent = state.endless ? '♾️ 無盡模式' : `第 ${stage.id} 關`;
       document.getElementById('hudStageName').textContent = stage.name;
       document.getElementById('hudCoins').textContent = save.coins + (state.mode === 'playing' ? state.stageCoins : 0);
@@ -7005,6 +7103,7 @@
     }
 
     function renderShopUI() {
+      if (typeof renderHeroSynergyBanner === 'function') renderHeroSynergyBanner(document.getElementById('shopSynergy'));
       const list = document.getElementById('shopList');
       list.innerHTML = '';
 
@@ -7077,7 +7176,8 @@
         persistSave();
         AudioFX.playBuy();
         spawnFireworks(PLAYER_X, 2.2);
-        showToast(`🎉 成功解鎖並裝備【${cur.name}】！`);
+        const syn = getHeroSynergy();
+        showToast(`🎉 解鎖【${cur.name}】！全體角色永久加成：金幣+${syn.extra * 8}% 分數+${syn.extra * 10}%！`);
       } else {
         save.equippedChar = cur.id;
         persistSave();

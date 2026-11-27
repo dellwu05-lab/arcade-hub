@@ -171,6 +171,19 @@
       .tbtn { padding: 12px 2px; font-size: 12px; }
       .perm-upg-grid { grid-template-columns: 1fr; }
     }
+    .synergy-bar {
+      margin: 0 0 10px; padding: 9px 12px; border-radius: 13px; text-align: left;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(56, 189, 248, 0.14), rgba(236, 72, 153, 0.16));
+      border: 1px solid rgba(250, 204, 21, 0.42);
+      box-shadow: 0 6px 18px rgba(250, 204, 21, 0.12);
+    }
+    .syn-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
+    .syn-title { font-size: 12px; font-weight: 900; color: #fde047; }
+    .syn-count { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(250, 204, 21, 0.2); color: #fef08a; border: 1px solid rgba(250, 204, 21, 0.45); }
+    .syn-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .syn-chip { font-size: 11px; color: #e2e8f0; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 7px; padding: 2px 7px; }
+    .syn-chip b { color: #86efac; }
+    .syn-hint { font-size: 10.5px; color: #cbd5e1; margin-top: 5px; line-height: 1.35; }
   </style>
 </head>
 <body>
@@ -261,6 +274,7 @@
           <span style="font-weight:800;color:#fde68a;">🪙 <span id="startCoins">40</span></span>
         </div>
 
+        <div class="synergy-bar" id="themeSynergy"></div>
         <div class="theme-grid" id="themeGrid"></div>
 
         <div class="perm-upg-head"><span>🔧 霓虹科技升級（點擊強化）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
@@ -501,6 +515,39 @@
       return game.bag.pop();
     }
 
+    function getHeroSynergy() {
+      const count = (save.ownedThemes && save.ownedThemes.length) || 1;
+      const extra = Math.max(0, count - 1);
+      return {
+        count,
+        total: THEMES.length,
+        extra,
+        scoreMult: 1 + extra * 0.10,
+        coinMult: 1 + extra * 0.10,
+        feverAdd: extra * 0.8,
+        specialAdd: extra * 0.012
+      };
+    }
+
+    function renderHeroSynergy() {
+      const el = document.getElementById('themeSynergy');
+      if (!el) return;
+      const syn = getHeroSynergy();
+      el.innerHTML = `
+        <div class="syn-head">
+          <span class="syn-title">🌟 夥伴圖鑑羈絆（全主題數值永久加成）</span>
+          <span class="syn-count">已解鎖 ${syn.count} / ${syn.total} 位</span>
+        </div>
+        <div class="syn-chips">
+          <span class="syn-chip">⭐ 分數 <b>+${syn.extra * 10}%</b></span>
+          <span class="syn-chip">🪙 金幣 <b>+${syn.extra * 10}%</b></span>
+          <span class="syn-chip">🌈 FEVER <b>+${syn.feverAdd.toFixed(1)}s</b></span>
+          <span class="syn-chip">💣 特效 <b>+${(syn.specialAdd * 100).toFixed(1)}%</b></span>
+        </div>
+        <div class="syn-hint">每多解鎖 1 位夥伴／主題，全體永久追加：分數 +10%、金幣 +10%、FEVER +0.8秒、特效方塊率 +1.2%</div>
+      `;
+    }
+
     function spawnPiece(typeIdx = null) {
       while (game.queue.length < 5) game.queue.push(nextFromBag());
       const t = typeIdx !== null ? typeIdx : game.queue.shift();
@@ -510,7 +557,8 @@
       const y = 0;
       const roll = Math.random();
       const upgSp = (save.upgrades && save.upgrades.special) || 0;
-      const thBonusSp = (getTheme().specialBonus || 0) * 0.5;
+      const syn = getHeroSynergy();
+      const thBonusSp = (getTheme().specialBonus || 0) * 0.5 + syn.specialAdd * 0.5;
       const bombChance = 0.13 + upgSp * 0.025 + thBonusSp;
       const goldChance = 0.12 + upgSp * 0.025 + thBonusSp;
       const special = roll < bombChance ? 'bomb' : (roll < bombChance + goldChance ? 'gold' : '');
@@ -644,19 +692,20 @@
         const upgFev = (save.upgrades && save.upgrades.fever) || 0;
         const upgCoin = (save.upgrades && save.upgrades.coin) || 0;
         const th = getTheme();
+        const syn = getHeroSynergy();
         if (game.combo >= 3 || full.length >= 3) {
-          game.feverTimer = 12.0 + upgFev * 2.5 + (th.feverBonus || 0);
+          game.feverTimer = 12.0 + upgFev * 2.5 + (th.feverBonus || 0) + syn.feverAdd;
           spawnFloat(COLS * CELL / 2, 180, '🌈 FEVER 雙倍狂熱!', '#f472b6', 22);
         }
         const feverMult = game.feverTimer > 0 ? 2 : 1;
         const basePts = [0, 100, 300, 500, 900][Math.min(4, full.length)] || 1100;
         const mult = (1 + (game.combo - 1) * 0.35) * feverMult;
-        const gainedPts = Math.round(basePts * game.level * mult);
+        const gainedPts = Math.round(basePts * game.level * mult * syn.scoreMult);
         game.score += gainedPts;
         game.lines += full.length;
         game.level = Math.min(18, 1 + Math.floor(game.lines / 8));
         const rawEarned = (full.length * 3 + (full.length >= 4 ? 10 : 0) + (game.combo >= 2 ? game.combo * 2 : 0)) * feverMult + goldCount * 15;
-        const earned = Math.max(1, Math.round(rawEarned * (1 + upgCoin * 0.2) * (th.coinMult || 1)));
+        const earned = Math.max(1, Math.round(rawEarned * (1 + upgCoin * 0.2) * (th.coinMult || 1) * syn.coinMult));
         game.runCoins += earned;
         game.shake = (bombTriggered || full.length >= 3) ? 0.38 : 0.16;
         SFX.clear(full.length, game.combo - 1);
@@ -904,6 +953,7 @@
     }
 
     function renderThemes() {
+      renderHeroSynergy();
       const grid = document.getElementById('themeGrid');
       grid.innerHTML = '';
       THEMES.forEach((th) => {
@@ -917,7 +967,7 @@
         btn.innerHTML = `<div class="theme-top"><span style="display:inline-flex;align-items:center;">${avHtml}${th.name}</span>${tag}</div><div class="swatches">${th.palette.slice(0, 6).map(c => `<span class="sw" style="background:${c}"></span>`).join('')}</div>`;
         btn.addEventListener('click', () => {
           if (own) { save.equippedTheme = th.id; persistSave(); SFX.rotate(); showToast(`🎨 已切換主題：【${th.name}】`); }
-          else if (save.coins >= th.price) { save.coins -= th.price; save.ownedThemes.push(th.id); save.equippedTheme = th.id; persistSave(); SFX.clear(3, 1); showToast(`🎉 解鎖並啟用【${th.name}】！`); }
+          else if (save.coins >= th.price) { save.coins -= th.price; save.ownedThemes.push(th.id); save.equippedTheme = th.id; persistSave(); SFX.clear(3, 1); const syn = getHeroSynergy(); showToast(`🎉 解鎖【${th.name}】！全體永久加成：分數+${syn.extra * 10}% 金幣+${syn.extra * 10}%！`); }
           else showToast(`⚠️ 金幣不足（需 ${th.price} 🪙）`);
           renderThemes(); updateHud(); drawSidePreviews();
         });

@@ -1041,8 +1041,8 @@
           <div class="gstat-val" id="statBestScore">0</div>
         </div>
         <div class="gstat-box">
-          <div class="gstat-label">總通關星數 / 收藏</div>
-          <div class="gstat-val green" id="statStarsChars">0★ · 4收藏</div>
+          <div class="gstat-label">全站英雄圖鑑 / 強化</div>
+          <div class="gstat-val green" id="statStarsChars">4/42 英雄 · ⚡Lv.0</div>
         </div>
       </div>
     </section>
@@ -1569,7 +1569,7 @@
       }
 
       const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
-      let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0, sumUpgrades = 0;
+      let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0, sumTotalItems = 0, sumUpgrades = 0;
       liveGames.forEach((g) => {
         const st = readStatsForGame(g.id);
         sumCoins += st.coins;
@@ -1577,12 +1577,13 @@
         if (st.bestScore > topScore) topScore = st.bestScore;
         sumStars += st.stars;
         sumItems += st.charsUnlocked;
+        sumTotalItems += st.charsTotal;
         sumUpgrades += Number(st.upgradeLevel) || 0;
       });
       document.getElementById('statLiveGames').textContent = `${liveGames.length} 款`;
       document.getElementById('statTotalCoins').textContent = sumCoins.toLocaleString();
       document.getElementById('statBestScore').textContent = topScore.toLocaleString();
-      document.getElementById('statStarsChars').textContent = `${sumStars}★ · ⚡Lv.${sumUpgrades}`;
+      document.getElementById('statStarsChars').textContent = `${sumItems}/${sumTotalItems} 英雄 · ⚡Lv.${sumUpgrades}`;
 
       // Arcade Rank & XP Bar
       const spinMeta = getDailySpinState();
@@ -1666,11 +1667,14 @@
       items.forEach((g) => {
         const isLive = g.status === 'live';
         const stats = isLive ? readStatsForGame(g.id) : null;
+        const extraHeroes = stats ? Math.max(0, (stats.charsUnlocked || 1) - 1) : 0;
+        const synPct = g.id === 'star_blaster_3d' ? extraHeroes * 8 : extraHeroes * 10;
         const card = document.createElement('article');
         card.className = 'game-card' + (isLive ? ' live' : ' soon') + (g.featured && activeFilter === 'all' ? ' featured' : '');
 
         const badgesHtml = `
           <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
+          ${isLive && stats ? `<span class="cbadge tech" style="color:#86efac;border-color:rgba(134,239,172,0.5);">🌟 英雄羈絆 +${synPct}%</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#fde047;border-color:rgba(251,191,36,0.45);">⚡ 強化 Lv.${stats.upgradeLevel || 0}/${stats.upgradeMax || 15}</span>` : ''}
           ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
         `;

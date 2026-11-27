@@ -155,6 +155,19 @@
       .dash-cluster { top: 52px; padding: 5px 12px; gap: 8px; }
       .nitro-wrap { width: 82px; }
     }
+    .synergy-bar {
+      margin: 0 0 10px; padding: 9px 12px; border-radius: 13px; text-align: left;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(249, 115, 22, 0.16), rgba(56, 189, 248, 0.14));
+      border: 1px solid rgba(250, 204, 21, 0.42);
+      box-shadow: 0 6px 18px rgba(250, 204, 21, 0.12);
+    }
+    .syn-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
+    .syn-title { font-size: 12px; font-weight: 900; color: #fde047; }
+    .syn-count { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(250, 204, 21, 0.2); color: #fef08a; border: 1px solid rgba(250, 204, 21, 0.45); }
+    .syn-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .syn-chip { font-size: 11px; color: #e2e8f0; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 7px; padding: 2px 7px; }
+    .syn-chip b { color: #86efac; }
+    .syn-hint { font-size: 10.5px; color: #cbd5e1; margin-top: 5px; line-height: 1.35; }
   </style>
 </head>
 <body>
@@ -216,6 +229,7 @@
           <span style="font-weight:800;color:#fde68a;">🪙 <span id="startCoins">40</span></span>
         </div>
 
+        <div class="synergy-bar" id="carSynergy"></div>
         <div class="car-grid" id="carGrid"></div>
 
         <div class="perm-upg-head"><span>🔧 超跑性能改裝（點擊升級）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
@@ -363,13 +377,49 @@
       try { localStorage.setItem(getSaveKey(), JSON.stringify(save)); } catch (e) {}
       postToHub({ type: 'ARCADE_GAME_STATS', gameId: GAME_ID, uid: auth.currentUser ? auth.currentUser.uid : null, stats: getSummaryStats() });
     }
+    function getHeroSynergy() {
+      const count = (save.ownedCars && save.ownedCars.length) || 1;
+      const extra = Math.max(0, count - 1);
+      return {
+        count,
+        total: CARS.length,
+        extra,
+        spdAdd: extra * 6,
+        driftMult: 1 + extra * 0.08,
+        scoreMult: 1 + extra * 0.10,
+        coinMult: 1 + extra * 0.08
+      };
+    }
+
+    function renderHeroSynergy() {
+      const el = document.getElementById('carSynergy');
+      if (!el) return;
+      const syn = getHeroSynergy();
+      el.innerHTML = `
+        <div class="syn-head">
+          <span class="syn-title">🌟 車手圖鑑羈絆（全車庫性能永久加成）</span>
+          <span class="syn-count">已解鎖 ${syn.count} / ${syn.total} 位</span>
+        </div>
+        <div class="syn-chips">
+          <span class="syn-chip">🏎️ 極速 <b>+${syn.spdAdd} km/h</b></span>
+          <span class="syn-chip">💨 集氣 <b>+${syn.extra * 8}%</b></span>
+          <span class="syn-chip">⭐ 分數 <b>+${syn.extra * 10}%</b></span>
+          <span class="syn-chip">🪙 金幣 <b>+${syn.extra * 8}%</b></span>
+        </div>
+        <div class="syn-hint">每多解鎖 1 位車手／超跑，全車庫永久追加：極速/氮氣 +6 km/h、飄移集氣 +8%、分數 +10%、金幣 +8%</div>
+      `;
+    }
+
     function getCar() {
       const base = CARS.find(c => c.id === save.equippedCar) || CARS[0];
       const u = save.upgrades || { engine: 0, nitro: 0, drift: 0 };
+      const syn = getHeroSynergy();
       return Object.assign({}, base, {
-        maxSpd: base.maxSpd + (u.engine || 0) * 12,
-        nitroSpd: base.nitroSpd + (u.engine || 0) * 14,
-        driftCharge: base.driftCharge * (1 + (u.drift || 0) * 0.18),
+        maxSpd: base.maxSpd + (u.engine || 0) * 12 + syn.spdAdd,
+        nitroSpd: base.nitroSpd + (u.engine || 0) * 14 + syn.spdAdd,
+        driftCharge: base.driftCharge * (1 + (u.drift || 0) * 0.18) * syn.driftMult,
+        coinMult: (base.coinMult || 1) * syn.coinMult,
+        scoreMult: syn.scoreMult,
         nitroMult: 1 + (u.nitro || 0) * 0.18,
         startNitro: Math.min(100, 45 + (u.nitro || 0) * 10)
       });
@@ -589,7 +639,7 @@
       if (drifting && !offRoad) {
         st.driftTime += dt;
         st.nitro = Math.min(100, st.nitro + 27 * car.driftCharge * dt);
-        st.score += 52 * dt;
+        st.score += 52 * (car.scoreMult || 1) * dt;
         const sparkCol = st.driftTime >= 2.8 ? '#f472b6' : (st.driftTime >= 1.8 ? '#38bdf8' : (st.driftTime >= 1.0 ? '#fbbf24' : '#fb923c'));
         for (let k = 0; k < 2; k++) {
           st.sparks.push({
@@ -607,6 +657,7 @@
           if (st.driftTime >= 2.8) { label = '🔥 LEGEND 傳說甩尾'; pts = 550; bonusCoins = 10; mt = 2.0; spdAdd = 78; col = '#f472b6'; }
           else if (st.driftTime >= 1.8) { label = '⚡ SUPER 超級甩尾'; pts = 350; bonusCoins = 6; mt = 1.5; spdAdd = 62; col = '#38bdf8'; }
           else if (st.driftTime >= 1.15) { label = '✨ GREAT 完美甩尾'; pts = 220; bonusCoins = 3; mt = 1.15; spdAdd = 48; col = '#fb923c'; }
+          pts = Math.round(pts * (car.scoreMult || 1));
           st.miniTurbo = Math.max(st.miniTurbo, mt);
           st.speed = Math.min(car.nitroSpd, st.speed + spdAdd);
           st.score += pts;
@@ -622,7 +673,7 @@
       // Advance distance & score
       const meters = (st.speed / 3.6) * dt;
       st.dist += meters;
-      st.score += meters * (boosting ? 3.2 : (miniBoosting ? 2.2 : 1.5)) * (1 + st.combo * 0.25);
+      st.score += meters * (boosting ? 3.2 : (miniBoosting ? 2.2 : 1.5)) * (1 + st.combo * 0.25) * (car.scoreMult || 1);
 
       // Checkpoint / Biome Transition every 1200m
       if (st.dist >= st.nextCp) {
@@ -1021,6 +1072,7 @@
     }
 
     function renderCarGrid() {
+      renderHeroSynergy();
       const grid = document.getElementById('carGrid');
       grid.innerHTML = '';
       CARS.forEach((c) => {
@@ -1034,7 +1086,7 @@
         btn.innerHTML = `<div class="car-top"><span style="display:inline-flex;align-items:center;">${avHtml}${c.name}</span>${tag}</div><div class="car-desc">${c.desc}</div>`;
         btn.addEventListener('click', () => {
           if (own) { save.equippedCar = c.id; persistSave(); SFX.coin(); showToast(`🏎️ 已切換超跑：【${c.name}】`); }
-          else if (save.coins >= c.price) { save.coins -= c.price; save.ownedCars.push(c.id); save.equippedCar = c.id; persistSave(); SFX.checkpoint(); showToast(`🎉 解鎖並駕駛【${c.name}】！`); }
+          else if (save.coins >= c.price) { save.coins -= c.price; save.ownedCars.push(c.id); save.equippedCar = c.id; persistSave(); SFX.checkpoint(); const syn = getHeroSynergy(); showToast(`🎉 解鎖【${c.name}】！全車庫永久加成：極速+${syn.spdAdd}km/h 分數+${syn.extra * 10}%！`); }
           else showToast(`⚠️ 金幣不足（需 ${c.price} 🪙）`);
           renderCarGrid(); updateHud();
         });

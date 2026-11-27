@@ -202,6 +202,19 @@
       .panel { padding: 18px 14px; }
       .hide-sm { display: none; }
     }
+    .synergy-bar {
+      margin: 0 0 10px; padding: 9px 12px; border-radius: 13px; text-align: left;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(56, 189, 248, 0.14), rgba(168, 85, 247, 0.16));
+      border: 1px solid rgba(250, 204, 21, 0.42);
+      box-shadow: 0 6px 18px rgba(250, 204, 21, 0.12);
+    }
+    .syn-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
+    .syn-title { font-size: 12px; font-weight: 900; color: #fde047; }
+    .syn-count { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(250, 204, 21, 0.2); color: #fef08a; border: 1px solid rgba(250, 204, 21, 0.45); }
+    .syn-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .syn-chip { font-size: 11px; color: #e2e8f0; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 7px; padding: 2px 7px; }
+    .syn-chip b { color: #86efac; }
+    .syn-hint { font-size: 10.5px; color: #cbd5e1; margin-top: 5px; line-height: 1.35; }
   </style>
 </head>
 <body>
@@ -266,6 +279,7 @@
           <span style="font-size:12px;font-weight:800;color:#fde68a;">🪙 <span id="startCoins">40</span></span>
         </div>
 
+        <div class="synergy-bar" id="shipSynergy"></div>
         <div class="ship-grid" id="shipGrid"></div>
 
         <div class="perm-upg-head"><span>🔧 機庫永久升級（點擊強化）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
@@ -690,12 +704,46 @@
       else if (dropRoll < 0.22) state.pickups.push({ x: e.x, y: e.y, vy: 85, kind: 'heal' });
     }
 
+    function getHeroSynergy() {
+      const count = (save.ownedShips && save.ownedShips.length) || 1;
+      const extra = Math.max(0, count - 1);
+      return {
+        count,
+        total: SHIPS.length,
+        extra,
+        dmgMult: 1 + extra * 0.08,
+        hpAdd: extra * 12,
+        novaMult: 1 + extra * 0.08,
+        coinMult: 1 + extra * 0.08
+      };
+    }
+
+    function renderHeroSynergy() {
+      const el = document.getElementById('shipSynergy');
+      if (!el) return;
+      const syn = getHeroSynergy();
+      el.innerHTML = `
+        <div class="syn-head">
+          <span class="syn-title">🌟 全員出擊羈絆（全戰機數值永久加成）</span>
+          <span class="syn-count">已解鎖 ${syn.count} / ${syn.total} 位</span>
+        </div>
+        <div class="syn-chips">
+          <span class="syn-chip">🔫 火力 <b>+${syn.extra * 8}%</b></span>
+          <span class="syn-chip">🛡️ 裝甲 <b>+${syn.hpAdd}</b></span>
+          <span class="syn-chip">💥 集氣 <b>+${syn.extra * 8}%</b></span>
+          <span class="syn-chip">🪙 星幣 <b>+${syn.extra * 8}%</b></span>
+        </div>
+        <div class="syn-hint">每多解鎖 1 位戰機／英雄，全體戰機永久追加：火力 +8%、最大裝甲 +12、大招充能 +8%、星幣 +8%</div>
+      `;
+    }
+
     function defeatBoss() {
       const b = state.boss;
       if (!b) return;
       state.boss = null;
+      const syn = getHeroSynergy();
       state.score += 1200 * b.tier;
-      const bonus = Math.round(35 * getShip().coinMult);
+      const bonus = Math.round(35 * getShip().coinMult * syn.coinMult);
       state.runCoins += bonus;
       save.bossesDefeated++;
       state.shake = 0.6;
@@ -746,6 +794,7 @@
       SFX.ensure();
       SFX.startBgm();
       const ship = getShip();
+      const syn = getHeroSynergy();
       state.mode = 'playing';
       state.score = 0;
       state.runCoins = 0;
@@ -753,7 +802,7 @@
       state.waveKills = 0;
       state.waveKillGoal = 12;
       const upg = save.upgrades || { dmg: 0, hp: 0, nova: 0 };
-      const bonusHp = (upg.hp || 0) * 20;
+      const bonusHp = (upg.hp || 0) * 20 + syn.hpAdd;
       state.novaCharge = 100;
       state.combo = 0; state.comboTimer = 0; state.overdrive = 0; state.magnetBuff = 0;
       state.boss = null;
@@ -762,8 +811,8 @@
         x: W / 2, y: H * 0.78, vx: 0, bank: 0,
         hp: ship.hp + bonusHp, maxHp: ship.hp + bonusHp, shield: ship.id === 'solaris', fireCd: 0, missileCd: 0, invuln: 1.0,
         spread: ship.spread, fireMult: 1.0, homing: ship.homing, magnet: 115,
-        novaRate: 1.0 + (upg.nova || 0) * 0.25,
-        dmgMult: 1.0 + (upg.dmg || 0) * 0.18
+        novaRate: (1.0 + (upg.nova || 0) * 0.25) * syn.novaMult,
+        dmgMult: (1.0 + (upg.dmg || 0) * 0.18) * syn.dmgMult
       };
       document.getElementById('startOverlay').classList.add('hidden');
       document.getElementById('overOverlay').classList.add('hidden');
@@ -1013,7 +1062,7 @@
         }
         if (d < 28) {
           if (pk.kind === 'coin') {
-            const val = Math.max(1, Math.round(1 * ship.coinMult));
+            const val = Math.max(1, Math.round(1 * ship.coinMult * getHeroSynergy().coinMult));
             state.runCoins += val;
             state.score += 20;
             state.novaCharge = Math.min(100, state.novaCharge + 2.4 * p.novaRate);
@@ -1335,6 +1384,7 @@
     }
 
     function renderShipGrid() {
+      renderHeroSynergy();
       const grid = document.getElementById('shipGrid');
       grid.innerHTML = '';
       SHIPS.forEach((s) => {
@@ -1358,7 +1408,8 @@
             save.equippedShip = s.id;
             persistSave();
             SFX.upgrade();
-            showToast(`🎉 解鎖並裝備【${s.name}】！`);
+            const syn = getHeroSynergy();
+            showToast(`🎉 解鎖【${s.name}】！全體戰機永久加成：火力+${syn.extra * 8}% 裝甲+${syn.hpAdd}！`);
           } else {
             showToast(`⚠️ 星幣不足（需要 ${s.price} 枚星幣）`);
           }
