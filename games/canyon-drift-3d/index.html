@@ -474,15 +474,17 @@
     // 3. 3D PERSPECTIVE CURVED HIGHWAY ENGINE
     // =========================================================================
     const canvas = document.getElementById('roadCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     let W = 960, H = 640;
+    let cachedSkyKey = '', cachedSkyGrad = null;
 
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       W = window.innerWidth; H = window.innerHeight;
       canvas.width = Math.floor(W * dpr);
       canvas.height = Math.floor(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cachedSkyKey = '';
     }
     window.addEventListener('resize', resize);
     resize();
@@ -513,14 +515,43 @@
       showToast._t = setTimeout(() => el.classList.remove('show'), 2200);
     }
 
+    // Analytical C-infinity smooth road curve & double integral (ZERO segment snapping!)
+    const CA = 0.0042, CB = 0.0019, CURVE_SCALE = 0.00028;
     function roadCurveAt(z) {
-      return Math.sin(z * 0.0042) * 1.15 + Math.cos(z * 0.0019) * 0.65;
+      return Math.sin(z * CA) * 1.15 + Math.cos(z * CB) * 0.65;
+    }
+    function curveInt1(z) {
+      return -Math.cos(z * CA) * (1.15 / CA) + Math.sin(z * CB) * (0.65 / CB);
+    }
+    function curveInt2(z) {
+      return -Math.sin(z * CA) * (1.15 / (CA * CA)) - Math.cos(z * CB) * (0.65 / (CB * CB));
     }
 
-    function spawnWorldEntities(aheadDist) {
+    let frameZ0 = 0, frameI1 = 0, frameI2 = 0, frameHill0 = 0, frameHorizon = 280, frameRoadW = 420;
+    function prepareProjection() {
+      frameZ0 = st.dist;
+      frameI1 = curveInt1(frameZ0);
+      frameI2 = curveInt2(frameZ0);
+      frameHill0 = Math.sin(frameZ0 * 0.024);
+      frameHorizon = H * 0.44;
+      frameRoadW = W * 0.46;
+    }
+    function projectWorld(z, laneX) {
+      const dz = z - frameZ0;
+      const depth = dz + 10.5;
+      const scale = 10.5 / depth;
+      const curveShift = (curveInt2(z) - frameI2 - frameI1 * dz) * CURVE_SCALE;
+      const hillShift = (Math.sin(z * 0.024) - frameHill0) * 15;
+      const halfW = frameRoadW * scale;
+      const x = W * 0.5 + (curveShift + laneX - st.playerX) * halfW;
+      const y = frameHorizon + scale * (H * 0.44) - hillShift * scale * 0.42;
+      return { x, y, w: halfW, scale, depth };
+    }
+
+    function spawnWorldEntities() {
       while (st.rivals.length < 7) {
         const lastZ = st.rivals.length ? Math.max(...st.rivals.map(r => r.z)) : st.dist + 80;
-        const nz = Math.max(st.dist + 110, lastZ + 55 + Math.random() * 65);
+        const nz = Math.max(st.dist + 110, lastZ + 58 + Math.random() * 65);
         const lanes = [-0.62, 0, 0.62];
         st.rivals.push({
           z: nz,
@@ -530,18 +561,18 @@
           passed: false
         });
       }
-      while (st.coins.length < 16) {
-        const lastZ = st.coins.length ? Math.max(...st.coins.map(c => c.z)) : st.dist + 40;
-        const lane = (Math.floor(Math.random() * 3) - 1) * 0.55;
-        const startZ = Math.max(st.dist + 70, lastZ + 38 + Math.random() * 30);
-        for (let k = 0; k < 4; k++) {
-          st.coins.push({ z: startZ + k * 14, x: lane, got: false });
+      while (st.coins.length < 20) {
+        const lastZ = st.coins.length ? Math.max(...st.coins.map(c => c.z)) : st.dist + 35;
+        const lane = (Math.floor(Math.random() * 3) - 1) * 0.56;
+        const startZ = Math.max(st.dist + 55, lastZ + 32 + Math.random() * 26);
+        for (let k = 0; k < 5; k++) {
+          st.coins.push({ z: startZ + k * 11, x: lane, got: false });
         }
       }
       while (st.boostPads.length < 3) {
         const lastZ = st.boostPads.length ? Math.max(...st.boostPads.map(b => b.z)) : st.dist + 140;
-        const lane = (Math.floor(Math.random() * 3) - 1) * 0.58;
-        st.boostPads.push({ z: Math.max(st.dist + 160, lastZ + 170 + Math.random() * 140), x: lane, hit: false });
+        const lane = (Math.floor(Math.random() * 3) - 1) * 0.56;
+        st.boostPads.push({ z: Math.max(st.dist + 150, lastZ + 165 + Math.random() * 130), x: lane, hit: false });
       }
     }
 
@@ -549,7 +580,7 @@
       if (st.mode !== 'playing' || st.nitro < 30 || st.nitroTime > 0) return;
       st.nitroTime = (1.6 + (st.nitro / 100) * 1.6) * (getCar().nitroMult || 1);
       st.nitro = 0;
-      st.shake = 0.22;
+      st.shake = 0.14;
       SFX.nitro();
       spawnFloat('🔥 氮氣極速爆發！', '#38bdf8', -18);
       showToast('🔥 氮氣極速爆發！');
@@ -561,7 +592,7 @@
       const car = getCar();
       st.mode = 'playing';
       st.dist = 0; st.nextCp = 1200; st.biomeIdx = 0;
-      st.speed = 90; st.playerX = 0; st.steer = 0; st.driftAngle = 0;
+      st.speed = 95; st.playerX = 0; st.steer = 0; st.driftAngle = 0;
       st.driftTime = 0; st.miniTurbo = 0;
       st.nitro = car.startNitro || 45; st.nitroTime = 0; st.timeLeft = 36;
       st.score = 0; st.runCoins = 0; st.combo = 0; st.comboTimer = 0; st.shake = 0;
@@ -573,6 +604,7 @@
       document.getElementById('pauseOverlay').classList.add('hidden');
       document.getElementById('dashCluster').classList.remove('hidden');
       document.getElementById('driveBar').classList.remove('hidden');
+      updateHud();
       showToast(`🏁 ${getCar().name} 出發！長按飄移放開觸發小噴射！`);
     }
 
@@ -593,7 +625,7 @@
 
     function update(dt) {
       st.time += dt;
-      if (st.shake > 0) st.shake = Math.max(0, st.shake - dt);
+      if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 1.6);
       for (let i = st.floats.length - 1; i >= 0; i--) {
         const fl = st.floats[i];
         fl.y -= 52 * dt; fl.life -= dt;
@@ -601,7 +633,7 @@
       }
 
       if (st.mode === 'menu') {
-        st.dist += 55 * dt;
+        st.dist += 48 * dt;
         return;
       }
       if (st.mode !== 'playing') return;
@@ -621,38 +653,38 @@
       const drifting = st.keys.drift && Math.abs(steerInput) > 0 && st.speed > 130;
 
       // Speed physics
-      const offRoad = Math.abs(st.playerX) > 1.02;
+      const offRoad = Math.abs(st.playerX) > 1.04;
       const targetMax = boosting
         ? car.nitroSpd
         : (miniBoosting
           ? car.maxSpd + 48
-          : (offRoad ? car.maxSpd * 0.58 : (drifting ? car.maxSpd * 0.94 : car.maxSpd)));
-      const accel = boosting ? 300 : (miniBoosting ? 240 : (offRoad ? 110 : 128));
+          : (offRoad ? car.maxSpd * 0.62 : (drifting ? car.maxSpd * 0.94 : car.maxSpd)));
+      const accel = boosting ? 300 : (miniBoosting ? 240 : (offRoad ? 110 : 132));
       if (st.speed < targetMax) st.speed = Math.min(targetMax, st.speed + accel * dt);
       else st.speed = Math.max(targetMax, st.speed - 165 * dt);
 
-      // Steering + Curve Centrifugal Force + Drift
+      // Steering + Smooth Curve Centrifugal Force + Drift
       const curCurve = roadCurveAt(st.dist);
-      const steerPower = drifting ? 2.18 : 1.58;
-      st.steer += (steerInput - st.steer) * Math.min(1, dt * 11);
-      st.driftAngle += ((drifting ? steerInput * 0.34 : 0) - st.driftAngle) * Math.min(1, dt * 8);
-      st.playerX += (st.steer * steerPower - curCurve * (st.speed / 340) * 0.62) * dt;
-      st.playerX = Math.max(-1.45, Math.min(1.45, st.playerX));
+      const steerPower = drifting ? 1.95 : 1.48;
+      st.steer += (steerInput - st.steer) * Math.min(1, dt * 12);
+      st.driftAngle += ((drifting ? steerInput * 0.30 : 0) - st.driftAngle) * Math.min(1, dt * 9);
+      st.playerX += (st.steer * steerPower - curCurve * (st.speed / 360) * 0.42) * dt;
+      st.playerX = Math.max(-1.35, Math.min(1.35, st.playerX));
 
       // Drift Grading + Nitro Charge + Release Mini-Turbo!
       if (drifting && !offRoad) {
         st.driftTime += dt;
         st.nitro = Math.min(100, st.nitro + 27 * car.driftCharge * dt);
         st.score += 52 * (car.scoreMult || 1) * dt;
-        const sparkCol = st.driftTime >= 2.8 ? '#f472b6' : (st.driftTime >= 1.8 ? '#38bdf8' : (st.driftTime >= 1.0 ? '#fbbf24' : '#fb923c'));
-        for (let k = 0; k < 2; k++) {
+        if (st.sparks.length < 32) {
+          const sparkCol = st.driftTime >= 2.8 ? '#f472b6' : (st.driftTime >= 1.8 ? '#38bdf8' : (st.driftTime >= 1.0 ? '#fbbf24' : '#fb923c'));
           st.sparks.push({
             x: W / 2 + (Math.random() > 0.5 ? -38 : 38) + st.steer * 14,
             y: H * 0.86,
             vx: -steerInput * (140 + Math.random() * 140) + (Math.random() - 0.5) * 60,
             vy: -40 - Math.random() * 70,
             col: sparkCol,
-            life: 0.28 + Math.random() * 0.22
+            life: 0.25 + Math.random() * 0.18
           });
         }
       } else {
@@ -666,7 +698,7 @@
           st.speed = Math.min(car.nitroSpd, st.speed + spdAdd);
           st.score += pts;
           if (bonusCoins > 0) st.runCoins += Math.round(bonusCoins * car.coinMult);
-          st.shake = 0.14;
+          st.shake = 0.08;
           SFX.miniTurbo();
           spawnFloat(`${label} +${pts}${bonusCoins ? ` +${bonusCoins}🪙` : ''}`, col, -10);
         }
@@ -683,6 +715,7 @@
       if (st.dist >= st.nextCp) {
         st.nextCp += 1200;
         st.biomeIdx = (st.biomeIdx + 1) % BIOMES.length;
+        cachedSkyKey = '';
         st.timeLeft = Math.min(60, st.timeLeft + 22);
         const bonus = Math.round(25 * car.coinMult);
         st.runCoins += bonus;
@@ -692,41 +725,41 @@
         showToast(`🏁 檢查點達成！+22秒 +${bonus}🪙 · 進入 ${BIOMES[st.biomeIdx].name}`);
       }
 
-      // Highway Boost Pads
+      // Highway Boost Pads (1:1 aligned hitbox)
       for (let i = st.boostPads.length - 1; i >= 0; i--) {
         const bp = st.boostPads[i];
         const dz = bp.z - st.dist;
-        if (!bp.hit && dz < 10 && dz > -6 && Math.abs(bp.x - st.playerX) < 0.42) {
+        if (!bp.hit && dz < 11 && dz > -6 && Math.abs(bp.x - st.playerX) < 0.48) {
           bp.hit = true;
           st.miniTurbo = Math.max(st.miniTurbo, 1.35);
           st.speed = Math.min(car.nitroSpd + 15, st.speed + 78);
           st.nitro = Math.min(100, st.nitro + 18);
           st.score += 150;
-          st.shake = 0.16;
+          st.shake = 0.09;
           SFX.boostPad();
           spawnFloat('⏩ 極速加速帶！+150', '#38bdf8', -18);
         }
-        if (dz < -18) st.boostPads.splice(i, 1);
+        if (dz < -16) st.boostPads.splice(i, 1);
       }
 
-      // Rivals collision & Near-Miss Overtake
+      // Rivals collision & Near-Miss Overtake (1:1 aligned hitbox)
       for (let i = st.rivals.length - 1; i >= 0; i--) {
         const rv = st.rivals[i];
         rv.z += (rv.spd / 3.6) * dt;
         const dz = rv.z - st.dist;
-        if (dz < 8 && dz > -4) {
+        if (dz < 7 && dz > -4) {
           const dx = Math.abs(rv.x - st.playerX);
-          if (dx < 0.34) {
+          if (dx < 0.30) {
             if (boosting) {
               st.rivals.splice(i, 1);
               st.score += 180;
-              st.shake = 0.25;
+              st.shake = 0.16;
               SFX.crash();
               spawnFloat('💥 氮氣撞飛對手！+180', '#fb923c', -16);
               continue;
             } else {
               st.speed = Math.max(65, st.speed * 0.48);
-              st.shake = 0.35;
+              st.shake = 0.22;
               st.combo = 0;
               st.driftTime = 0;
               rv.z -= 12;
@@ -743,23 +776,32 @@
             spawnFloat(`⚡ 極限超車 x${st.combo}！+${120 * st.combo}`, '#fde047', -22);
           }
         }
-        if (dz < -20) st.rivals.splice(i, 1);
+        if (dz < -18) st.rivals.splice(i, 1);
       }
 
-      // Coins pickup
-      const magnetRange = (car.id === 'solar_s' || car.magnet) ? 0.56 : 0.34;
+      // Coins pickup — Exact 1:1 lane alignment + smooth magnetic pull!
+      const pullRange = (car.id === 'solar_s' || car.magnet) ? 1.15 : 0.72;
+      const pickupRange = (car.id === 'solar_s' || car.magnet) ? 0.72 : 0.50;
       for (let i = st.coins.length - 1; i >= 0; i--) {
         const cn = st.coins[i];
         const dz = cn.z - st.dist;
-        if (!cn.got && dz < 9 && dz > -5 && Math.abs(cn.x - st.playerX) < magnetRange) {
+        if (!cn.got && dz < 24 && dz > -5 && Math.abs(cn.x - st.playerX) < pullRange) {
+          cn.x += (st.playerX - cn.x) * Math.min(1, dt * 11);
+        }
+        if (!cn.got && dz < 8 && dz > -5 && Math.abs(cn.x - st.playerX) < pickupRange) {
           cn.got = true;
           const v = Math.max(1, Math.round(2 * car.coinMult));
           st.runCoins += v;
-          st.score += 35;
-          st.nitro = Math.min(100, st.nitro + 3.5);
+          st.score += Math.round(35 * (car.scoreMult || 1));
+          st.nitro = Math.min(100, st.nitro + 4.0);
           SFX.coin();
+          if (st.sparks.length < 36) {
+            for (let k = 0; k < 3; k++) {
+              st.sparks.push({ x: W / 2 + (Math.random() - 0.5) * 40, y: H * 0.84, vx: (Math.random() - 0.5) * 180, vy: -90 - Math.random() * 90, col: '#fde047', life: 0.28 });
+            }
+          }
         }
-        if (cn.got || dz < -15) st.coins.splice(i, 1);
+        if (cn.got || dz < -12) st.coins.splice(i, 1);
       }
       spawnWorldEntities();
 
@@ -770,32 +812,37 @@
         if (sp.life <= 0) st.sparks.splice(i, 1);
       }
 
-      updateHud();
+      updateRaceHud();
     }
 
     function render() {
       const bm = BIOMES[st.biomeIdx];
+      prepareProjection();
+      const horizon = frameHorizon;
+
       ctx.save();
       if (st.shake > 0) {
-        const m = st.shake * 12;
-        ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+        const m = st.shake * 8;
+        ctx.translate(Math.sin(st.time * 65) * m, Math.cos(st.time * 55) * m * 0.6);
       }
 
-      const horizon = H * 0.44;
-
-      // Sky gradient
-      const sky = ctx.createLinearGradient(0, 0, 0, horizon);
-      sky.addColorStop(0, bm.skyTop);
-      sky.addColorStop(1, bm.skyBot);
-      ctx.fillStyle = sky;
+      // Cached Sky Gradient
+      const skyKey = `${st.biomeIdx}_${H}`;
+      if (cachedSkyKey !== skyKey) {
+        cachedSkyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
+        cachedSkyGrad.addColorStop(0, bm.skyTop);
+        cachedSkyGrad.addColorStop(1, bm.skyBot);
+        cachedSkyKey = skyKey;
+      }
+      ctx.fillStyle = cachedSkyGrad;
       ctx.fillRect(0, 0, W, horizon + 2);
 
       // Sun / Moon & Parallax Canyon Silhouettes
-      const sunX = W * 0.5 - roadCurveAt(st.dist) * 85;
-      const sg = ctx.createRadialGradient(sunX, horizon * 0.62, 10, sunX, horizon * 0.62, 95);
-      sg.addColorStop(0, bm.sun); sg.addColorStop(0.35, bm.sun + '88'); sg.addColorStop(1, 'transparent');
-      ctx.fillStyle = sg;
-      ctx.beginPath(); ctx.arc(sunX, horizon * 0.62, 95, 0, Math.PI * 2); ctx.fill();
+      const sunX = W * 0.5 - roadCurveAt(st.dist) * 70;
+      ctx.fillStyle = bm.sun + '44';
+      ctx.beginPath(); ctx.arc(sunX, horizon * 0.62, 76, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = bm.sun;
+      ctx.beginPath(); ctx.arc(sunX, horizon * 0.62, 38, 0, Math.PI * 2); ctx.fill();
 
       // Distant Canyon Mesas
       ctx.fillStyle = bm.ground2;
@@ -803,42 +850,33 @@
       ctx.moveTo(0, horizon);
       for (let i = 0; i <= 10; i++) {
         const mx = (i / 10) * W;
-        const mh = 26 + Math.abs(Math.sin(i * 1.7 + st.biomeIdx)) * 62;
+        const mh = 26 + Math.abs(Math.sin(i * 1.7 + st.biomeIdx)) * 60;
         ctx.lineTo(mx, horizon - mh);
       }
       ctx.lineTo(W, horizon); ctx.closePath(); ctx.fill();
 
-      // 3D Perspective Road Segments (back to front)
-      const SEG_COUNT = 82;
-      const SEG_LEN = 3.2;
-      const roadW = W * 0.44;
-      let curveAcc = 0;
-      const baseIndex = Math.floor(st.dist / SEG_LEN);
-      const frac = (st.dist % SEG_LEN) / SEG_LEN;
-      const proj = [];
+      // Continuous 3D Perspective Road Segments (ZERO snapping, ZERO negative depth!)
+      const SEG_COUNT = 54;
+      const SEG_LEN = 3.4;
+      const baseIndex = Math.floor(st.dist / SEG_LEN) - 1;
+      const proj = new Array(SEG_COUNT + 1);
 
       for (let i = 0; i <= SEG_COUNT; i++) {
         const segIdx = baseIndex + i;
-        const depth = (i - frac) * SEG_LEN + 2.2;
-        const scale = 1 / (depth * 0.055);
-        const curve = roadCurveAt(segIdx * SEG_LEN);
-        curveAcc += curve * 0.016;
-        const hill = Math.sin(segIdx * 0.08) * 18;
-        const screenY = horizon + scale * (H * 0.46) - hill * scale * 0.35;
-        const screenX = W / 2 + (curveAcc * depth * 0.45 - st.playerX * 1.12) * roadW * scale * 0.5;
-        const halfW = roadW * scale;
-        proj.push({ segIdx, depth, scale, x: screenX, y: screenY, w: halfW });
+        const p = projectWorld(segIdx * SEG_LEN, 0);
+        p.segIdx = segIdx;
+        proj[i] = p;
       }
 
       // Draw ground + road strips far to near
       for (let i = SEG_COUNT; i >= 1; i--) {
         const p1 = proj[i], p2 = proj[i - 1];
-        if (p1.y >= p2.y) continue;
-        const alt = Math.floor(p1.segIdx / 3) % 2 === 0;
+        if (p1.y >= p2.y || p2.y < horizon - 4 || p1.y > H + 10) continue;
+        const alt = ((Math.floor(p1.segIdx / 3) % 2) + 2) % 2 === 0;
 
         // Ground strip
         ctx.fillStyle = alt ? bm.ground1 : bm.ground2;
-        ctx.fillRect(0, p1.y, W, p2.y - p1.y + 1);
+        ctx.fillRect(0, p1.y, W, p2.y - p1.y + 1.5);
 
         // Rumble shoulder
         const r1 = p1.w * 1.15, r2 = p2.w * 1.15;
@@ -855,78 +893,87 @@
         ctx.lineTo(p2.x + p2.w, p2.y); ctx.lineTo(p2.x - p2.w, p2.y);
         ctx.closePath(); ctx.fill();
 
-        // Lane dashes
+        // Lane dashes (batched single path)
         if (alt) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+          const lw1 = p1.w * 0.032, lw2 = p2.w * 0.032;
+          ctx.beginPath();
           for (const laneF of [-0.33, 0.33]) {
-            const lw1 = p1.w * 0.032, lw2 = p2.w * 0.032;
-            ctx.beginPath();
             ctx.moveTo(p1.x + p1.w * laneF - lw1, p1.y); ctx.lineTo(p1.x + p1.w * laneF + lw1, p1.y);
             ctx.lineTo(p2.x + p2.w * laneF + lw2, p2.y); ctx.lineTo(p2.x + p2.w * laneF - lw2, p2.y);
-            ctx.closePath(); ctx.fill();
           }
+          ctx.closePath(); ctx.fill();
         }
 
         // Roadside 3D Canyon Pillars / Crystals
-        if (p1.segIdx % 7 === 0) {
-          const ph = p1.w * 0.72, pw = p1.w * 0.28;
+        if (((p1.segIdx % 7) + 7) % 7 === 0) {
+          const ph = p1.w * 0.70, pw = p1.w * 0.26;
           ctx.fillStyle = bm.propCol;
           ctx.fillRect(p1.x - p1.w * 1.65 - pw, p1.y - ph, pw, ph);
           ctx.fillRect(p1.x + p1.w * 1.65, p1.y - ph, pw, ph);
-          ctx.fillStyle = 'rgba(255,255,255,0.18)';
-          ctx.fillRect(p1.x - p1.w * 1.65 - pw, p1.y - ph, pw * 0.35, ph);
-          ctx.fillRect(p1.x + p1.w * 1.65, p1.y - ph, pw * 0.35, ph);
-        }
-
-        // Draw Boost Pads, Coins & Rival Cars on this depth slice
-        const segZMin = p1.segIdx * SEG_LEN, segZMax = segZMin + SEG_LEN;
-        for (const bp of st.boostPads) {
-          if (bp.z >= segZMin && bp.z < segZMax + SEG_LEN * 1.4) {
-            const bw1 = p1.w * 0.24, bw2 = p2.w * 0.24;
-            const bx1 = p1.x + bp.x * p1.w, bx2 = p2.x + bp.x * p2.w;
-            const pulse = 0.65 + Math.sin(st.time * 16) * 0.28;
-            ctx.fillStyle = bp.hit ? 'rgba(52, 211, 153, 0.5)' : `rgba(56, 189, 248, ${pulse})`;
-            ctx.beginPath();
-            ctx.moveTo(bx1 - bw1, p1.y); ctx.lineTo(bx1 + bw1, p1.y);
-            ctx.lineTo(bx2 + bw2, p2.y); ctx.lineTo(bx2 - bw2, p2.y);
-            ctx.closePath(); ctx.fill();
-            // Glowing chevron arrow
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = Math.max(1.5, p1.w * 0.025);
-            ctx.beginPath();
-            ctx.moveTo(bx2 - bw2 * 0.55, p2.y);
-            ctx.lineTo(bx1, p1.y);
-            ctx.lineTo(bx2 + bw2 * 0.55, p2.y);
-            ctx.stroke();
-          }
-        }
-        for (const cn of st.coins) {
-          if (!cn.got && cn.z >= segZMin && cn.z < segZMax) {
-            const cx = p1.x + cn.x * p1.w;
-            const cr = Math.max(4, p1.w * 0.095);
-            ctx.fillStyle = '#fbbf24';
-            ctx.beginPath(); ctx.arc(cx, p1.y - cr * 1.4, cr, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#fef08a';
-            ctx.beginPath(); ctx.arc(cx, p1.y - cr * 1.4, cr * 0.5, 0, Math.PI * 2); ctx.fill();
-          }
-        }
-        for (const rv of st.rivals) {
-          if (rv.z >= segZMin && rv.z < segZMax) {
-            const rx = p1.x + rv.x * p1.w;
-            const rw = Math.max(12, p1.w * 0.36);
-            const rh = rw * 0.56;
-            drawCar3D(rx, p1.y, rw, rh, rv.col, '#ffffff', 0, false, false);
-          }
         }
       }
 
-      // Draw Player 3D Supercar
+      // Smoothly projected Boost Pads (continuous Z — ZERO popping!)
+      const maxDrawZ = st.dist + SEG_COUNT * SEG_LEN;
+      for (const bp of st.boostPads) {
+        if (bp.z < st.dist - 5 || bp.z > maxDrawZ) continue;
+        const pf = projectWorld(bp.z + 7, bp.x);
+        const pn = projectWorld(bp.z - 2, bp.x);
+        const bw1 = pf.w * 0.26, bw2 = pn.w * 0.26;
+        const pulse = 0.65 + Math.sin(st.time * 14) * 0.25;
+        ctx.fillStyle = bp.hit ? 'rgba(52, 211, 153, 0.55)' : `rgba(56, 189, 248, ${pulse})`;
+        ctx.beginPath();
+        ctx.moveTo(pf.x - bw1, pf.y); ctx.lineTo(pf.x + bw1, pf.y);
+        ctx.lineTo(pn.x + bw2, pn.y); ctx.lineTo(pn.x - bw2, pn.y);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = Math.max(1.5, pn.w * 0.024);
+        ctx.beginPath();
+        ctx.moveTo(pn.x - bw2 * 0.55, pn.y);
+        ctx.lineTo(pf.x, pf.y);
+        ctx.lineTo(pn.x + bw2 * 0.55, pn.y);
+        ctx.stroke();
+      }
+
+      // Smoothly projected Coins & Rivals sorted far-to-near (continuous sub-pixel motion!)
+      const drawables = [];
+      for (const cn of st.coins) {
+        if (!cn.got && cn.z >= st.dist - 3 && cn.z <= maxDrawZ) drawables.push({ kind: 'coin', z: cn.z, ref: cn });
+      }
+      for (const rv of st.rivals) {
+        if (rv.z >= st.dist - 3 && rv.z <= maxDrawZ) drawables.push({ kind: 'rival', z: rv.z, ref: rv });
+      }
+      drawables.sort((a, b) => b.z - a.z);
+
+      const coinSpin = 0.72 + Math.abs(Math.cos(st.time * 6)) * 0.28;
+      for (const item of drawables) {
+        const ref = item.ref;
+        const p = projectWorld(ref.z, ref.x);
+        if (p.y < horizon - 8 || p.y > H + 60) continue;
+        if (item.kind === 'coin') {
+          const cr = Math.max(5, p.w * 0.115);
+          const cy = p.y - cr * 1.25;
+          ctx.fillStyle = 'rgba(250, 204, 21, 0.28)';
+          ctx.beginPath(); ctx.arc(p.x, cy, cr * 1.45, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath(); ctx.ellipse(p.x, cy, cr * coinSpin, cr, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath(); ctx.ellipse(p.x, cy, cr * 0.5 * coinSpin, cr * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+        } else {
+          const rw = Math.max(12, p.w * 0.36);
+          const rh = rw * 0.56;
+          drawCar3D(p.x, p.y, rw, rh, ref.col, '#ffffff', 0, false, false);
+        }
+      }
+
+      // Draw Player 3D Supercar (rock-steady, zero jitter!)
       const car = getCar();
       const boosting = st.nitroTime > 0;
       const miniBoosting = st.miniTurbo > 0;
       const carW = Math.min(138, W * 0.24);
       const carH = carW * 0.52;
-      drawCar3D(W / 2, H * 0.88 + Math.sin(st.time * 28) * (st.speed > 100 ? 1.5 : 0), carW, carH, car.body, car.stripe, st.steer * 0.14 + st.driftAngle, st.keys.drift, boosting || miniBoosting, AVATAR_IMGS[car.id]);
+      drawCar3D(W / 2, H * 0.88, carW, carH, car.body, car.stripe, st.steer * 0.14 + st.driftAngle, st.keys.drift, boosting || miniBoosting, AVATAR_IMGS[car.id]);
 
       // Live Drift Charge Grade Badge
       if (st.mode === 'playing' && st.driftTime >= 0.35) {
@@ -945,28 +992,31 @@
         ctx.restore();
       }
 
-      // Drift Sparks
-      ctx.globalCompositeOperation = 'lighter';
-      for (const sp of st.sparks) {
-        ctx.fillStyle = sp.col;
-        ctx.globalAlpha = Math.max(0, sp.life * 2.5);
-        ctx.beginPath(); ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2); ctx.fill();
+      // Drift & Coin Pickup Sparks
+      if (st.sparks.length > 0) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (const sp of st.sparks) {
+          ctx.fillStyle = sp.col;
+          ctx.globalAlpha = Math.max(0, sp.life * 2.5);
+          ctx.beginPath(); ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
       }
+
       // Nitro & Mini-Turbo Speed Lines
       if (boosting || miniBoosting) {
-        ctx.strokeStyle = boosting ? 'rgba(125, 211, 252, 0.48)' : 'rgba(251, 191, 36, 0.34)';
-        ctx.lineWidth = boosting ? 2.6 : 2;
-        const cnt = boosting ? 14 : 9;
+        ctx.strokeStyle = boosting ? 'rgba(125, 211, 252, 0.45)' : 'rgba(251, 191, 36, 0.32)';
+        ctx.lineWidth = boosting ? 2.4 : 1.8;
+        const cnt = boosting ? 12 : 8;
+        ctx.beginPath();
         for (let k = 0; k < cnt; k++) {
           const ang = (k / cnt) * Math.PI * 2 + st.time * 4;
-          ctx.beginPath();
           ctx.moveTo(W / 2 + Math.cos(ang) * W * 0.25, H * 0.48 + Math.sin(ang) * H * 0.22);
           ctx.lineTo(W / 2 + Math.cos(ang) * W * 0.65, H * 0.48 + Math.sin(ang) * H * 0.65);
-          ctx.stroke();
         }
+        ctx.stroke();
       }
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
 
       // Floating Arcade Callouts
       for (const fl of st.floats) {
@@ -986,7 +1036,7 @@
     function drawCar3D(cx, baseY, w, h, bodyCol, stripeCol, tilt, braking, boosting, driverImg) {
       ctx.save();
       ctx.translate(cx, baseY);
-      ctx.rotate(tilt);
+      if (tilt) ctx.rotate(tilt);
 
       // Ground shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
@@ -1048,6 +1098,41 @@
       ctx.restore();
     }
 
+    const hudEls = {
+      biome: document.getElementById('hudBiome'),
+      coins: document.getElementById('hudCoins'),
+      score: document.getElementById('hudScore'),
+      speed: document.getElementById('dashSpeed'),
+      nPct: document.getElementById('nitroPct'),
+      nFill: document.getElementById('nitroFill'),
+      btnNitro: document.getElementById('btnNitro'),
+      time: document.getElementById('dashTime')
+    };
+    const hudCache = { biome: -1, coins: -1, score: -1, speed: -1, nitro: -1, time: -1 };
+
+    function updateRaceHud() {
+      const totalCoins = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      const sc = Math.floor(st.score);
+      const sp = Math.floor(st.speed);
+      const np = Math.floor(st.nitro);
+      const tm = Math.ceil(st.timeLeft);
+      if (hudCache.biome !== st.biomeIdx) { hudCache.biome = st.biomeIdx; hudEls.biome.textContent = BIOMES[st.biomeIdx].name; }
+      if (hudCache.coins !== totalCoins) { hudCache.coins = totalCoins; hudEls.coins.textContent = totalCoins; }
+      if (hudCache.score !== sc) { hudCache.score = sc; hudEls.score.textContent = String(sc).padStart(5, '0'); }
+      if (hudCache.speed !== sp) { hudCache.speed = sp; hudEls.speed.textContent = sp; }
+      if (hudCache.nitro !== np) {
+        hudCache.nitro = np;
+        hudEls.nPct.textContent = np + '%';
+        hudEls.nFill.style.width = np + '%';
+        hudEls.btnNitro.classList.toggle('ready', np >= 30);
+      }
+      if (hudCache.time !== tm) {
+        hudCache.time = tm;
+        hudEls.time.textContent = `⏱️ ${tm}s`;
+        hudEls.time.classList.toggle('low', tm <= 8);
+      }
+    }
+
     function updateHud() {
       const u = auth.currentUser;
       document.getElementById('hudPlayerName').textContent = u && u.name ? u.name : '峽谷車手';
@@ -1060,19 +1145,8 @@
       document.getElementById('startAcctName').textContent = u ? `${u.name}（Google 已登入）` : '訪客車手';
       document.getElementById('startAcctSub').textContent = u ? `${u.email} · 專屬超跑車庫存檔` : '於遊戲綜合區登入即可自動同步';
       document.getElementById('startCoins').textContent = save.coins;
-
-      document.getElementById('hudBiome').textContent = BIOMES[st.biomeIdx].name;
-      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
-      document.getElementById('hudScore').textContent = String(Math.floor(st.score)).padStart(5, '0');
-      document.getElementById('dashSpeed').textContent = Math.floor(st.speed);
-      const np = Math.floor(st.nitro);
-      document.getElementById('nitroPct').textContent = np + '%';
-      document.getElementById('nitroFill').style.width = np + '%';
-      document.getElementById('btnNitro').classList.toggle('ready', np >= 30);
-
-      const tEl = document.getElementById('dashTime');
-      tEl.textContent = `⏱️ ${Math.ceil(st.timeLeft)}s`;
-      tEl.classList.toggle('low', st.timeLeft <= 8);
+      hudCache.biome = -1; hudCache.coins = -1; hudCache.score = -1; hudCache.speed = -1; hudCache.nitro = -1; hudCache.time = -1;
+      updateRaceHud();
     }
 
     function renderCarGrid() {
