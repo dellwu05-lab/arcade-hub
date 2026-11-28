@@ -831,10 +831,38 @@
       justify-content: space-between;
       gap: 10px;
     }
+    .game-stage.bar-collapsed .stage-topbar { display: none; }
+    .stage-expand-pill {
+      position: fixed;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 70;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(9, 13, 24, 0.72);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: #e2e8f0;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      opacity: 0.78;
+    }
+    .stage-expand-pill:hover { opacity: 1; border-color: rgba(245, 158, 11, 0.7); }
+    .game-stage.bar-collapsed .stage-expand-pill { display: inline-flex; }
+    @media (max-width: 900px), (max-height: 500px) {
+      .stage-sso-tag { display: none !important; }
+      #stageAcctName { display: none !important; }
+      .stage-acct-btn { padding: 3px !important; }
+    }
     @media (max-height: 460px) and (orientation: landscape) {
-      .stage-topbar { height: 34px; gap: 6px; }
-      .stage-back-btn { padding: 3px 10px; font-size: 11.5px; }
-      .stage-center { font-size: 12px; }
+      .stage-topbar { height: 30px; gap: 6px; }
+      .stage-back-btn { padding: 2px 8px; font-size: 11px; }
+      .stage-center { font-size: 11.5px; }
     }
 
     .stage-back-btn {
@@ -1253,8 +1281,10 @@
           <span class="hide-xs" id="stageAcctName">訪客模式</span>
         </button>
         <button class="stage-back-btn" id="btnStageFullscreen" type="button" title="切換全螢幕">⛶</button>
+        <button class="stage-back-btn" id="btnCollapseStageBar" type="button" title="收合上方列，擴大遊玩畫面">▲</button>
       </div>
     </div>
+    <button class="stage-expand-pill" id="btnExpandStageBar" type="button" title="展開綜合區選單">▼ 選單</button>
     <iframe class="game-frame" id="gameFrame" title="遊戲遊玩視窗" allow="autoplay; fullscreen"></iframe>
   </div>
 
@@ -2315,6 +2345,11 @@
         document.exitFullscreen && document.exitFullscreen().catch(() => {});
       }
     });
+
+    const btnCollapseBar = document.getElementById('btnCollapseStageBar');
+    const btnExpandBar = document.getElementById('btnExpandStageBar');
+    if (btnCollapseBar) btnCollapseBar.addEventListener('click', () => document.getElementById('gameStage').classList.add('bar-collapsed'));
+    if (btnExpandBar) btnExpandBar.addEventListener('click', () => document.getElementById('gameStage').classList.remove('bar-collapsed'));
 
     document.getElementById('btnHubSwitchView').addEventListener('click', () => openAuthModal(true));
     document.getElementById('btnHubSignOut').addEventListener('click', signOutAccount);
