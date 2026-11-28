@@ -145,4 +145,100 @@
     isHttpOriginForOAuth,
     getClientId
   };
+
+  // =========================================================================
+  // ArcadeEconomy — 統一遊戲金幣倍率、進階細項與單局上限 SDK
+  // =========================================================================
+  const ECONOMY_STORAGE_KEY = 'arcade_hub_economy_v1';
+  const AUDIT_STORAGE_KEY = 'arcade_hub_admin_audit_v1';
+  const DEFAULT_GAME_ECONOMY = {
+    coinMultiplier: 1.0,
+    normalDropMult: 1.0,
+    bonusDropMult: 1.0,
+    maxCoinsPerRun: 0
+  };
+
+  function clampMult(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 1.0;
+    return Math.round(Math.max(0.1, Math.min(5.0, n)) * 100) / 100;
+  }
+
+  function clampCap(v) {
+    const n = Math.floor(Number(v) || 0);
+    if (n <= 0) return 0;
+    return Math.max(50, Math.min(99999, n));
+  }
+
+  function sanitizeGameEconomy(raw) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    return {
+      coinMultiplier: clampMult(src.coinMultiplier !== undefined ? src.coinMultiplier : DEFAULT_GAME_ECONOMY.coinMultiplier),
+      normalDropMult: clampMult(src.normalDropMult !== undefined ? src.normalDropMult : DEFAULT_GAME_ECONOMY.normalDropMult),
+      bonusDropMult: clampMult(src.bonusDropMult !== undefined ? src.bonusDropMult : DEFAULT_GAME_ECONOMY.bonusDropMult),
+      maxCoinsPerRun: clampCap(src.maxCoinsPerRun !== undefined ? src.maxCoinsPerRun : DEFAULT_GAME_ECONOMY.maxCoinsPerRun)
+    };
+  }
+
+  function sanitizeEconomyDoc(raw) {
+    const out = { preset: 'normal', updatedAt: 0, games: {} };
+    if (!raw || typeof raw !== 'object') return out;
+    out.preset = typeof raw.preset === 'string' && raw.preset.trim() ? raw.preset.trim().slice(0, 24) : 'custom';
+    out.updatedAt = Number(raw.updatedAt) || 0;
+    if (raw.games && typeof raw.games === 'object') {
+      Object.keys(raw.games).forEach((gid) => {
+        out.games[gid] = sanitizeGameEconomy(raw.games[gid]);
+      });
+    }
+    return out;
+  }
+
+  function loadEconomy() {
+    try {
+      const raw = localStorage.getItem(ECONOMY_STORAGE_KEY);
+      if (raw) return sanitizeEconomyDoc(JSON.parse(raw));
+    } catch (e) { /* ignore */ }
+    return sanitizeEconomyDoc(null);
+  }
+
+  function saveEconomy(doc) {
+    const clean = sanitizeEconomyDoc(doc);
+    try {
+      localStorage.setItem(ECONOMY_STORAGE_KEY, JSON.stringify(clean));
+    } catch (e) { /* ignore */ }
+    return clean;
+  }
+
+  function getGameEconomy(gameId, ecoDoc) {
+    const doc = ecoDoc || loadEconomy();
+    return sanitizeGameEconomy(doc && doc.games ? doc.games[gameId] : null);
+  }
+
+  function getEffectiveMult(gameId, kind, ecoDoc) {
+    const cfg = getGameEconomy(gameId, ecoDoc);
+    const sub = kind === 'bonus' ? cfg.bonusDropMult : cfg.normalDropMult;
+    return Math.round(cfg.coinMultiplier * sub * 100) / 100;
+  }
+
+  function getBadgeMult(gameId, ecoDoc) {
+    const cfg = getGameEconomy(gameId, ecoDoc);
+    const best = Math.max(cfg.coinMultiplier, cfg.coinMultiplier * cfg.normalDropMult, cfg.coinMultiplier * cfg.bonusDropMult);
+    const rounded = Math.round(best * 100) / 100;
+    return rounded > 1.0 ? rounded : 0;
+  }
+
+  global.ArcadeEconomy = {
+    ECONOMY_STORAGE_KEY,
+    AUDIT_STORAGE_KEY,
+    DEFAULT_GAME_ECONOMY,
+    clampMult,
+    clampCap,
+    sanitizeGameEconomy,
+    sanitizeEconomyDoc,
+    loadEconomy,
+    saveEconomy,
+    getGameEconomy,
+    getEffectiveMult,
+    getBadgeMult
+  };
 })(window);

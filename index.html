@@ -991,7 +991,13 @@
     .ach-banner-title { font-size: 13.5px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ach-banner-sub { font-size: 11px; color: #cbd5e1; margin-top: 1px; }
 
-    /* Admin Coin Manager Controls */
+    /* Admin Coin & Economy Manager Controls */
+    .cbadge.event-mult {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.96), rgba(239, 68, 68, 0.94));
+      color: #fff;
+      border: 1px solid rgba(254, 240, 138, 0.8);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.45);
+    }
     .admin-coin-toolbar {
       display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
       padding: 8px 10px; border-radius: 12px; margin-bottom: 10px;
@@ -1013,6 +1019,7 @@
       border: 1px solid rgba(250, 204, 21, 0.45); background: rgba(9, 13, 24, 0.92);
       color: #fde047; font-size: 12.5px; font-weight: 900; text-align: right; font-variant-numeric: tabular-nums;
     }
+    .admin-coin-input.sm { width: 62px; font-size: 12px; }
     .admin-mini-btn {
       padding: 5px 7px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.16);
       background: rgba(255, 255, 255, 0.08); color: #f8fafc; font-size: 11px; font-weight: 800; cursor: pointer;
@@ -1021,6 +1028,50 @@
     .admin-mini-btn.apply {
       background: linear-gradient(135deg, #f59e0b, #eab308); color: #1c0a00; border-color: transparent;
     }
+    .admin-mini-btn.preset-active {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; border-color: rgba(125, 211, 252, 0.6);
+    }
+    .admin-mini-btn.danger {
+      border-color: rgba(248, 113, 113, 0.45); color: #fca5a5;
+    }
+    .admin-eco-card {
+      padding: 9px 11px; border-radius: 12px;
+      background: rgba(15, 23, 42, 0.76); border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex; flex-direction: column; gap: 7px;
+    }
+    .admin-eco-card.boosted { border-color: rgba(250, 204, 21, 0.55); background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(15, 23, 42, 0.84)); }
+    .admin-eco-main { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .admin-eco-adv {
+      display: none; padding-top: 7px; border-top: 1px dashed rgba(148, 163, 184, 0.22);
+      align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      font-size: 11px; color: #cbd5e1;
+    }
+    .admin-eco-card.open-adv .admin-eco-adv { display: flex; }
+    .admin-eco-field { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #cbd5e1; }
+    .admin-cloud-grant-box {
+      padding: 10px 11px; border-radius: 12px; margin-bottom: 10px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(99, 102, 241, 0.12));
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      display: flex; flex-direction: column; gap: 7px;
+    }
+    .admin-grant-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .admin-text-input {
+      padding: 5px 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(9, 13, 24, 0.9); color: #f8fafc; font-size: 12px; font-weight: 700;
+      min-width: 140px; flex: 1;
+    }
+    .audit-row {
+      padding: 8px 10px; border-radius: 11px;
+      background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .audit-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: #94a3b8; font-weight: 700; }
+    .audit-tag {
+      padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 800;
+      background: rgba(56, 189, 248, 0.16); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .audit-tag.wallet { background: rgba(250, 204, 21, 0.16); color: #fde047; border-color: rgba(250, 204, 21, 0.35); }
+    .audit-summary { font-size: 12px; font-weight: 700; color: #f1f5f9; line-height: 1.4; }
 
     /* ================= FULLSCREEN GAME STAGE ================= */
     .game-stage {
@@ -1760,20 +1811,23 @@
 
   <!-- ================= ADMIN-ONLY CONTROL CENTER MODAL ================= -->
   <div class="modal-backdrop" id="adminModal">
-    <div class="auth-panel" style="max-width:610px;">
+    <div class="auth-panel" style="max-width:650px;">
       <div class="modal-head">
         <div>
           <h2>🛡️ 管理者後台選單</h2>
-          <div class="modal-sub" id="adminSub">僅管理者可見 · 全球遊玩統計與各遊戲金幣調整</div>
+          <div class="modal-sub" id="adminSub">僅管理者可見 · 雲端經濟倍率、跨裝置發幣與變更稽核</div>
         </div>
         <button class="close-btn" id="btnCloseAdmin" type="button" aria-label="關閉">✕</button>
       </div>
 
       <div class="ach-tabs" id="adminTabs">
-        <button class="ach-tab active" data-atab="stats" type="button">📊 遊玩統計與玩家榜</button>
-        <button class="ach-tab" data-atab="coins" type="button">🪙 各遊戲金幣管理</button>
+        <button class="ach-tab active" data-atab="stats" type="button">📊 遊玩統計</button>
+        <button class="ach-tab" data-atab="economy" type="button">⚖️ 經濟倍率</button>
+        <button class="ach-tab" data-atab="coins" type="button">🪙 玩家錢包</button>
+        <button class="ach-tab" data-atab="audit" type="button">📜 變更紀錄</button>
       </div>
 
+      <!-- TAB 1: Global Play Stats -->
       <div id="adminStatsPane">
         <div class="ach-top-bar" style="margin-bottom:10px;">
           <div class="ach-stats-col">
@@ -1785,10 +1839,51 @@
         <div class="playlog-list" id="adminGamesList" style="max-height:360px;"></div>
       </div>
 
+      <!-- TAB 2: Cloud Coin Economy & Drop Multipliers -->
+      <div id="adminEconomyPane" style="display:none;">
+        <div class="admin-coin-toolbar">
+          <div style="font-size:11.5px;font-weight:800;color:#cbd5e1;">
+            <span>🎯 活動快速預設：</span>
+            <span id="adminEcoPresetStatus" style="color:#7dd3fc;">平日 1.0x</span>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <button class="admin-mini-btn" data-eco-preset="normal" type="button">⚖️ 平日 1x</button>
+            <button class="admin-mini-btn" data-eco-preset="double" type="button">🔥 週末雙倍 2x</button>
+            <button class="admin-mini-btn" data-eco-preset="hard" type="button">🧊 嚴苛 0.5x</button>
+            <button class="admin-mini-btn danger" id="btnAdminEcoResetAll" type="button">↺ 全部還原預設</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;line-height:1.45;">
+          💡 全遊戲以目前掉幣量為 <b style="color:#e2e8f0;">1.0x 基準</b>（防呆範圍 0.1x ~ 5.0x）。僅總倍率 <b style="color:#fde047;">&gt; 1.0x</b> 時顯示活動徽章，&le; 1.0x 對玩家低調隱藏。
+        </div>
+        <div class="playlog-list" id="adminEconomyList" style="max-height:345px;"></div>
+      </div>
+
+      <!-- TAB 3: Player Wallet (Cloud Cross-Device Grant + Local Quick Editor) -->
       <div id="adminCoinsPane" style="display:none;">
+        <div class="admin-cloud-grant-box">
+          <div style="font-size:12px;font-weight:900;color:#7dd3fc;display:flex;align-items:center;justify-content:space-between;gap:6px;">
+            <span>☁️ 跨裝置雲端發放 / 調整（玩家下次開啟大廳自動入帳）</span>
+          </div>
+          <div class="admin-grant-row">
+            <input class="admin-text-input" id="adminGrantEmail" list="adminKnownEmails" type="email" placeholder="玩家 Email（如 player@gmail.com）" />
+            <datalist id="adminKnownEmails"></datalist>
+            <select class="admin-coin-select" id="adminGrantGame"></select>
+          </div>
+          <div class="admin-grant-row">
+            <select class="admin-coin-select" id="adminGrantMode">
+              <option value="add">加減金幣 (+/-)</option>
+              <option value="set">指定餘額 (=)</option>
+            </select>
+            <input class="admin-coin-input" id="adminGrantAmount" type="number" value="500" placeholder="金額" />
+            <input class="admin-text-input" id="adminGrantNote" type="text" maxlength="50" placeholder="備註（選填，如：活動補償）" />
+            <button class="admin-mini-btn apply" id="btnAdminSendGrant" type="button" style="padding:6px 12px;">📤 雲端發放</button>
+          </div>
+        </div>
+
         <div class="admin-coin-toolbar">
           <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#cbd5e1;">
-            <span>調整對象：</span>
+            <span>💻 本機即時調整：</span>
             <select class="admin-coin-select" id="adminCoinAccount"></select>
           </label>
           <div style="display:flex;gap:5px;flex-wrap:wrap;">
@@ -1797,7 +1892,18 @@
             <button class="admin-mini-btn apply" id="btnAdminSet9999All" type="button">設為 9999</button>
           </div>
         </div>
-        <div class="playlog-list" id="adminCoinsList" style="max-height:360px;"></div>
+        <div class="playlog-list" id="adminCoinsList" style="max-height:245px;"></div>
+      </div>
+
+      <!-- TAB 4: Audit Log -->
+      <div id="adminAuditPane" style="display:none;">
+        <div class="ach-top-bar" style="margin-bottom:10px;">
+          <div class="ach-stats-col">
+            <span id="adminAuditHeader">📜 管理者經濟與發幣變更紀錄（最近 100 筆）</span>
+          </div>
+          <button class="btn-secondary" id="btnRefreshAudit" type="button" style="padding:6px 12px;font-size:12px;">🔄 重新整理</button>
+        </div>
+        <div class="playlog-list" id="adminAuditList" style="max-height:360px;"></div>
       </div>
     </div>
   </div>
@@ -1818,6 +1924,8 @@
     'use strict';
 
     const SSO = window.ArcadeSSO;
+    const ECO = window.ArcadeEconomy;
+    let hubEconomy = ECO ? ECO.loadEconomy() : { preset: 'normal', updatedAt: 0, games: {} };
     const DEFAULT_GOOGLE_CLIENT_ID = '1013170994188-fdsubqrb9rqemu8ils5ttn5onfe9ai9p.apps.googleusercontent.com';
 
     // =========================================================================
@@ -2069,11 +2177,27 @@
     function pushSsoToActiveGame() {
       const frame = document.getElementById('gameFrame');
       if (!activeGame || !frame || !frame.contentWindow) return;
+      const ecoCfg = ECO ? ECO.getGameEconomy(activeGame.id, hubEconomy) : null;
       try {
         frame.contentWindow.postMessage({
           type: 'ARCADE_SSO_SYNC',
           source: 'arcade_hub',
-          auth: SSO.sanitizeAuth(auth)
+          auth: SSO.sanitizeAuth(auth),
+          economy: ecoCfg
+        }, '*');
+      } catch (e) { /* ignore */ }
+    }
+
+    function pushEconomyToActiveGame() {
+      const frame = document.getElementById('gameFrame');
+      if (!activeGame || !frame || !frame.contentWindow) return;
+      const ecoCfg = ECO ? ECO.getGameEconomy(activeGame.id, hubEconomy) : null;
+      try {
+        frame.contentWindow.postMessage({
+          type: 'ARCADE_ECONOMY_SYNC',
+          source: 'arcade_hub',
+          gameId: activeGame.id,
+          economy: ecoCfg
         }, '*');
       } catch (e) { /* ignore */ }
     }
@@ -2113,6 +2237,7 @@
       pushSsoToActiveGame();
       renderHubUI();
       renderAuthModal();
+      checkPendingWalletGrants();
       const liveCnt = GAMES_REGISTRY.filter(g => g.status === 'live').length;
       showToast(`✅ 已登入 ${userObj.name}！全站 ${liveCnt} 款遊戲皆已自動同步帳號`);
     }
@@ -2714,8 +2839,310 @@
       document.getElementById('playLogModal').classList.add('open');
     }
 
-    // Admin-Only Control Center (Global Play Stats + Per-Game Coin Manager)
+    // Admin-Only Control Center (Global Play Stats + Cloud Economy + Wallet + Audit Log)
     let activeAdminTab = 'stats';
+    let adminAuditLogs = [];
+    const expandedEcoGames = new Set();
+
+    function loadLocalAuditLogs() {
+      try {
+        const raw = localStorage.getItem(ECO ? ECO.AUDIT_STORAGE_KEY : 'arcade_hub_admin_audit_v1');
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) { return []; }
+    }
+
+    function appendLocalAuditLog(entry) {
+      const logs = loadLocalAuditLogs();
+      logs.unshift(Object.assign({
+        id: 'loc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5),
+        at: Date.now(),
+        actor: (auth.currentUser && auth.currentUser.email) || 'dellwu05@gmail.com'
+      }, entry));
+      const trimmed = logs.slice(0, 100);
+      try { localStorage.setItem(ECO ? ECO.AUDIT_STORAGE_KEY : 'arcade_hub_admin_audit_v1', JSON.stringify(trimmed)); } catch (e) {}
+      adminAuditLogs = trimmed;
+      return trimmed;
+    }
+
+    async function fetchCloudEconomy() {
+      if (!canUseCloudApi()) return;
+      try {
+        const res = await fetch('/api/economy', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.ok && data.economy) {
+          hubEconomy = ECO ? ECO.saveEconomy(data.economy) : data.economy;
+          pushEconomyToActiveGame();
+          renderHubUI();
+          if (document.getElementById('adminModal').classList.contains('open') && activeAdminTab === 'economy') {
+            renderAdminEconomyPane();
+          }
+        }
+      } catch (e) { /* offline fallback */ }
+    }
+
+    async function fetchAdminAuditLog(showFeedback = false) {
+      if (!isAdminUser()) return;
+      if (!canUseCloudApi()) {
+        adminAuditLogs = loadLocalAuditLogs();
+        if (activeAdminTab === 'audit') renderAdminAuditPane();
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/audit', { headers: getAdminRequestHeaders(), cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ok && Array.isArray(data.logs)) {
+            adminAuditLogs = data.logs;
+            try { localStorage.setItem(ECO ? ECO.AUDIT_STORAGE_KEY : 'arcade_hub_admin_audit_v1', JSON.stringify(data.logs)); } catch (e) {}
+            if (activeAdminTab === 'audit') renderAdminAuditPane();
+            if (showFeedback) showToast('📜 已同步雲端變更紀錄！');
+          }
+        }
+      } catch (e) {
+        adminAuditLogs = loadLocalAuditLogs();
+        if (activeAdminTab === 'audit') renderAdminAuditPane();
+      }
+    }
+
+    async function adminApplyEconomyPreset(preset) {
+      if (!isAdminUser() || !ECO) return;
+      const multMap = { normal: 1.0, double: 2.0, hard: 0.5 };
+      const labelMap = { normal: '平日預設 1.0x', double: '週末雙倍 2.0x', hard: '嚴苛模式 0.5x' };
+      const mult = multMap[preset] !== undefined ? multMap[preset] : 1.0;
+
+      // Optimistic local update
+      const nextGames = Object.assign({}, hubEconomy.games || {});
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        const prev = ECO.getGameEconomy(g.id, hubEconomy);
+        nextGames[g.id] = ECO.sanitizeGameEconomy(Object.assign({}, prev, {
+          coinMultiplier: mult,
+          normalDropMult: 1.0,
+          bonusDropMult: 1.0
+        }));
+      });
+      hubEconomy = ECO.saveEconomy({ preset, updatedAt: Date.now(), games: nextGames });
+      pushEconomyToActiveGame();
+      renderHubUI();
+      renderAdminEconomyPane();
+
+      let cloudSaved = false;
+      if (canUseCloudApi()) {
+        try {
+          const res = await fetch('/api/admin/economy', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, getAdminRequestHeaders()),
+            body: JSON.stringify({ action: 'preset', preset })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ok && data.economy) {
+              cloudSaved = true;
+              hubEconomy = ECO.saveEconomy(data.economy);
+              pushEconomyToActiveGame();
+              renderHubUI();
+              renderAdminEconomyPane();
+            }
+          }
+        } catch (e) { /* keep local */ }
+      }
+      if (!cloudSaved) {
+        appendLocalAuditLog({ type: 'economy_preset', gameId: 'all', summary: `切換全站活動預設檔：${labelMap[preset] || preset}` });
+      }
+      showToast(`⚖️ 已切換全站經濟預設：${labelMap[preset] || preset}！`);
+    }
+
+    async function adminResetAllEconomy() {
+      if (!isAdminUser() || !ECO) return;
+      const freshGames = {};
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        freshGames[g.id] = Object.assign({}, ECO.DEFAULT_GAME_ECONOMY);
+      });
+      hubEconomy = ECO.saveEconomy({ preset: 'normal', updatedAt: Date.now(), games: freshGames });
+      pushEconomyToActiveGame();
+      renderHubUI();
+      renderAdminEconomyPane();
+
+      let cloudSaved = false;
+      if (canUseCloudApi()) {
+        try {
+          const res = await fetch('/api/admin/economy', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, getAdminRequestHeaders()),
+            body: JSON.stringify({ action: 'reset_all' })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ok && data.economy) {
+              cloudSaved = true;
+              hubEconomy = ECO.saveEconomy(data.economy);
+              pushEconomyToActiveGame();
+              renderHubUI();
+              renderAdminEconomyPane();
+            }
+          }
+        } catch (e) { /* keep local */ }
+      }
+      if (!cloudSaved) {
+        appendLocalAuditLog({ type: 'economy_reset', gameId: 'all', summary: '全遊戲還原為 1.0x 預設經濟參數' });
+      }
+      showToast('↺ 已將全站遊戲還原為 1.0x 預設經濟參數！');
+    }
+
+    async function adminUpdateGameEconomy(gameId, patch) {
+      if (!isAdminUser() || !ECO) return;
+      const prev = ECO.getGameEconomy(gameId, hubEconomy);
+      const next = ECO.sanitizeGameEconomy(Object.assign({}, prev, patch));
+      const games = Object.assign({}, hubEconomy.games || {}, { [gameId]: next });
+      hubEconomy = ECO.saveEconomy({ preset: 'custom', updatedAt: Date.now(), games });
+      pushEconomyToActiveGame();
+      renderHubUI();
+      renderAdminEconomyPane();
+
+      const g = GAMES_REGISTRY.find(x => x.id === gameId);
+      const title = g ? g.title : gameId;
+      let cloudSaved = false;
+      if (canUseCloudApi()) {
+        try {
+          const res = await fetch('/api/admin/economy', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, getAdminRequestHeaders()),
+            body: JSON.stringify({ action: 'set_game', gameId, config: next })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ok && data.economy) {
+              cloudSaved = true;
+              hubEconomy = ECO.saveEconomy(data.economy);
+              pushEconomyToActiveGame();
+              renderHubUI();
+              renderAdminEconomyPane();
+            }
+          }
+        } catch (e) { /* keep local */ }
+      }
+      if (!cloudSaved) {
+        appendLocalAuditLog({
+          type: 'economy_game',
+          gameId,
+          summary: `調整 ${title} 倍率 ${prev.coinMultiplier}x → ${next.coinMultiplier}x（一般 ${next.normalDropMult}x / 特殊 ${next.bonusDropMult}x / 上限 ${next.maxCoinsPerRun || '無'}）`
+        });
+      }
+      showToast(`⚖️ 已更新【${title}】總倍率 ${next.coinMultiplier}x（一般 ${next.normalDropMult}x · 特殊 ${next.bonusDropMult}x${next.maxCoinsPerRun ? ' · 上限 ' + next.maxCoinsPerRun : ''}）`);
+    }
+
+    async function checkPendingWalletGrants() {
+      if (!canUseCloudApi() || !auth.currentUser || !auth.currentUser.email) return;
+      const email = String(auth.currentUser.email).trim().toLowerCase();
+      try {
+        const res = await fetch('/api/wallet/pending?email=' + encodeURIComponent(email), { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const grants = data && data.ok && Array.isArray(data.grants) ? data.grants : [];
+        if (!grants.length) return;
+
+        const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
+        const claimIds = [];
+        const notes = [];
+        grants.forEach((gr) => {
+          if (!gr || !gr.id) return;
+          claimIds.push(gr.id);
+          const targets = gr.gameId === 'all' ? liveGames : liveGames.filter(x => x.id === gr.gameId);
+          targets.forEach((g) => {
+            const cur = SSO.readGameSave(g.id, auth.currentUser) || {};
+            const prev = typeof cur.coins === 'number' ? cur.coins : 40;
+            const next = gr.mode === 'set'
+              ? Math.max(0, Math.min(999999, Math.floor(Number(gr.amount) || 0)))
+              : Math.max(0, Math.min(999999, prev + Math.floor(Number(gr.amount) || 0)));
+            SSO.writeGameSave(g.id, auth.currentUser, Object.assign({}, cur, { coins: next }));
+          });
+          const gLabel = gr.gameId === 'all' ? '全遊戲' : ((GAMES_REGISTRY.find(x => x.id === gr.gameId) || {}).title || gr.gameId);
+          const amtTxt = gr.mode === 'set' ? `設為 ${gr.amount}` : (gr.amount > 0 ? `+${gr.amount}` : `${gr.amount}`);
+          notes.push(`${gLabel} ${amtTxt} 🪙`);
+        });
+
+        await fetch('/api/wallet/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, grantIds: claimIds })
+        });
+        pushSsoToActiveGame();
+        renderHubUI();
+        showToast(`🎁 收到雲端金幣調整：${notes.join('、')}`);
+      } catch (e) { /* ignore offline */ }
+    }
+
+    async function adminSendCloudWalletGrant() {
+      if (!isAdminUser()) return;
+      const emailEl = document.getElementById('adminGrantEmail');
+      const gameEl = document.getElementById('adminGrantGame');
+      const modeEl = document.getElementById('adminGrantMode');
+      const amtEl = document.getElementById('adminGrantAmount');
+      const noteEl = document.getElementById('adminGrantNote');
+      const email = String(emailEl ? emailEl.value : '').trim().toLowerCase();
+      const gameId = gameEl ? gameEl.value : 'all';
+      const mode = modeEl ? modeEl.value : 'add';
+      const amount = Math.floor(Number(amtEl ? amtEl.value : 0) || 0);
+      const note = String(noteEl ? noteEl.value : '').trim().slice(0, 50);
+
+      if (!email || !email.includes('@')) {
+        showToast('⚠️ 請輸入有效的玩家 Email');
+        return;
+      }
+      if ((mode === 'set' && (amount < 0 || amount > 999999)) || (mode === 'add' && (amount === 0 || Math.abs(amount) > 999999))) {
+        showToast('⚠️ 請輸入有效的金幣金額（不可為 0）');
+        return;
+      }
+
+      if (canUseCloudApi()) {
+        try {
+          const res = await fetch('/api/admin/wallet-grant', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, getAdminRequestHeaders()),
+            body: JSON.stringify({ email, gameId, mode, amount, note })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            showToast(`⚠️ 雲端發放失敗：${(data && data.error) || '請稍後再試'}`);
+            return;
+          }
+          if (noteEl) noteEl.value = '';
+          showToast(`📤 已排程雲端發放給 ${email}！玩家下次登入將自動入帳`);
+          if (auth.currentUser && String(auth.currentUser.email || '').toLowerCase() === email) {
+            await checkPendingWalletGrants();
+            renderAdminCoinsPane();
+          }
+          return;
+        } catch (e) {
+          showToast('⚠️ 無法連線至雲端 Worker，請確認網路狀態');
+          return;
+        }
+      }
+
+      // Offline local preview fallback: if email matches a saved account, apply locally & log
+      const matched = (auth.savedAccounts || []).find(a => a && String(a.email || '').toLowerCase() === email);
+      if (matched) {
+        const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
+        const targets = gameId === 'all' ? liveGames : liveGames.filter(x => x.id === gameId);
+        targets.forEach((g) => {
+          const cur = SSO.readGameSave(g.id, matched) || {};
+          const prev = typeof cur.coins === 'number' ? cur.coins : 40;
+          const next = mode === 'set' ? amount : Math.max(0, Math.min(999999, prev + amount));
+          SSO.writeGameSave(g.id, matched, Object.assign({}, cur, { coins: next }));
+        });
+        pushSsoToActiveGame();
+        renderHubUI();
+        renderAdminCoinsPane();
+      }
+      appendLocalAuditLog({
+        type: 'wallet_grant',
+        gameId,
+        summary: `雲端發放給 ${email}（${gameId === 'all' ? '全遊戲' : gameId}）：${mode === 'set' ? '設為 ' + amount : (amount > 0 ? '+' + amount : amount)} 🪙${note ? ' · ' + note : ''}`
+      });
+      if (noteEl) noteEl.value = '';
+      showToast(`📤 已記錄發放給 ${email}（本機預覽模式已寫入變更紀錄）`);
+    }
 
     function getAdminTargetUser() {
       const sel = document.getElementById('adminCoinAccount');
@@ -2731,9 +3158,15 @@
       const targetUser = getAdminTargetUser();
       const clamped = Math.max(0, Math.min(999999, Math.floor(Number(newAmount) || 0)));
       const cur = SSO.readGameSave(gameId, targetUser) || {};
+      const prev = typeof cur.coins === 'number' ? cur.coins : 40;
       SSO.writeGameSave(gameId, targetUser, Object.assign({}, cur, { coins: clamped }));
       if (!silent) {
         const g = GAMES_REGISTRY.find(x => x.id === gameId);
+        appendLocalAuditLog({
+          type: 'wallet_local',
+          gameId,
+          summary: `本機調整 ${(targetUser && targetUser.name) || '訪客'}《${g ? g.title : gameId}》金幣：${prev} → ${clamped} 🪙`
+        });
         pushSsoToActiveGame();
         renderHubUI();
         renderAdminCoinsPane();
@@ -2751,13 +3184,120 @@
         const next = mode === 'set' ? amount : Math.max(0, prev + amount);
         SSO.writeGameSave(g.id, targetUser, Object.assign({}, cur, { coins: Math.min(999999, Math.floor(next)) }));
       });
+      appendLocalAuditLog({
+        type: 'wallet_local',
+        gameId: 'all',
+        summary: `本機批次調整 ${(targetUser && targetUser.name) || '訪客'} 全遊戲金幣：${mode === 'set' ? '設為 ' + amount : '+' + amount} 🪙`
+      });
       pushSsoToActiveGame();
       renderHubUI();
       renderAdminCoinsPane();
       showToast(mode === 'set' ? `🪙 已將全站 ${liveGames.length} 款遊戲金幣設為 ${amount.toLocaleString()} 🪙！` : `🪙 已為全站 ${liveGames.length} 款遊戲各加發 +${amount.toLocaleString()} 🪙！`);
     }
 
+    function renderAdminEconomyPane() {
+      const list = document.getElementById('adminEconomyList');
+      if (!list || !ECO) return;
+      const presetMap = { normal: '平日預設 1.0x', double: '🔥 週末雙倍 2.0x', hard: '🧊 嚴苛模式 0.5x', custom: '⚙️ 自訂個別參數' };
+      const statusEl = document.getElementById('adminEcoPresetStatus');
+      if (statusEl) statusEl.textContent = presetMap[hubEconomy.preset] || presetMap.custom;
+      document.querySelectorAll('[data-eco-preset]').forEach((btn) => {
+        btn.classList.toggle('preset-active', btn.dataset.ecoPreset === hubEconomy.preset);
+      });
+
+      list.innerHTML = '';
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        const cfg = ECO.getGameEconomy(g.id, hubEconomy);
+        const effNorm = ECO.getEffectiveMult(g.id, 'normal', hubEconomy);
+        const effBonus = ECO.getEffectiveMult(g.id, 'bonus', hubEconomy);
+        const badgeMult = ECO.getBadgeMult(g.id, hubEconomy);
+        const isOpen = expandedEcoGames.has(g.id);
+
+        const card = document.createElement('div');
+        card.className = 'admin-eco-card' + (badgeMult > 1.0 ? ' boosted' : '') + (isOpen ? ' open-adv' : '');
+        card.innerHTML = `
+          <div class="admin-eco-main">
+            <div class="admin-coin-meta">
+              <span style="font-size:20px;">${g.icon}</span>
+              <div style="min-width:0;">
+                <div style="font-size:12.5px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  ${escapeHtml(g.title)}
+                  ${badgeMult > 1.0 ? `<span style="margin-left:5px;padding:1px 6px;border-radius:999px;background:rgba(245,158,11,0.28);color:#fde047;font-size:10px;">🔥 ${badgeMult}x</span>` : ''}
+                </div>
+                <div style="font-size:10.5px;color:#94a3b8;font-weight:700;">
+                  一般 <b style="color:#e2e8f0;">${effNorm}x</b> · 特殊獎勵 <b style="color:#fde047;">${effBonus}x</b> · 單局上限 <b style="color:#7dd3fc;">${cfg.maxCoinsPerRun ? cfg.maxCoinsPerRun : '無'}</b>
+                </div>
+              </div>
+            </div>
+            <div class="admin-coin-controls">
+              <button class="admin-mini-btn" data-qmult="0.5" type="button">0.5x</button>
+              <button class="admin-mini-btn" data-qmult="1" type="button">1x</button>
+              <button class="admin-mini-btn" data-qmult="2" type="button">2x</button>
+              <input class="admin-coin-input sm" data-field="coinMultiplier" type="number" step="0.05" min="0.1" max="5" value="${cfg.coinMultiplier}" title="總倍率 (0.1~5.0)" />
+              <button class="admin-mini-btn" data-toggle-adv="1" type="button">${isOpen ? '▾ 細項' : '▸ 細項'}</button>
+              <button class="admin-mini-btn apply" data-save-eco="1" type="button">套用</button>
+            </div>
+          </div>
+          <div class="admin-eco-adv">
+            <label class="admin-eco-field">一般掉落倍率：
+              <input class="admin-coin-input sm" data-field="normalDropMult" type="number" step="0.05" min="0.1" max="5" value="${cfg.normalDropMult}" />
+            </label>
+            <label class="admin-eco-field">特殊獎勵倍率：
+              <input class="admin-coin-input sm" data-field="bonusDropMult" type="number" step="0.05" min="0.1" max="5" value="${cfg.bonusDropMult}" />
+            </label>
+            <label class="admin-eco-field">單局上限(0=無)：
+              <input class="admin-coin-input sm" data-field="maxCoinsPerRun" type="number" step="50" min="0" max="99999" value="${cfg.maxCoinsPerRun}" />
+            </label>
+            <button class="admin-mini-btn danger" data-reset-one="1" type="button">↺ 還原 1x</button>
+          </div>
+        `;
+
+        const readPatch = () => ({
+          coinMultiplier: card.querySelector('[data-field="coinMultiplier"]').value,
+          normalDropMult: card.querySelector('[data-field="normalDropMult"]').value,
+          bonusDropMult: card.querySelector('[data-field="bonusDropMult"]').value,
+          maxCoinsPerRun: card.querySelector('[data-field="maxCoinsPerRun"]').value
+        });
+
+        card.querySelectorAll('[data-qmult]').forEach((b) => {
+          b.addEventListener('click', () => adminUpdateGameEconomy(g.id, { coinMultiplier: Number(b.dataset.qmult) }));
+        });
+        card.querySelector('[data-toggle-adv]').addEventListener('click', () => {
+          if (expandedEcoGames.has(g.id)) expandedEcoGames.delete(g.id);
+          else expandedEcoGames.add(g.id);
+          renderAdminEconomyPane();
+        });
+        card.querySelector('[data-save-eco]').addEventListener('click', () => adminUpdateGameEconomy(g.id, readPatch()));
+        card.querySelector('[data-reset-one]').addEventListener('click', () => adminUpdateGameEconomy(g.id, ECO.DEFAULT_GAME_ECONOMY));
+        card.querySelectorAll('input').forEach((inp) => {
+          inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') adminUpdateGameEconomy(g.id, readPatch()); });
+        });
+        list.appendChild(card);
+      });
+    }
+
     function renderAdminCoinsPane() {
+      // Populate Cloud Grant dropdowns & known player emails
+      const grantGameSel = document.getElementById('adminGrantGame');
+      if (grantGameSel && !grantGameSel.options.length) {
+        const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
+        grantGameSel.innerHTML = `<option value="all">🌐 全站所有遊戲</option>` +
+          liveGames.map(g => `<option value="${escapeHtml(g.id)}">${g.icon} ${escapeHtml(g.title)}</option>`).join('');
+      }
+      const emailList = document.getElementById('adminKnownEmails');
+      if (emailList) {
+        const emails = new Set();
+        if (auth.currentUser && auth.currentUser.email) emails.add(auth.currentUser.email.toLowerCase());
+        (auth.savedAccounts || []).forEach(a => { if (a && a.email) emails.add(String(a.email).toLowerCase()); });
+        const playMap = getMergedAdminPlayLog();
+        Object.values(playMap || {}).forEach(ent => {
+          Object.values((ent && ent.players) || {}).forEach(pl => {
+            if (pl && pl.email) emails.add(String(pl.email).toLowerCase());
+          });
+        });
+        emailList.innerHTML = Array.from(emails).map(em => `<option value="${escapeHtml(em)}"></option>`).join('');
+      }
+
       const sel = document.getElementById('adminCoinAccount');
       if (sel) {
         const prevVal = sel.value;
@@ -2814,15 +3354,60 @@
       });
     }
 
+    function renderAdminAuditPane() {
+      const list = document.getElementById('adminAuditList');
+      if (!list) return;
+      const logs = adminAuditLogs.length ? adminAuditLogs : loadLocalAuditLogs();
+      list.innerHTML = '';
+      if (!logs.length) {
+        list.innerHTML = `<div style="padding:26px 12px;text-align:center;color:var(--muted);font-size:12.5px;">尚無任何變更紀錄</div>`;
+        return;
+      }
+      const tagMap = {
+        economy_game: '⚖️ 單遊戲倍率',
+        economy_preset: '🎯 活動預設',
+        economy_reset: '↺ 還原預設',
+        wallet_grant: '☁️ 雲端發幣',
+        wallet_local: '🪙 本機調幣'
+      };
+      logs.forEach((item) => {
+        const isWallet = String(item.type || '').startsWith('wallet');
+        const row = document.createElement('div');
+        row.className = 'audit-row';
+        const timeStr = item.at ? new Date(item.at).toLocaleString('zh-TW', { hour12: false }) : '';
+        row.innerHTML = `
+          <div class="audit-head">
+            <span class="audit-tag ${isWallet ? 'wallet' : ''}">${escapeHtml(tagMap[item.type] || item.type || '變更')}</span>
+            <span>${escapeHtml(item.actor || '')} · ${escapeHtml(timeStr)}</span>
+          </div>
+          <div class="audit-summary">${escapeHtml(item.summary || '')}</div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
     function renderAdminModal() {
       document.querySelectorAll('#adminTabs .ach-tab').forEach(b => b.classList.toggle('active', b.dataset.atab === activeAdminTab));
       const statsPane = document.getElementById('adminStatsPane');
+      const ecoPane = document.getElementById('adminEconomyPane');
       const coinsPane = document.getElementById('adminCoinsPane');
+      const auditPane = document.getElementById('adminAuditPane');
       if (statsPane) statsPane.style.display = activeAdminTab === 'stats' ? 'block' : 'none';
+      if (ecoPane) ecoPane.style.display = activeAdminTab === 'economy' ? 'block' : 'none';
       if (coinsPane) coinsPane.style.display = activeAdminTab === 'coins' ? 'block' : 'none';
+      if (auditPane) auditPane.style.display = activeAdminTab === 'audit' ? 'block' : 'none';
 
+      if (activeAdminTab === 'economy') {
+        renderAdminEconomyPane();
+        return;
+      }
       if (activeAdminTab === 'coins') {
         renderAdminCoinsPane();
+        return;
+      }
+      if (activeAdminTab === 'audit') {
+        renderAdminAuditPane();
+        fetchAdminAuditLog(false);
         return;
       }
 
@@ -2872,6 +3457,8 @@
       renderAdminModal();
       document.getElementById('adminModal').classList.add('open');
       fetchAdminCloudStats(false);
+      fetchCloudEconomy();
+      fetchAdminAuditLog(false);
     }
 
     // Public Global Score Leaderboard Modal (Visible to ALL users — NO play counts, NO emails!)
@@ -2972,8 +3559,10 @@
         const card = document.createElement('article');
         card.className = 'game-card' + (isLive ? ' live' : ' soon') + (g.featured && activeFilter === 'all' ? ' featured' : '');
 
+        const badgeMult = isLive && ECO ? ECO.getBadgeMult(g.id, hubEconomy) : 0;
         const badgesHtml = `
           <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
+          ${badgeMult > 1.0 ? `<span class="cbadge event-mult">🔥 ${badgeMult}x 金幣</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#86efac;border-color:rgba(134,239,172,0.5);">🌟 英雄羈絆 +${synPct}%</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#fde047;border-color:rgba(251,191,36,0.45);">⚡ 強化 Lv.${stats.upgradeLevel || 0}/${stats.upgradeMax || 15}</span>` : ''}
           ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
@@ -3976,6 +4565,12 @@
     document.getElementById('btnAdminAdd500All').addEventListener('click', () => adminBatchAdjustCoins('add', 500));
     document.getElementById('btnAdminAdd2000All').addEventListener('click', () => adminBatchAdjustCoins('add', 2000));
     document.getElementById('btnAdminSet9999All').addEventListener('click', () => adminBatchAdjustCoins('set', 9999));
+    document.querySelectorAll('[data-eco-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => adminApplyEconomyPreset(btn.dataset.ecoPreset));
+    });
+    document.getElementById('btnAdminEcoResetAll').addEventListener('click', adminResetAllEconomy);
+    document.getElementById('btnAdminSendGrant').addEventListener('click', adminSendCloudWalletGrant);
+    document.getElementById('btnRefreshAudit').addEventListener('click', () => fetchAdminAuditLog(true));
 
     // Boot Hub
     renderHubUI();
@@ -3983,6 +4578,8 @@
     checkNewAchievementUnlocks(true);
     achBootDone = true;
     syncAllMyScoresToCloud();
+    fetchCloudEconomy();
+    checkPendingWalletGrants();
     if (isAdminUser()) fetchAdminCloudStats(false);
   })();
   </script>

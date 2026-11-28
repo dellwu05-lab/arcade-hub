@@ -385,6 +385,85 @@
       .sprint-btn { padding: 7px 12px !important; font-size: 12px !important; border-radius: 13px !important; }
     }
   </style>
+
+  <script>
+  (function () {
+    const GAME_ID = 'brick_breaker_3d';
+    const ECO_KEY = 'arcade_hub_economy_v1';
+    const DEF = { coinMultiplier: 1.0, normalDropMult: 1.0, bonusDropMult: 1.0, maxCoinsPerRun: 0 };
+    function clampM(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(Math.max(0.1, Math.min(5.0, n)) * 100) / 100 : 1.0; }
+    function clampC(v) { const n = Math.floor(Number(v) || 0); return n <= 0 ? 0 : Math.max(50, Math.min(99999, n)); }
+    function norm(raw) {
+      const s = raw && typeof raw === 'object' ? raw : {};
+      return {
+        coinMultiplier: clampM(s.coinMultiplier !== undefined ? s.coinMultiplier : 1.0),
+        normalDropMult: clampM(s.normalDropMult !== undefined ? s.normalDropMult : 1.0),
+        bonusDropMult: clampM(s.bonusDropMult !== undefined ? s.bonusDropMult : 1.0),
+        maxCoinsPerRun: clampC(s.maxCoinsPerRun !== undefined ? s.maxCoinsPerRun : 0)
+      };
+    }
+    let cfg = Object.assign({}, DEF);
+    function renderBadge() {
+      let el = document.getElementById('arcadeEcoBadge');
+      const best = Math.round(Math.max(cfg.coinMultiplier, cfg.coinMultiplier * cfg.normalDropMult, cfg.coinMultiplier * cfg.bonusDropMult) * 100) / 100;
+      if (best <= 1.0) {
+        if (el) el.style.display = 'none';
+        return;
+      }
+      if (!el && document.body) {
+        el = document.createElement('div');
+        el.id = 'arcadeEcoBadge';
+        el.style.cssText = 'position:fixed;bottom:10px;left:10px;z-index:25;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:900;color:#fff;background:linear-gradient(135deg,rgba(245,158,11,0.95),rgba(239,68,68,0.92));border:1px solid rgba(254,240,138,0.8);box-shadow:0 4px 12px rgba(245,158,11,0.4);pointer-events:none;font-family:inherit;';
+        document.body.appendChild(el);
+      }
+      if (el) {
+        el.textContent = '🔥 ' + best + 'x 金幣';
+        el.style.display = 'inline-flex';
+      }
+    }
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(ECO_KEY);
+        if (raw) {
+          const doc = JSON.parse(raw);
+          cfg = (doc && doc.games && doc.games[GAME_ID]) ? norm(doc.games[GAME_ID]) : Object.assign({}, DEF);
+        } else {
+          cfg = Object.assign({}, DEF);
+        }
+      } catch (e) {}
+      renderBadge();
+    }
+    function scale(base, kind, currentRun) {
+      const sub = kind === 'bonus' ? cfg.bonusDropMult : cfg.normalDropMult;
+      const rawVal = Math.max(0, Number(base) || 0) * cfg.coinMultiplier * sub;
+      let gain = Math.floor(rawVal);
+      if (Math.random() < (rawVal - gain)) gain += 1;
+      if (cfg.maxCoinsPerRun > 0 && typeof currentRun === 'number') {
+        const rem = Math.max(0, cfg.maxCoinsPerRun - currentRun);
+        gain = Math.min(gain, rem);
+      }
+      return Math.max(0, gain);
+    }
+    window.addEventListener('message', function (ev) {
+      const d = ev && ev.data;
+      if (!d || typeof d !== 'object') return;
+      if ((d.type === 'ARCADE_SSO_SYNC' || d.type === 'ARCADE_ECONOMY_SYNC') && d.economy) {
+        cfg = norm(d.economy);
+        renderBadge();
+      }
+    });
+    window.addEventListener('storage', function (ev) {
+      if (ev && ev.key === ECO_KEY) loadFromStorage();
+    });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadFromStorage);
+    else loadFromStorage();
+    window.__ARCADE_ECO__ = {
+      get: function () { return cfg; },
+      scale: scale,
+      capRun: function (val) { return cfg.maxCoinsPerRun > 0 ? Math.min(val, cfg.maxCoinsPerRun) : val; }
+    };
+  })();
+  </script>
 </head>
 <body>
   <div class="app-root">
@@ -847,7 +926,7 @@
 
           if (b.kind === 'gold') {
             const c = Math.max(1, Math.round(2 * getCoinMult()));
-            st.runCoins += c; SFX.coin();
+            st.runCoins += window.__ARCADE_ECO__.scale(c, 'normal', st.runCoins); SFX.coin();
             addFloat(cx, cy, `+${c}🪙`, '#fde047', 14);
           } else if (b.kind === 'bomb') {
             SFX.bomb(); st.shake = Math.max(st.shake, 0.25);
@@ -861,7 +940,7 @@
           } else if (b.kind === 'boss') {
             save.bossesDefeated++;
             const c = Math.max(12, Math.round((14 + st.stage * 2) * getCoinMult()));
-            st.runCoins += c; SFX.bomb(); st.shake = Math.max(st.shake, 0.42);
+            st.runCoins += window.__ARCADE_ECO__.scale(c, 'bonus', st.runCoins); SFX.bomb(); st.shake = Math.max(st.shake, 0.42);
             addFloat(cx, cy, `👑 BOSS 擊破 +${c}🪙`, '#fde047', 19);
             showToast(`🏆 擊破魔王磚牆！+${pts} 分 +${c} 金幣！`);
           } else {
@@ -981,7 +1060,7 @@
 
     function nextStage() {
       const clearCoins = Math.max(8, Math.round((10 + st.stage * 2) * getCoinMult()));
-      st.runCoins += clearCoins;
+      st.runCoins += window.__ARCADE_ECO__.scale(clearCoins, 'bonus', st.runCoins);
       st.stage++;
       if (st.stage > save.bestStage) save.bestStage = st.stage;
       st.lives = Math.min(5, st.lives + 1);
@@ -1148,7 +1227,7 @@
           else if (d.kind === 'laser') { st.buffs.laser = 8.5; addFloat(st.pad.x, st.pad.y - 24, '🔫 雙雷射砲 8.5s!', '#f472b6', 16); }
           else if (d.kind === 'wide') { st.buffs.wide = 10.0; addFloat(st.pad.x, st.pad.y - 24, '🛡️ 超寬能量板!', '#34d399', 16); }
           else if (d.kind === 'barrier') { st.buffs.barrier = 11.0; addFloat(st.pad.x, st.pad.y - 24, '✨ 底部防護盾!', '#a855f7', 16); }
-          else if (d.kind === 'coin') { const c = Math.max(2, Math.round(3 * getCoinMult())); st.runCoins += c; addFloat(st.pad.x, st.pad.y - 24, `🪙 +${c} 金幣!`, '#fde047', 16); }
+          else if (d.kind === 'coin') { const c = Math.max(2, Math.round(3 * getCoinMult())); st.runCoins += window.__ARCADE_ECO__.scale(c, 'normal', st.runCoins); addFloat(st.pad.x, st.pad.y - 24, `🪙 +${c} 金幣!`, '#fde047', 16); }
           continue;
         }
         if (d.y > ARENA.y + ARENA.h + 24) st.drops.splice(i, 1);

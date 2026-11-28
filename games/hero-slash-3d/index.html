@@ -394,6 +394,85 @@
       .sprint-btn { padding: 7px 12px !important; font-size: 12px !important; border-radius: 13px !important; }
     }
   </style>
+
+  <script>
+  (function () {
+    const GAME_ID = 'hero_slash_3d';
+    const ECO_KEY = 'arcade_hub_economy_v1';
+    const DEF = { coinMultiplier: 1.0, normalDropMult: 1.0, bonusDropMult: 1.0, maxCoinsPerRun: 0 };
+    function clampM(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(Math.max(0.1, Math.min(5.0, n)) * 100) / 100 : 1.0; }
+    function clampC(v) { const n = Math.floor(Number(v) || 0); return n <= 0 ? 0 : Math.max(50, Math.min(99999, n)); }
+    function norm(raw) {
+      const s = raw && typeof raw === 'object' ? raw : {};
+      return {
+        coinMultiplier: clampM(s.coinMultiplier !== undefined ? s.coinMultiplier : 1.0),
+        normalDropMult: clampM(s.normalDropMult !== undefined ? s.normalDropMult : 1.0),
+        bonusDropMult: clampM(s.bonusDropMult !== undefined ? s.bonusDropMult : 1.0),
+        maxCoinsPerRun: clampC(s.maxCoinsPerRun !== undefined ? s.maxCoinsPerRun : 0)
+      };
+    }
+    let cfg = Object.assign({}, DEF);
+    function renderBadge() {
+      let el = document.getElementById('arcadeEcoBadge');
+      const best = Math.round(Math.max(cfg.coinMultiplier, cfg.coinMultiplier * cfg.normalDropMult, cfg.coinMultiplier * cfg.bonusDropMult) * 100) / 100;
+      if (best <= 1.0) {
+        if (el) el.style.display = 'none';
+        return;
+      }
+      if (!el && document.body) {
+        el = document.createElement('div');
+        el.id = 'arcadeEcoBadge';
+        el.style.cssText = 'position:fixed;bottom:10px;left:10px;z-index:25;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:900;color:#fff;background:linear-gradient(135deg,rgba(245,158,11,0.95),rgba(239,68,68,0.92));border:1px solid rgba(254,240,138,0.8);box-shadow:0 4px 12px rgba(245,158,11,0.4);pointer-events:none;font-family:inherit;';
+        document.body.appendChild(el);
+      }
+      if (el) {
+        el.textContent = '🔥 ' + best + 'x 金幣';
+        el.style.display = 'inline-flex';
+      }
+    }
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(ECO_KEY);
+        if (raw) {
+          const doc = JSON.parse(raw);
+          cfg = (doc && doc.games && doc.games[GAME_ID]) ? norm(doc.games[GAME_ID]) : Object.assign({}, DEF);
+        } else {
+          cfg = Object.assign({}, DEF);
+        }
+      } catch (e) {}
+      renderBadge();
+    }
+    function scale(base, kind, currentRun) {
+      const sub = kind === 'bonus' ? cfg.bonusDropMult : cfg.normalDropMult;
+      const rawVal = Math.max(0, Number(base) || 0) * cfg.coinMultiplier * sub;
+      let gain = Math.floor(rawVal);
+      if (Math.random() < (rawVal - gain)) gain += 1;
+      if (cfg.maxCoinsPerRun > 0 && typeof currentRun === 'number') {
+        const rem = Math.max(0, cfg.maxCoinsPerRun - currentRun);
+        gain = Math.min(gain, rem);
+      }
+      return Math.max(0, gain);
+    }
+    window.addEventListener('message', function (ev) {
+      const d = ev && ev.data;
+      if (!d || typeof d !== 'object') return;
+      if ((d.type === 'ARCADE_SSO_SYNC' || d.type === 'ARCADE_ECONOMY_SYNC') && d.economy) {
+        cfg = norm(d.economy);
+        renderBadge();
+      }
+    });
+    window.addEventListener('storage', function (ev) {
+      if (ev && ev.key === ECO_KEY) loadFromStorage();
+    });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadFromStorage);
+    else loadFromStorage();
+    window.__ARCADE_ECO__ = {
+      get: function () { return cfg; },
+      scale: scale,
+      capRun: function (val) { return cfg.maxCoinsPerRun > 0 ? Math.min(val, cfg.maxCoinsPerRun) : val; }
+    };
+  })();
+  </script>
 </head>
 <body>
   <div class="app-root">
@@ -808,7 +887,7 @@
 
         if (t.hp > 0) {
           const hitCoin = Math.max(1, Math.round(0.75 * getCoinMult()));
-          st.runCoins += hitCoin;
+          st.runCoins += window.__ARCADE_ECO__.scale(hitCoin, 'bonus', st.runCoins);
           st.score += Math.round(120 * syn.scoreMult);
           t.vy = Math.min(t.vy, -260); // Juggle bounce upward!
           addParticles(t.x, t.y, '#fde047', 14, 260);
@@ -820,7 +899,7 @@
         t.sliced = true;
         const jackpot = Math.max(3, Math.round(4 * getCoinMult()));
         const pts = Math.round(450 * syn.scoreMult * (st.slowTimer > 0 ? 1.5 : 1));
-        st.runCoins += jackpot;
+        st.runCoins += window.__ARCADE_ECO__.scale(jackpot, 'bonus', st.runCoins);
         st.score += pts;
         st.shake = 0.34;
         if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + 20 * syn.ultMult);
@@ -854,7 +933,7 @@
 
       if (t.kind === 'gold') {
         const c = Math.max(1, Math.round(2 * getCoinMult()));
-        st.runCoins += c; SFX.gold();
+        st.runCoins += window.__ARCADE_ECO__.scale(c, 'normal', st.runCoins); SFX.gold();
         addFloat(t.x, t.y, `⭐ +${c}🪙`, '#fde047', 17);
       } else if (t.kind === 'freeze') {
         st.slowTimer = 4.5 + (u.freeze || 0) * 0.9 + (hero.id === 'kanade' || hero.id === 'gojo' ? 1.2 : 0);
@@ -872,7 +951,7 @@
         if (st.swipeCount >= 3) {
           const baseComboCoin = st.swipeCount <= 5 ? 1 : Math.min(3, Math.floor(st.swipeCount * 0.28));
           const bonusCoin = Math.max(1, Math.round(baseComboCoin * getCoinMult() * 0.5));
-          st.runCoins += bonusCoin;
+          st.runCoins += window.__ARCADE_ECO__.scale(bonusCoin, 'bonus', st.runCoins);
           addFloat(t.x, t.y - 24, `⚡ ${st.swipeCount} 連斬加成! +${bonusPts} +${bonusCoin}🪙`, '#fde047', st.swipeCount >= 4 ? 20 : 18);
         } else {
           addFloat(t.x, t.y - 24, `⚡ ${st.swipeCount} 連斬! +${bonusPts}`, '#fde047', 17);
@@ -959,7 +1038,7 @@
       const syn = getHeroSynergy();
       const pts = Math.round((850 * b.tier) * syn.scoreMult);
       const coins = Math.max(3, Math.round((3.5 + b.tier) * getCoinMult()));
-      st.score += pts; st.runCoins += coins;
+      st.score += pts; st.runCoins += window.__ARCADE_ECO__.scale(coins, 'bonus', st.runCoins);
       save.bossesDefeated++;
       st.lives = Math.min(5, st.lives + 1);
       st.shake = 0.5;

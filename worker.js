@@ -1,10 +1,16 @@
 /**
  * Arcade Hub Cloudflare Worker API (worker.js)
  * ------------------------------------------------------------
- * - POST /api/play          : Records global play count & player (never returns counts)
- * - POST /api/score         : Submits player's high score to global leaderboard
- * - GET  /api/leaderboard   : Public global score leaderboard (no emails / no play counts)
- * - GET  /api/admin/stats   : Admin-only global cross-device play counts & player roster
+ * - POST /api/play               : Records global play count & player (never returns counts)
+ * - POST /api/score              : Submits player's high score to global leaderboard
+ * - GET  /api/leaderboard        : Public global score leaderboard (no emails / no play counts)
+ * - GET  /api/economy            : Public global coin economy multipliers & caps per game
+ * - GET  /api/wallet/pending     : Fetch unclaimed cloud coin grants for a signed-in email
+ * - POST /api/wallet/claim       : Mark cloud coin grants as claimed
+ * - GET  /api/admin/stats        : Admin-only global cross-device play counts & player roster
+ * - POST /api/admin/economy      : Admin-only update game multipliers, presets, or reset defaults
+ * - POST /api/admin/wallet-grant : Admin-only queue cross-device coin grant/adjust for a player
+ * - GET  /api/admin/audit        : Admin-only economy & wallet change audit log
  *
  * Storage:
  *   Uses Cloudflare KV binding `ARCADE_KV` when configured in Workers Settings -> Bindings.
@@ -14,9 +20,37 @@
 const DEFAULT_ADMINS = ['dellwu05@gmail.com'];
 const KV_PLAYS_KEY = 'arcade:global_plays_v1';
 const KV_SCORES_KEY = 'arcade:global_scores_v1';
+const KV_ECONOMY_KEY = 'arcade:economy_v1';
+const KV_GRANTS_KEY = 'arcade:wallet_grants_v1';
+const KV_AUDIT_KEY = 'arcade:audit_log_v1';
+
+const KNOWN_GAME_IDS = [
+  'canyon_parkour_3d',
+  'star_blaster_3d',
+  'canyon_drift_3d',
+  'neon_blocks_3d',
+  'hero_arena_3d',
+  'brick_breaker_3d',
+  'hero_slash_3d',
+  'neon_snake_3d',
+  'cozy_island_3d'
+];
+
+const DEFAULT_GAME_ECONOMY = {
+  coinMultiplier: 1.0,
+  normalDropMult: 1.0,
+  bonusDropMult: 1.0,
+  maxCoinsPerRun: 0
+};
 
 if (!globalThis.__ARCADE_MEM) {
-  globalThis.__ARCADE_MEM = { plays: {}, scores: {} };
+  globalThis.__ARCADE_MEM = {
+    plays: {},
+    scores: {},
+    economy: null,
+    grants: {},
+    audit: []
+  };
 }
 
 function jsonRes(data, status = 200) {
@@ -50,20 +84,25 @@ function decodeJwtPayload(token) {
   }
 }
 
-function isAuthorizedAdmin(request, env) {
+function getAdminActorEmail(request, env) {
   const admins = getAdminEmails(env);
   const authHeader = request.headers.get('Authorization') || '';
   if (authHeader.startsWith('Bearer ')) {
     const payload = decodeJwtPayload(authHeader.slice(7).trim());
     if (payload && payload.email && admins.has(String(payload.email).toLowerCase())) {
-      return true;
+      return String(payload.email).toLowerCase();
     }
   }
   const emailHdr = (request.headers.get('X-Arcade-Admin-Email') || '').trim().toLowerCase();
-  return !!(emailHdr && admins.has(emailHdr));
+  if (emailHdr && admins.has(emailHdr)) return emailHdr;
+  return '';
 }
 
-async function readStore(env, key, memField) {
+function isAuthorizedAdmin(request, env) {
+  return !!getAdminActorEmail(request, env);
+}
+
+async function readStore(env, key, memField, fallbackValue = {}) {
   if (env && env.ARCADE_KV) {
     try {
       const raw = await env.ARCADE_KV.get(key);
@@ -72,9 +111,11 @@ async function readStore(env, key, memField) {
         if (parsed && typeof parsed === 'object') return parsed;
       }
     } catch { /* fall through */ }
-    return {};
+    return Array.isArray(fallbackValue) ? [] : Object.assign({}, fallbackValue);
   }
-  return globalThis.__ARCADE_MEM[memField] || {};
+  const val = globalThis.__ARCADE_MEM[memField];
+  if (val !== undefined && val !== null) return val;
+  return Array.isArray(fallbackValue) ? [] : Object.assign({}, fallbackValue);
 }
 
 async function writeStore(env, key, memField, obj) {
@@ -90,9 +131,65 @@ function cleanStr(v, maxLen = 40) {
   return String(v || '').trim().slice(0, maxLen);
 }
 
+function clampMult(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 1.0;
+  return Math.round(Math.max(0.1, Math.min(5.0, n)) * 100) / 100;
+}
+
+function clampCap(v) {
+  const n = Math.floor(Number(v) || 0);
+  if (n <= 0) return 0;
+  return Math.max(50, Math.min(99999, n));
+}
+
+function sanitizeGameEconomy(raw) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    coinMultiplier: clampMult(src.coinMultiplier !== undefined ? src.coinMultiplier : DEFAULT_GAME_ECONOMY.coinMultiplier),
+    normalDropMult: clampMult(src.normalDropMult !== undefined ? src.normalDropMult : DEFAULT_GAME_ECONOMY.normalDropMult),
+    bonusDropMult: clampMult(src.bonusDropMult !== undefined ? src.bonusDropMult : DEFAULT_GAME_ECONOMY.bonusDropMult),
+    maxCoinsPerRun: clampCap(src.maxCoinsPerRun !== undefined ? src.maxCoinsPerRun : DEFAULT_GAME_ECONOMY.maxCoinsPerRun)
+  };
+}
+
+function createDefaultEconomy() {
+  const games = {};
+  KNOWN_GAME_IDS.forEach((gid) => {
+    games[gid] = Object.assign({}, DEFAULT_GAME_ECONOMY);
+  });
+  return { preset: 'normal', updatedAt: 0, games };
+}
+
+function sanitizeEconomyDoc(raw) {
+  const base = createDefaultEconomy();
+  if (!raw || typeof raw !== 'object') return base;
+  base.preset = cleanStr(raw.preset || 'custom', 24) || 'custom';
+  base.updatedAt = Number(raw.updatedAt) || 0;
+  const srcGames = raw.games && typeof raw.games === 'object' ? raw.games : {};
+  Object.keys(srcGames).forEach((gid) => {
+    const cleanId = cleanStr(gid, 40);
+    if (cleanId) base.games[cleanId] = sanitizeGameEconomy(srcGames[gid]);
+  });
+  return base;
+}
+
+async function appendAuditLog(env, entry) {
+  const list = await readStore(env, KV_AUDIT_KEY, 'audit', []);
+  const logs = Array.isArray(list) ? list : [];
+  logs.unshift(Object.assign({
+    id: 'aud_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+    at: Date.now()
+  }, entry));
+  const trimmed = logs.slice(0, 100);
+  await writeStore(env, KV_AUDIT_KEY, 'audit', trimmed);
+  return trimmed;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const storage = env && env.ARCADE_KV ? 'kv' : 'memory';
 
     // 1. Record Play Event (Public write-only; never exposes counts)
     if (url.pathname === '/api/play' && request.method === 'POST') {
@@ -108,7 +205,7 @@ export default {
         const color = /^#[0-9a-f]{3,8}$/i.test(String(body.color || '')) ? String(body.color) : '#64748b';
         const now = Date.now();
 
-        const plays = await readStore(env, KV_PLAYS_KEY, 'plays');
+        const plays = await readStore(env, KV_PLAYS_KEY, 'plays', {});
         if (!plays[gameId] || typeof plays[gameId] !== 'object') {
           plays[gameId] = { totalPlays: 0, lastPlayedAt: 0, players: {} };
         }
@@ -150,7 +247,7 @@ export default {
         const title = cleanStr(body.title || '', 24);
         const now = Date.now();
 
-        const scores = await readStore(env, KV_SCORES_KEY, 'scores');
+        const scores = await readStore(env, KV_SCORES_KEY, 'scores', {});
         if (!scores[gameId] || typeof scores[gameId] !== 'object') scores[gameId] = {};
         const prev = scores[gameId][uid];
         if (!prev || score >= (Number(prev.score) || 0)) {
@@ -163,7 +260,6 @@ export default {
             score: Math.max(score, Number(prev && prev.score) || 0),
             updatedAt: now
           };
-          // Keep top 60 entries per game to keep KV compact
           const sorted = Object.values(scores[gameId])
             .sort((a, b) => (b.score - a.score) || ((b.updatedAt || 0) - (a.updatedAt || 0)))
             .slice(0, 60);
@@ -181,8 +277,7 @@ export default {
     // 3. Public Global Score Leaderboard (NO emails, NO play counts!)
     if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
       const gameId = cleanStr(url.searchParams.get('gameId') || '', 40);
-      const scores = await readStore(env, KV_SCORES_KEY, 'scores');
-      const storage = env && env.ARCADE_KV ? 'kv' : 'memory';
+      const scores = await readStore(env, KV_SCORES_KEY, 'scores', {});
 
       const formatList = (mapObj) => Object.values(mapObj || {})
         .filter(x => x && Number(x.score) > 0)
@@ -205,14 +300,189 @@ export default {
       return jsonRes({ ok: true, storage, games: all });
     }
 
-    // 4. Admin-Only Global Play Counts & Players Analytics
+    // 4. Public Global Economy Settings (multipliers & caps per game)
+    if (url.pathname === '/api/economy' && request.method === 'GET') {
+      const raw = await readStore(env, KV_ECONOMY_KEY, 'economy', null);
+      const economy = sanitizeEconomyDoc(raw);
+      return jsonRes({ ok: true, storage, economy });
+    }
+
+    // 5. Player Pending Cloud Wallet Grants (for cross-device coin grants)
+    if (url.pathname === '/api/wallet/pending' && request.method === 'GET') {
+      const email = cleanStr(url.searchParams.get('email') || '', 64).toLowerCase();
+      if (!email) return jsonRes({ ok: true, grants: [] });
+      const grantsMap = await readStore(env, KV_GRANTS_KEY, 'grants', {});
+      const list = Array.isArray(grantsMap[email]) ? grantsMap[email] : [];
+      const pending = list.filter(g => g && !g.claimedAt);
+      return jsonRes({ ok: true, storage, grants: pending });
+    }
+
+    if (url.pathname === '/api/wallet/claim' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const email = cleanStr(body.email || '', 64).toLowerCase();
+        const ids = Array.isArray(body.grantIds) ? new Set(body.grantIds.map(x => cleanStr(x, 48))) : new Set();
+        if (!email || ids.size === 0) return jsonRes({ ok: true, claimed: 0 });
+        const grantsMap = await readStore(env, KV_GRANTS_KEY, 'grants', {});
+        const list = Array.isArray(grantsMap[email]) ? grantsMap[email] : [];
+        let claimed = 0;
+        const now = Date.now();
+        list.forEach((g) => {
+          if (g && !g.claimedAt && ids.has(g.id)) {
+            g.claimedAt = now;
+            claimed++;
+          }
+        });
+        if (claimed > 0) {
+          // Keep latest 40 grant records per email
+          grantsMap[email] = list.slice(-40);
+          await writeStore(env, KV_GRANTS_KEY, 'grants', grantsMap);
+        }
+        return jsonRes({ ok: true, claimed });
+      } catch {
+        return jsonRes({ ok: false, error: 'invalid payload' }, 400);
+      }
+    }
+
+    // 6. Admin-Only Global Play Counts & Players Analytics
     if (url.pathname === '/api/admin/stats' && request.method === 'GET') {
       if (!isAuthorizedAdmin(request, env)) {
         return jsonRes({ ok: false, error: 'Forbidden: Admin access only' }, 403);
       }
-      const plays = await readStore(env, KV_PLAYS_KEY, 'plays');
-      const storage = env && env.ARCADE_KV ? 'kv' : 'memory';
+      const plays = await readStore(env, KV_PLAYS_KEY, 'plays', {});
       return jsonRes({ ok: true, storage, plays });
+    }
+
+    // 7. Admin-Only Economy Control (update game, apply preset, or reset all)
+    if (url.pathname === '/api/admin/economy' && request.method === 'POST') {
+      const actor = getAdminActorEmail(request, env);
+      if (!actor) return jsonRes({ ok: false, error: 'Forbidden: Admin access only' }, 403);
+      try {
+        const body = await request.json();
+        const action = cleanStr(body.action || 'set_game', 24);
+        const raw = await readStore(env, KV_ECONOMY_KEY, 'economy', null);
+        const economy = sanitizeEconomyDoc(raw);
+        const now = Date.now();
+
+        if (action === 'reset_all') {
+          const prevPreset = economy.preset;
+          const fresh = createDefaultEconomy();
+          fresh.updatedAt = now;
+          await writeStore(env, KV_ECONOMY_KEY, 'economy', fresh);
+          await appendAuditLog(env, {
+            actor,
+            type: 'economy_reset',
+            gameId: 'all',
+            summary: '全遊戲還原為 1.0x 預設經濟參數',
+            before: { preset: prevPreset },
+            after: { preset: 'normal', coinMultiplier: 1.0 }
+          });
+          return jsonRes({ ok: true, storage, economy: fresh });
+        }
+
+        if (action === 'preset') {
+          const preset = cleanStr(body.preset || 'normal', 24);
+          const multMap = { normal: 1.0, double: 2.0, hard: 0.5 };
+          const mult = multMap[preset] !== undefined ? multMap[preset] : 1.0;
+          const prevPreset = economy.preset;
+          Object.keys(economy.games).forEach((gid) => {
+            economy.games[gid] = Object.assign({}, economy.games[gid], {
+              coinMultiplier: mult,
+              normalDropMult: 1.0,
+              bonusDropMult: 1.0
+            });
+          });
+          economy.preset = preset;
+          economy.updatedAt = now;
+          await writeStore(env, KV_ECONOMY_KEY, 'economy', economy);
+          const labelMap = { normal: '平日預設 1.0x', double: '週末雙倍 2.0x', hard: '嚴苛模式 0.5x' };
+          await appendAuditLog(env, {
+            actor,
+            type: 'economy_preset',
+            gameId: 'all',
+            summary: `切換全站活動預設檔：${labelMap[preset] || preset}`,
+            before: { preset: prevPreset },
+            after: { preset, coinMultiplier: mult }
+          });
+          return jsonRes({ ok: true, storage, economy });
+        }
+
+        // Single game update
+        const gameId = cleanStr(body.gameId || '', 40);
+        if (!gameId) return jsonRes({ ok: false, error: 'missing gameId' }, 400);
+        const prevCfg = sanitizeGameEconomy(economy.games[gameId]);
+        const nextCfg = sanitizeGameEconomy(Object.assign({}, prevCfg, body.config || {}));
+        economy.games[gameId] = nextCfg;
+        economy.preset = 'custom';
+        economy.updatedAt = now;
+        await writeStore(env, KV_ECONOMY_KEY, 'economy', economy);
+        await appendAuditLog(env, {
+          actor,
+          type: 'economy_game',
+          gameId,
+          summary: `調整 ${gameId} 倍率 ${prevCfg.coinMultiplier}x → ${nextCfg.coinMultiplier}x（一般 ${nextCfg.normalDropMult}x / 特殊 ${nextCfg.bonusDropMult}x / 上限 ${nextCfg.maxCoinsPerRun || '無'}）`,
+          before: prevCfg,
+          after: nextCfg
+        });
+        return jsonRes({ ok: true, storage, economy });
+      } catch {
+        return jsonRes({ ok: false, error: 'invalid payload' }, 400);
+      }
+    }
+
+    // 8. Admin-Only Cross-Device Cloud Wallet Grant
+    if (url.pathname === '/api/admin/wallet-grant' && request.method === 'POST') {
+      const actor = getAdminActorEmail(request, env);
+      if (!actor) return jsonRes({ ok: false, error: 'Forbidden: Admin access only' }, 403);
+      try {
+        const body = await request.json();
+        const email = cleanStr(body.email || '', 64).toLowerCase();
+        const gameId = cleanStr(body.gameId || '', 40);
+        const mode = body.mode === 'set' ? 'set' : 'add';
+        const amount = Math.floor(Number(body.amount) || 0);
+        const note = cleanStr(body.note || '', 60);
+        if (!email || !gameId) return jsonRes({ ok: false, error: 'missing email or gameId' }, 400);
+        if (mode === 'set' && (amount < 0 || amount > 999999)) return jsonRes({ ok: false, error: 'invalid amount' }, 400);
+        if (mode === 'add' && (amount === 0 || Math.abs(amount) > 999999)) return jsonRes({ ok: false, error: 'invalid delta' }, 400);
+
+        const grant = {
+          id: 'gr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+          email,
+          gameId,
+          mode,
+          amount,
+          note,
+          createdBy: actor,
+          createdAt: Date.now(),
+          claimedAt: 0
+        };
+        const grantsMap = await readStore(env, KV_GRANTS_KEY, 'grants', {});
+        if (!Array.isArray(grantsMap[email])) grantsMap[email] = [];
+        grantsMap[email].push(grant);
+        grantsMap[email] = grantsMap[email].slice(-40);
+        await writeStore(env, KV_GRANTS_KEY, 'grants', grantsMap);
+
+        await appendAuditLog(env, {
+          actor,
+          type: 'wallet_grant',
+          gameId,
+          summary: `雲端發放給 ${email}（${gameId === 'all' ? '全遊戲' : gameId}）：${mode === 'set' ? '設為 ' + amount : (amount > 0 ? '+' + amount : amount)} 🪙${note ? ' · ' + note : ''}`,
+          before: null,
+          after: { email, gameId, mode, amount, note }
+        });
+        return jsonRes({ ok: true, storage, grant });
+      } catch {
+        return jsonRes({ ok: false, error: 'invalid payload' }, 400);
+      }
+    }
+
+    // 9. Admin-Only Audit Log
+    if (url.pathname === '/api/admin/audit' && request.method === 'GET') {
+      if (!isAuthorizedAdmin(request, env)) {
+        return jsonRes({ ok: false, error: 'Forbidden: Admin access only' }, 403);
+      }
+      const logs = await readStore(env, KV_AUDIT_KEY, 'audit', []);
+      return jsonRes({ ok: true, storage, logs: Array.isArray(logs) ? logs : [] });
     }
 
     // Serve static assets for all non-API routes
@@ -222,3 +492,4 @@ export default {
     return new Response('Not Found', { status: 404 });
   }
 };
+

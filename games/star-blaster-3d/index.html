@@ -385,6 +385,85 @@
       .sprint-btn { padding: 7px 12px !important; font-size: 12px !important; border-radius: 13px !important; }
     }
   </style>
+
+  <script>
+  (function () {
+    const GAME_ID = 'star_blaster_3d';
+    const ECO_KEY = 'arcade_hub_economy_v1';
+    const DEF = { coinMultiplier: 1.0, normalDropMult: 1.0, bonusDropMult: 1.0, maxCoinsPerRun: 0 };
+    function clampM(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(Math.max(0.1, Math.min(5.0, n)) * 100) / 100 : 1.0; }
+    function clampC(v) { const n = Math.floor(Number(v) || 0); return n <= 0 ? 0 : Math.max(50, Math.min(99999, n)); }
+    function norm(raw) {
+      const s = raw && typeof raw === 'object' ? raw : {};
+      return {
+        coinMultiplier: clampM(s.coinMultiplier !== undefined ? s.coinMultiplier : 1.0),
+        normalDropMult: clampM(s.normalDropMult !== undefined ? s.normalDropMult : 1.0),
+        bonusDropMult: clampM(s.bonusDropMult !== undefined ? s.bonusDropMult : 1.0),
+        maxCoinsPerRun: clampC(s.maxCoinsPerRun !== undefined ? s.maxCoinsPerRun : 0)
+      };
+    }
+    let cfg = Object.assign({}, DEF);
+    function renderBadge() {
+      let el = document.getElementById('arcadeEcoBadge');
+      const best = Math.round(Math.max(cfg.coinMultiplier, cfg.coinMultiplier * cfg.normalDropMult, cfg.coinMultiplier * cfg.bonusDropMult) * 100) / 100;
+      if (best <= 1.0) {
+        if (el) el.style.display = 'none';
+        return;
+      }
+      if (!el && document.body) {
+        el = document.createElement('div');
+        el.id = 'arcadeEcoBadge';
+        el.style.cssText = 'position:fixed;bottom:10px;left:10px;z-index:25;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:900;color:#fff;background:linear-gradient(135deg,rgba(245,158,11,0.95),rgba(239,68,68,0.92));border:1px solid rgba(254,240,138,0.8);box-shadow:0 4px 12px rgba(245,158,11,0.4);pointer-events:none;font-family:inherit;';
+        document.body.appendChild(el);
+      }
+      if (el) {
+        el.textContent = '🔥 ' + best + 'x 金幣';
+        el.style.display = 'inline-flex';
+      }
+    }
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(ECO_KEY);
+        if (raw) {
+          const doc = JSON.parse(raw);
+          cfg = (doc && doc.games && doc.games[GAME_ID]) ? norm(doc.games[GAME_ID]) : Object.assign({}, DEF);
+        } else {
+          cfg = Object.assign({}, DEF);
+        }
+      } catch (e) {}
+      renderBadge();
+    }
+    function scale(base, kind, currentRun) {
+      const sub = kind === 'bonus' ? cfg.bonusDropMult : cfg.normalDropMult;
+      const rawVal = Math.max(0, Number(base) || 0) * cfg.coinMultiplier * sub;
+      let gain = Math.floor(rawVal);
+      if (Math.random() < (rawVal - gain)) gain += 1;
+      if (cfg.maxCoinsPerRun > 0 && typeof currentRun === 'number') {
+        const rem = Math.max(0, cfg.maxCoinsPerRun - currentRun);
+        gain = Math.min(gain, rem);
+      }
+      return Math.max(0, gain);
+    }
+    window.addEventListener('message', function (ev) {
+      const d = ev && ev.data;
+      if (!d || typeof d !== 'object') return;
+      if ((d.type === 'ARCADE_SSO_SYNC' || d.type === 'ARCADE_ECONOMY_SYNC') && d.economy) {
+        cfg = norm(d.economy);
+        renderBadge();
+      }
+    });
+    window.addEventListener('storage', function (ev) {
+      if (ev && ev.key === ECO_KEY) loadFromStorage();
+    });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadFromStorage);
+    else loadFromStorage();
+    window.__ARCADE_ECO__ = {
+      get: function () { return cfg; },
+      scale: scale,
+      capRun: function (val) { return cfg.maxCoinsPerRun > 0 ? Math.min(val, cfg.maxCoinsPerRun) : val; }
+    };
+  })();
+  </script>
 </head>
 <body>
   <div class="app-root">
@@ -734,7 +813,7 @@
       { id: 'rate',   icon: '⚡', title: '超頻射速核心', desc: '武器開火速度提升 22%，壓制敵艦彈幕', apply: p => { p.fireMult *= 0.80; } },
       { id: 'homing', icon: '🎯', title: '追蹤光束飛彈', desc: '自動發射鎖定敵艦與母艦的星際飛彈 +1', apply: p => { p.homing = Math.min(3, p.homing + 1); } },
       { id: 'repair', icon: '🛡️', title: '奈米裝甲修復', desc: '回復 45% 裝甲＋最大裝甲 +20＋立即開啟能量護盾', apply: p => { p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * 0.45)); p.shield = true; } },
-      { id: 'magnet', icon: '🧲', title: '星幣重力磁場', desc: '大幅擴大星幣吸附半徑，並立即獲得 +25 星幣', apply: p => { p.magnet += 95; state.runCoins += 25; } },
+      { id: 'magnet', icon: '🧲', title: '星幣重力磁場', desc: '大幅擴大星幣吸附半徑，並立即獲得 +25 星幣', apply: p => { p.magnet += 95; state.runCoins += window.__ARCADE_ECO__.scale(25, 'bonus', state.runCoins); } },
       { id: 'nova',   icon: '💥', title: '超新星反應爐', desc: '大招集氣效率 +40%，並立即充能 50%', apply: p => { p.novaRate += 0.4; state.novaCharge = Math.min(100, state.novaCharge + 50); } }
     ];
 
@@ -1014,7 +1093,7 @@
       const syn = getHeroSynergy();
       state.score += 1200 * b.tier;
       const bonus = Math.round(35 * getShip().coinMult * syn.coinMult);
-      state.runCoins += bonus;
+      state.runCoins += window.__ARCADE_ECO__.scale(bonus, 'bonus', state.runCoins);
       save.bossesDefeated++;
       state.shake = 0.6;
       SFX.explode(true);
@@ -1356,7 +1435,7 @@
         if (d < 28) {
           if (pk.kind === 'coin') {
             const val = Math.max(1, Math.round(1 * ship.coinMult * getHeroSynergy().coinMult));
-            state.runCoins += val;
+            state.runCoins += window.__ARCADE_ECO__.scale(val, 'normal', state.runCoins);
             state.score += 20;
             state.novaCharge = Math.min(100, state.novaCharge + 2.4 * p.novaRate);
             SFX.coin();
