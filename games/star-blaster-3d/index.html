@@ -657,6 +657,10 @@
       { id: 'hp',   icon: '🛡️', name: '鈦金裝甲', costs: [30, 60, 100, 150, 220], stat: (lv) => `裝甲 +${lv * 20}` },
       { id: 'nova', icon: '💥', name: '超新星核', costs: [35, 70, 115, 170, 240], stat: (lv) => `充能 +${lv * 20}%` }
     ];
+    // Economy rebalance: prices x2.5 so a single run can't unlock everything
+    const PRICE_SCALE = 2.5;
+    SHIPS.forEach(s => { if (s.price > 0) s.price = Math.round(s.price * PRICE_SCALE / 10) * 10; });
+    UPG_DEFS.forEach(u => { u.costs = u.costs.map(c => Math.round(c * PRICE_SCALE / 5) * 5); });
     function cleanUpg(raw) {
       const u = raw && typeof raw === 'object' ? raw : {};
       return {
@@ -815,7 +819,7 @@
       { id: 'rate',   icon: '⚡', title: '超頻射速核心', desc: '武器開火速度提升 22%，壓制敵艦彈幕', apply: p => { p.fireMult *= 0.80; } },
       { id: 'homing', icon: '🎯', title: '追蹤光束飛彈', desc: '自動發射鎖定敵艦與母艦的星際飛彈 +1', apply: p => { p.homing = Math.min(3, p.homing + 1); } },
       { id: 'repair', icon: '🛡️', title: '奈米裝甲修復', desc: '回復 45% 裝甲＋最大裝甲 +20＋立即開啟能量護盾', apply: p => { p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * 0.45)); p.shield = true; } },
-      { id: 'magnet', icon: '🧲', title: '星幣重力磁場', desc: '大幅擴大星幣吸附半徑，並立即獲得 +12 星幣', apply: p => { p.magnet += 95; state.runCoins += window.__ARCADE_ECO__.scale(12, 'bonus', state.runCoins); } },
+      { id: 'magnet', icon: '🧲', title: '星幣重力磁場', desc: '大幅擴大星幣吸附半徑，並立即獲得 +12 星幣', apply: p => { p.magnet += 95; awardRunCoins(12, 'bonus'); } },
       { id: 'nova',   icon: '💥', title: '超新星反應爐', desc: '大招集氣效率 +40%，並立即充能 50%', apply: p => { p.novaRate += 0.4; state.novaCharge = Math.min(100, state.novaCharge + 50); } }
     ];
 
@@ -1106,6 +1110,19 @@
       `;
     }
 
+
+    // Per-run coin income: diminishing returns + wave-based hard cap
+    function awardRunCoins(base, kind) {
+      const runCap = 150 + state.wave * 60;
+      const f = 1 / (1 + state.runCoins / 250);
+      let v = Math.max(0, base) * f;
+      let n = Math.floor(v); if (Math.random() < v - n) n += 1;
+      let gain = n ? window.__ARCADE_ECO__.scale(n, kind, state.runCoins) : 0;
+      gain = Math.min(gain, Math.max(0, runCap - state.runCoins));
+      state.runCoins += gain;
+      return gain;
+    }
+
     function defeatBoss() {
       const b = state.boss;
       if (!b) return;
@@ -1113,7 +1130,7 @@
       const syn = getHeroSynergy();
       state.score += 1200 * b.tier;
       const bonus = Math.round(22 * getShip().coinMult * syn.coinMult);
-      state.runCoins += window.__ARCADE_ECO__.scale(bonus, 'bonus', state.runCoins);
+      awardRunCoins(bonus, 'bonus');
       save.bossesDefeated++;
       state.shake = 0.6;
       SFX.explode(true);
@@ -1458,7 +1475,7 @@
         if (d < 28) {
           if (pk.kind === 'coin') {
             const val = Math.max(1, Math.round(1 * ship.coinMult * getHeroSynergy().coinMult));
-            state.runCoins += window.__ARCADE_ECO__.scale(val, 'normal', state.runCoins);
+            awardRunCoins(val, 'normal');
             state.score += 20;
             if ((state.novaLockTimer || 0) <= 0) state.novaCharge = Math.min(100, state.novaCharge + 0.6 * p.novaRate);
             SFX.coin();
