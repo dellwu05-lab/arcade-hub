@@ -920,7 +920,7 @@
       const baseSpd = hero.spd * syn.spdMult;
 
       st.mode = 'playing'; st.time = 0; st.wave = 1; st.kills = 0; st.score = 0; st.runCoins = 0;
-      st.ultCharge = 100; st.shake = 0; st.spawnCd = 0.25; st.bossTimer = 26;
+      st.ultCharge = 25; st.ultLockTimer = 0; st.shake = 0; st.spawnCd = 0.25; st.bossTimer = 26;
       st.freezeTimer = 0; st.rainbowTimer = 0;
       st.enemies = []; st.projectiles = []; st.eBullets = []; st.gems = []; st.particles = []; st.bolts = []; st.waves = []; st.floats = []; st.ultFx = []; st.boss = null;
 
@@ -947,7 +947,11 @@
       document.getElementById('barsWrap').classList.remove('hidden');
       document.getElementById('ultBar').classList.remove('hidden');
       updateHudUI();
-      showToast(`${hero.icon} 【${hero.name}】出陣！裝備「${hero.weaponName || '專屬武器'}」· 奧義已就緒！`);
+      showToast(`${hero.icon} 【${hero.name}】出陣！裝備「${hero.weaponName || '專屬武器'}」· 擊殺怪潮累積奧義！`);
+    }
+
+    function canGainUltCharge() {
+      return st.ultFx.length === 0 && (st.ultLockTimer || 0) <= 0;
     }
 
     function activateUltimate() {
@@ -959,9 +963,10 @@
       }
       const p = st.player;
       st.ultCharge = 0;
+      st.ultLockTimer = 2.8;
       st.shake = 0.65;
       p.invuln = Math.max(p.invuln, 2.2);
-      p.magBuff = 5.5;
+      p.magBuff = 2.5;
       st.eBullets = [];
       SFX.ult();
       showUltCutin(hero);
@@ -1084,7 +1089,7 @@
         st.enemies.splice(idx, 1);
         st.kills++;
         st.score += e.score;
-        st.ultCharge = Math.min(100, st.ultCharge + 2.6 * st.player.ultRate);
+        if (canGainUltCharge()) st.ultCharge = Math.min(100, st.ultCharge + 0.45 * st.player.ultRate);
         addParticles(e.x, e.y, e.col, 10, 170);
         SFX.kill();
         st.gems.push({ x: e.x, y: e.y, kind: 'xp', val: e.xp });
@@ -1300,7 +1305,8 @@
       if (st.rainbowTimer > 0) st.rainbowTimer = Math.max(0, st.rainbowTimer - dt);
       if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
       if (p.magBuff > 0) p.magBuff = Math.max(0, p.magBuff - dt);
-      st.ultCharge = Math.min(100, st.ultCharge + dt * 5.2 * p.ultRate);
+      if (st.ultLockTimer > 0) st.ultLockTimer = Math.max(0, st.ultLockTimer - dt);
+      if (canGainUltCharge()) st.ultCharge = Math.min(100, st.ultCharge + dt * 0.9 * p.ultRate);
 
       // Player movement (WASD / Arrows / Drag Pointer)
       let mx = 0, my = 0;
@@ -1536,7 +1542,7 @@
           st.gems.splice(i, 1);
           if (g.kind === 'xp') {
             p.xp += g.val;
-            st.ultCharge = Math.min(100, st.ultCharge + 1.4 * p.ultRate);
+            if (canGainUltCharge()) st.ultCharge = Math.min(100, st.ultCharge + 0.22 * p.ultRate);
             SFX.gem();
             if (p.xp >= p.xpNext) {
               p.xp -= p.xpNext; p.lvl++; p.xpNext = Math.round(p.xpNext * 1.32 + 25);
