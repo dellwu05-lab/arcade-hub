@@ -991,6 +991,37 @@
     .ach-banner-title { font-size: 13.5px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ach-banner-sub { font-size: 11px; color: #cbd5e1; margin-top: 1px; }
 
+    /* Admin Coin Manager Controls */
+    .admin-coin-toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      padding: 8px 10px; border-radius: 12px; margin-bottom: 10px;
+      background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(250, 204, 21, 0.28);
+    }
+    .admin-coin-select {
+      padding: 5px 9px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(9, 13, 24, 0.9); color: #f8fafc; font-size: 12px; font-weight: 700;
+    }
+    .admin-coin-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      padding: 8px 10px; border-radius: 12px;
+      background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .admin-coin-meta { display: flex; align-items: center; gap: 8px; min-width: 145px; flex: 1; }
+    .admin-coin-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .admin-coin-input {
+      width: 78px; padding: 5px 7px; border-radius: 8px;
+      border: 1px solid rgba(250, 204, 21, 0.45); background: rgba(9, 13, 24, 0.92);
+      color: #fde047; font-size: 12.5px; font-weight: 900; text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .admin-mini-btn {
+      padding: 5px 7px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08); color: #f8fafc; font-size: 11px; font-weight: 800; cursor: pointer;
+    }
+    .admin-mini-btn:hover { border-color: #fde047; color: #fde047; background: rgba(250, 204, 21, 0.14); }
+    .admin-mini-btn.apply {
+      background: linear-gradient(135deg, #f59e0b, #eab308); color: #1c0a00; border-color: transparent;
+    }
+
     /* ================= FULLSCREEN GAME STAGE ================= */
     .game-stage {
       position: fixed;
@@ -1727,24 +1758,47 @@
     </div>
   </div>
 
-  <!-- ================= ADMIN-ONLY GLOBAL PLAY ANALYTICS MODAL ================= -->
+  <!-- ================= ADMIN-ONLY CONTROL CENTER MODAL ================= -->
   <div class="modal-backdrop" id="adminModal">
-    <div class="auth-panel" style="max-width:580px;">
+    <div class="auth-panel" style="max-width:610px;">
       <div class="modal-head">
         <div>
-          <h2>🛡️ 管理者雲端數據後台</h2>
-          <div class="modal-sub" id="adminSub">僅管理者可見 · 全球跨裝置遊玩次數與玩家名單</div>
+          <h2>🛡️ 管理者後台選單</h2>
+          <div class="modal-sub" id="adminSub">僅管理者可見 · 全球遊玩統計與各遊戲金幣調整</div>
         </div>
         <button class="close-btn" id="btnCloseAdmin" type="button" aria-label="關閉">✕</button>
       </div>
-      <div class="ach-top-bar" style="margin-bottom:10px;">
-        <div class="ach-stats-col">
-          <span id="adminCloudBadge">☁️ 正在同步全球雲端數據…</span>
-          <span class="ach-ap-sub" id="adminSummaryLine">總遊玩：0 次 · 不重複玩家：0 位</span>
-        </div>
-        <button class="btn-secondary" id="btnRefreshAdmin" type="button" style="padding:6px 12px;font-size:12px;">🔄 立即同步</button>
+
+      <div class="ach-tabs" id="adminTabs">
+        <button class="ach-tab active" data-atab="stats" type="button">📊 遊玩統計與玩家榜</button>
+        <button class="ach-tab" data-atab="coins" type="button">🪙 各遊戲金幣管理</button>
       </div>
-      <div class="playlog-list" id="adminGamesList" style="max-height:380px;"></div>
+
+      <div id="adminStatsPane">
+        <div class="ach-top-bar" style="margin-bottom:10px;">
+          <div class="ach-stats-col">
+            <span id="adminCloudBadge">☁️ 正在同步全球雲端數據…</span>
+            <span class="ach-ap-sub" id="adminSummaryLine">總遊玩：0 次 · 不重複玩家：0 位</span>
+          </div>
+          <button class="btn-secondary" id="btnRefreshAdmin" type="button" style="padding:6px 12px;font-size:12px;">🔄 立即同步</button>
+        </div>
+        <div class="playlog-list" id="adminGamesList" style="max-height:360px;"></div>
+      </div>
+
+      <div id="adminCoinsPane" style="display:none;">
+        <div class="admin-coin-toolbar">
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#cbd5e1;">
+            <span>調整對象：</span>
+            <select class="admin-coin-select" id="adminCoinAccount"></select>
+          </label>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <button class="admin-mini-btn" id="btnAdminAdd500All" type="button">+500 全遊戲</button>
+            <button class="admin-mini-btn" id="btnAdminAdd2000All" type="button">+2000 全遊戲</button>
+            <button class="admin-mini-btn apply" id="btnAdminSet9999All" type="button">設為 9999</button>
+          </div>
+        </div>
+        <div class="playlog-list" id="adminCoinsList" style="max-height:360px;"></div>
+      </div>
     </div>
   </div>
 
@@ -2660,8 +2714,118 @@
       document.getElementById('playLogModal').classList.add('open');
     }
 
-    // Admin-Only Global Cloud Analytics Dashboard Modal
+    // Admin-Only Control Center (Global Play Stats + Per-Game Coin Manager)
+    let activeAdminTab = 'stats';
+
+    function getAdminTargetUser() {
+      const sel = document.getElementById('adminCoinAccount');
+      const uid = sel ? sel.value : (auth.currentUser ? auth.currentUser.uid : 'guest');
+      if (uid === 'guest') return null;
+      if (auth.currentUser && auth.currentUser.uid === uid) return auth.currentUser;
+      const found = (auth.savedAccounts || []).find(a => a && a.uid === uid);
+      return found || auth.currentUser || null;
+    }
+
+    function adminSetGameCoins(gameId, newAmount, silent = false) {
+      if (!isAdminUser()) return;
+      const targetUser = getAdminTargetUser();
+      const clamped = Math.max(0, Math.min(999999, Math.floor(Number(newAmount) || 0)));
+      const cur = SSO.readGameSave(gameId, targetUser) || {};
+      SSO.writeGameSave(gameId, targetUser, Object.assign({}, cur, { coins: clamped }));
+      if (!silent) {
+        const g = GAMES_REGISTRY.find(x => x.id === gameId);
+        pushSsoToActiveGame();
+        renderHubUI();
+        renderAdminCoinsPane();
+        showToast(`🪙 已將【${g ? g.title : gameId}】金幣調整為 ${clamped.toLocaleString()} 🪙！`);
+      }
+    }
+
+    function adminBatchAdjustCoins(mode, amount) {
+      if (!isAdminUser()) return;
+      const targetUser = getAdminTargetUser();
+      const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
+      liveGames.forEach((g) => {
+        const cur = SSO.readGameSave(g.id, targetUser) || {};
+        const prev = typeof cur.coins === 'number' ? cur.coins : 40;
+        const next = mode === 'set' ? amount : Math.max(0, prev + amount);
+        SSO.writeGameSave(g.id, targetUser, Object.assign({}, cur, { coins: Math.min(999999, Math.floor(next)) }));
+      });
+      pushSsoToActiveGame();
+      renderHubUI();
+      renderAdminCoinsPane();
+      showToast(mode === 'set' ? `🪙 已將全站 ${liveGames.length} 款遊戲金幣設為 ${amount.toLocaleString()} 🪙！` : `🪙 已為全站 ${liveGames.length} 款遊戲各加發 +${amount.toLocaleString()} 🪙！`);
+    }
+
+    function renderAdminCoinsPane() {
+      const sel = document.getElementById('adminCoinAccount');
+      if (sel) {
+        const prevVal = sel.value;
+        const opts = [];
+        const seen = new Set();
+        if (auth.currentUser && auth.currentUser.uid) {
+          seen.add(auth.currentUser.uid);
+          opts.push({ uid: auth.currentUser.uid, label: `${auth.currentUser.name}（目前帳號）` });
+        }
+        (auth.savedAccounts || []).forEach((a) => {
+          if (a && a.uid && !seen.has(a.uid)) {
+            seen.add(a.uid);
+            opts.push({ uid: a.uid, label: `${a.name} (${a.email || ''})` });
+          }
+        });
+        opts.push({ uid: 'guest', label: '👤 訪客存檔' });
+        sel.innerHTML = opts.map(o => `<option value="${escapeHtml(o.uid)}">${escapeHtml(o.label)}</option>`).join('');
+        if (prevVal && opts.some(o => o.uid === prevVal)) sel.value = prevVal;
+      }
+
+      const targetUser = getAdminTargetUser();
+      const list = document.getElementById('adminCoinsList');
+      if (!list) return;
+      list.innerHTML = '';
+
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        const raw = SSO.readGameSave(g.id, targetUser);
+        const curCoins = raw && typeof raw.coins === 'number' ? raw.coins : 40;
+        const row = document.createElement('div');
+        row.className = 'admin-coin-row';
+        row.innerHTML = `
+          <div class="admin-coin-meta">
+            <span style="font-size:20px;">${g.icon}</span>
+            <div style="min-width:0;">
+              <div style="font-size:12.5px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(g.title)}</div>
+              <div style="font-size:10.5px;color:#fde047;font-weight:800;">目前：🪙 ${curCoins.toLocaleString()}</div>
+            </div>
+          </div>
+          <div class="admin-coin-controls">
+            <button class="admin-mini-btn" data-delta="-100" type="button">-100</button>
+            <button class="admin-mini-btn" data-delta="100" type="button">+100</button>
+            <button class="admin-mini-btn" data-delta="500" type="button">+500</button>
+            <input class="admin-coin-input" type="number" min="0" max="999999" value="${curCoins}" aria-label="${escapeHtml(g.title)} 金幣數" />
+            <button class="admin-mini-btn apply" data-apply="1" type="button">套用</button>
+          </div>
+        `;
+        const inp = row.querySelector('.admin-coin-input');
+        row.querySelectorAll('[data-delta]').forEach((b) => {
+          b.addEventListener('click', () => adminSetGameCoins(g.id, curCoins + Number(b.dataset.delta)));
+        });
+        row.querySelector('[data-apply]').addEventListener('click', () => adminSetGameCoins(g.id, inp.value));
+        inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') adminSetGameCoins(g.id, inp.value); });
+        list.appendChild(row);
+      });
+    }
+
     function renderAdminModal() {
+      document.querySelectorAll('#adminTabs .ach-tab').forEach(b => b.classList.toggle('active', b.dataset.atab === activeAdminTab));
+      const statsPane = document.getElementById('adminStatsPane');
+      const coinsPane = document.getElementById('adminCoinsPane');
+      if (statsPane) statsPane.style.display = activeAdminTab === 'stats' ? 'block' : 'none';
+      if (coinsPane) coinsPane.style.display = activeAdminTab === 'coins' ? 'block' : 'none';
+
+      if (activeAdminTab === 'coins') {
+        renderAdminCoinsPane();
+        return;
+      }
+
       const total = getTotalPlayStats();
       const badge = document.getElementById('adminCloudBadge');
       if (badge) {
@@ -2702,7 +2866,7 @@
 
     function openAdminModal() {
       if (!isAdminUser()) {
-        showToast('⚠️ 僅管理者帳號可檢視全球遊玩統計');
+        showToast('⚠️ 僅管理者帳號可檢視管理後台');
         return;
       }
       renderAdminModal();
@@ -3802,6 +3966,16 @@
       if (e.target.id === 'adminModal') document.getElementById('adminModal').classList.remove('open');
     });
     document.getElementById('btnRefreshAdmin').addEventListener('click', () => fetchAdminCloudStats(true));
+    document.getElementById('adminTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.ach-tab');
+      if (!btn) return;
+      activeAdminTab = btn.dataset.atab || 'stats';
+      renderAdminModal();
+    });
+    document.getElementById('adminCoinAccount').addEventListener('change', renderAdminCoinsPane);
+    document.getElementById('btnAdminAdd500All').addEventListener('click', () => adminBatchAdjustCoins('add', 500));
+    document.getElementById('btnAdminAdd2000All').addEventListener('click', () => adminBatchAdjustCoins('add', 2000));
+    document.getElementById('btnAdminSet9999All').addEventListener('click', () => adminBatchAdjustCoins('set', 9999));
 
     // Boot Hub
     renderHubUI();
