@@ -903,6 +903,94 @@
     .playlog-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #8b5cf6, #38bdf8); }
     .playlog-count { font-size: 14px; font-weight: 900; color: #fde047; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+    /* Achievement System v2: Tabs, Rarities, Titles & Live Unlock Banner */
+    .ach-top-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      padding: 9px 12px; border-radius: 13px; margin-bottom: 10px;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.14), rgba(139, 92, 246, 0.16));
+      border: 1px solid rgba(250, 204, 21, 0.35);
+    }
+    .ach-stats-col { display: flex; flex-direction: column; gap: 2px; font-size: 12px; font-weight: 800; color: #f8fafc; }
+    .ach-ap-sub { font-size: 11px; color: #fde047; font-weight: 800; }
+    .btn-claim-all {
+      padding: 7px 14px; border-radius: 10px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, #f59e0b, #eab308, #f97316);
+      color: #1c0a00; font-size: 12px; font-weight: 900;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.45);
+      transition: transform 0.14s ease, filter 0.14s ease;
+    }
+    .btn-claim-all:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-claim-all:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+
+    .ach-title-box {
+      padding: 8px 10px; border-radius: 12px; margin-bottom: 10px;
+      background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .ach-title-head { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 800; color: #cbd5e1; margin-bottom: 6px; }
+    .ach-title-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .title-chip {
+      padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; cursor: pointer;
+      background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.16); color: #e2e8f0;
+      transition: all 0.14s ease;
+    }
+    .title-chip:hover { border-color: #fde047; color: #fef08a; }
+    .title-chip.eq {
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.28), rgba(249, 115, 22, 0.28));
+      border-color: #fde047; color: #fef08a; box-shadow: 0 0 10px rgba(250, 204, 21, 0.35);
+    }
+
+    .ach-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+    .ach-tab {
+      padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05); color: #cbd5e1;
+      font-size: 11.5px; font-weight: 800; cursor: pointer; transition: all 0.14s ease;
+    }
+    .ach-tab:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+    .ach-tab.active {
+      background: linear-gradient(135deg, #38bdf8, #818cf8); border-color: transparent; color: #07101f;
+    }
+
+    .ach-meta-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 3px; }
+    .ach-rar {
+      font-size: 9.5px; font-weight: 900; padding: 1.5px 6px; border-radius: 999px;
+      border: 1px solid transparent; letter-spacing: 0.2px;
+    }
+    .ach-rar.bronze { background: rgba(217, 119, 6, 0.22); color: #fdba74; border-color: rgba(251, 146, 60, 0.45); }
+    .ach-rar.silver { background: rgba(148, 163, 184, 0.22); color: #e2e8f0; border-color: rgba(203, 213, 225, 0.45); }
+    .ach-rar.gold { background: rgba(250, 204, 21, 0.22); color: #fde047; border-color: rgba(250, 204, 21, 0.55); }
+    .ach-rar.platinum { background: rgba(56, 189, 248, 0.22); color: #7dd3fc; border-color: rgba(125, 211, 252, 0.6); }
+    .ach-tbadge {
+      font-size: 9.5px; font-weight: 800; padding: 1.5px 6px; border-radius: 999px;
+      background: rgba(168, 85, 247, 0.22); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.45);
+    }
+
+    .nav-title-badge {
+      display: none; align-items: center; padding: 1px 6px; border-radius: 999px; margin-left: 4px;
+      font-size: 10px; font-weight: 900; color: #fef08a;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.25), rgba(249, 115, 22, 0.25));
+      border: 1px solid rgba(250, 204, 21, 0.5);
+    }
+    .nav-title-badge.show { display: inline-flex; }
+
+    /* Live Floating Golden Achievement Unlock Banner */
+    .ach-banner {
+      position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-120px);
+      z-index: 120; cursor: pointer;
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 16px; border-radius: 16px; max-width: min(440px, calc(100vw - 24px));
+      background: linear-gradient(135deg, rgba(20, 16, 42, 0.96), rgba(45, 26, 10, 0.96));
+      border: 2px solid #fde047;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65), 0 0 28px rgba(250, 204, 21, 0.45);
+      opacity: 0; pointer-events: none;
+      transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+    }
+    .ach-banner.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+    .ach-banner-ico { font-size: 26px; flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.7)); }
+    .ach-banner-txt { text-align: left; min-width: 0; }
+    .ach-banner-kicker { font-size: 10px; font-weight: 900; color: #fde047; letter-spacing: 0.8px; text-transform: uppercase; }
+    .ach-banner-title { font-size: 13.5px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ach-banner-sub { font-size: 11px; color: #cbd5e1; margin-top: 1px; }
+
     /* ================= FULLSCREEN GAME STAGE ================= */
     .game-stage {
       position: fixed;
@@ -1302,7 +1390,7 @@
         <button class="nav-account-pill" id="btnNavAccount" type="button" title="管理全站 Google 帳號與跨遊戲存檔">
           <span class="g-avatar" id="navAvatar">G</span>
           <div class="acct-meta">
-            <div class="am-name" id="navAcctName">玩家</div>
+            <div class="am-name"><span id="navAcctName">玩家</span><span class="nav-title-badge" id="navTitleBadge"></span></div>
             <div class="am-sub">● 全站單一登入中</div>
           </div>
         </button>
@@ -1329,6 +1417,7 @@
         <div class="rank-strip">
           <div class="rank-top">
             <span class="rank-badge" id="rankBadge">🏅 Lv.1 · 🌱 峽谷見習生</span>
+            <span class="nav-title-badge" id="heroTitleBadge"></span>
             <span class="rank-xp-txt" id="rankXpTxt">0 / 300 XP</span>
           </div>
           <div class="rank-bar-track"><div class="rank-bar-fill" id="rankBarFill"></div></div>
@@ -1536,20 +1625,39 @@
     </div>
   </div>
 
-  <!-- ================= HUB QUESTS & CROSS-GAME COIN VAULT MODAL ================= -->
+  <!-- ================= HUB ACHIEVEMENT TROPHY ROOM MODAL ================= -->
   <div class="modal-backdrop" id="questsModal">
-    <div class="auth-panel" style="max-width:560px;">
+    <div class="auth-panel" style="max-width:600px;">
       <div class="modal-head">
         <div>
           <h2>🏆 全站成就獎盃室</h2>
-          <div class="modal-sub">達成跨遊戲里程碑，領取海量金幣與 +150 綜合區 Rank XP！</div>
+          <div class="modal-sub">達成跨遊戲與各遊戲專屬成就，解鎖稱號、成就點數（AP）、金幣與 Rank XP！</div>
         </div>
         <button class="close-btn" id="btnCloseQuests" type="button" aria-label="關閉">✕</button>
       </div>
 
-      <div class="quests-summary">
-        <span id="questsProgressSummary">🏅 已領取 0 / 8 座獎盃</span>
-        <span style="color:#fde047;" id="questsRewardSummary">可領取：0 項</span>
+      <div class="ach-top-bar">
+        <div class="ach-stats-col">
+          <span id="questsProgressSummary">🏅 已領取 0 / 38 座獎盃</span>
+          <span class="ach-ap-sub" id="questsRewardSummary">✨ 成就點數：0 AP · 可領取：0 項</span>
+        </div>
+        <button class="btn-claim-all" id="btnClaimAllQuests" type="button" disabled>✨ 一鍵全部領取</button>
+      </div>
+
+      <div class="ach-title-box">
+        <div class="ach-title-head">
+          <span>🎖️ 我的專屬稱號（點擊裝備於頭像旁）</span>
+          <span id="achEquippedLbl" style="color:#fde047;">尚未裝備</span>
+        </div>
+        <div class="ach-title-chips" id="achTitleChips"></div>
+      </div>
+
+      <div class="ach-tabs" id="achTabs">
+        <button class="ach-tab active" data-cat="all" type="button">全部 (38)</button>
+        <button class="ach-tab" data-cat="global" type="button">🌍 跨遊戲</button>
+        <button class="ach-tab" data-cat="game" type="button">🕹️ 各遊戲專屬</button>
+        <button class="ach-tab" data-cat="play" type="button">🎮 遊玩探索</button>
+        <button class="ach-tab" data-cat="secret" type="button">🕵️ 隱藏成就</button>
       </div>
 
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">💰 成就獎金匯入目標：</div>
@@ -1585,6 +1693,15 @@
         <div class="playlog-stat"><div class="l">累計遊玩者</div><div class="v" id="playLogPlayersCnt" style="color:#7dd3fc;">0 位</div></div>
       </div>
       <div class="playlog-list" id="playLogList"></div>
+    </div>
+  </div>
+
+  <div class="ach-banner" id="achBanner" role="button" tabindex="0" title="點擊開啟成就獎盃室領獎">
+    <div class="ach-banner-ico" id="achBannerIco">🏆</div>
+    <div class="ach-banner-txt">
+      <div class="ach-banner-kicker">✨ ACHIEVEMENT UNLOCKED · 點擊領獎</div>
+      <div class="ach-banner-title" id="achBannerTitle">成就達成！</div>
+      <div class="ach-banner-sub" id="achBannerSub">獲得金幣與成就點數</div>
     </div>
   </div>
 
@@ -2976,19 +3093,68 @@
     document.getElementById('btnDoSpin').addEventListener('click', startDailySpin);
 
     // =========================================================================
-    // HUB QUESTS & CROSS-GAME COIN VAULT
+    // HUB ACHIEVEMENT SYSTEM v2 (38 TROPHIES · RARITIES · AP · TITLES · BANNER)
     // =========================================================================
+    const RARITY_META = {
+      bronze:   { lbl: '🥉 銅',   ap: 10,  xp: 80  },
+      silver:   { lbl: '🥈 銀',   ap: 25,  xp: 140 },
+      gold:     { lbl: '🥇 金',   ap: 50,  xp: 220 },
+      platinum: { lbl: '💎 白金', ap: 100, xp: 360 }
+    };
+
+    const gScore = (s, id) => (s.perGame[id] ? s.perGame[id].bestScore : 0);
+    const gItems = (s, id) => (s.perGame[id] ? s.perGame[id].charsUnlocked : 0);
+
     const HUB_QUESTS = [
-      { id: 'q_heroes_10', title: '🌟 初試啼聲：全站英雄圖鑑', desc: '全站 8 款遊戲累積解鎖達 10 位英雄', target: 10, reward: 150, getVal: s => s.sumItems, fmt: v => `${v} 位` },
-      { id: 'q_heroes_20', title: '👑 全明星集結令', desc: '全站 8 款遊戲累積解鎖達 20 位英雄', target: 20, reward: 300, getVal: s => s.sumItems, fmt: v => `${v} 位` },
-      { id: 'q_upg_10',    title: '⚡ 工坊學徒', desc: '全站永久強化總等級累積達 Lv.10', target: 10, reward: 160, getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
-      { id: 'q_upg_30',    title: '🔥 極限鍛造大師', desc: '全站永久強化總等級累積達 Lv.30', target: 30, reward: 320, getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
-      { id: 'q_stars_15',  title: '⭐ 星海征服者', desc: '跨遊戲累積獲得 15 ★ 星等成就', target: 15, reward: 200, getVal: s => s.sumStars, fmt: v => `${v} ★` },
-      { id: 'q_score_10k', title: '🏆 萬分破關傳說', desc: '任一款遊戲最高紀錄突破 10,000 分', target: 10000, reward: 240, getVal: s => s.topScore, fmt: v => v.toLocaleString() },
-      { id: 'q_spin_1',    title: '🎡 每日好運打卡', desc: '完成至少 1 次全站每日幸運轉盤', target: 1, reward: 120, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
-      { id: 'q_coins_2k',  title: '💰 綜合區大富翁', desc: '全站累積持有金幣達 2,000 🪙', target: 2000, reward: 400, getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` }
+      // --- 1. Cross-Game Milestones (10) ---
+      { id: 'q_heroes_10', cat: 'global', rar: 'bronze',   title: '🌟 初試啼聲：全站英雄圖鑑', desc: '全站累積解鎖達 10 位英雄／收集品', target: 10, reward: 150, getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_heroes_20', cat: 'global', rar: 'silver',   title: '👑 全明星集結令', desc: '全站累積解鎖達 20 位英雄／收集品', target: 20, reward: 300, titleBadge: '🌟 全明星收藏家', getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_heroes_50', cat: 'global', rar: 'platinum', title: '🏛️ 全明星神殿', desc: '全站累積解鎖達 50 位英雄／收集品', target: 50, reward: 600, titleBadge: '🏛️ 神殿大收藏家', getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_upg_10',    cat: 'global', rar: 'bronze',   title: '⚡ 工坊學徒', desc: '全站永久強化總等級累積達 Lv.10', target: 10, reward: 160, getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
+      { id: 'q_upg_30',    cat: 'global', rar: 'gold',     title: '🔥 極限鍛造大師', desc: '全站永久強化總等級累積達 Lv.30', target: 30, reward: 320, titleBadge: '🔥 鍛造大師', getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
+      { id: 'q_stars_15',  cat: 'global', rar: 'silver',   title: '⭐ 星海征服者', desc: '跨遊戲累積獲得 15 ★ 星等成就', target: 15, reward: 200, getVal: s => s.sumStars, fmt: v => `${v} ★` },
+      { id: 'q_stars_60',  cat: 'global', rar: 'platinum', title: '🌌 銀河制霸王', desc: '跨遊戲累積獲得 60 ★ 星等成就', target: 60, reward: 550, titleBadge: '🌌 銀河制霸王', getVal: s => s.sumStars, fmt: v => `${v} ★` },
+      { id: 'q_score_10k', cat: 'global', rar: 'gold',     title: '🏆 萬分破關傳說', desc: '任一款遊戲最高紀錄突破 10,000 分', target: 10000, reward: 240, getVal: s => s.topScore, fmt: v => v.toLocaleString() },
+      { id: 'q_spin_1',    cat: 'global', rar: 'bronze',   title: '🎡 每日好運打卡', desc: '完成至少 1 次全站每日幸運轉盤', target: 1, reward: 120, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
+      { id: 'q_coins_2k',  cat: 'global', rar: 'gold',     title: '💰 綜合區大富翁', desc: '全站累積持有金幣達 2,000 🪙', target: 2000, reward: 400, getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` },
+
+      // --- 2. Per-Game Dedicated Achievements (18 — 2 per game across all 9 live games) ---
+      { id: 'g_parkour_1', cat: 'game', rar: 'bronze', title: '🏃 峽谷初跑者', desc: '《無盡峽谷 3D》單局最高分達 1,500 分', target: 1500, reward: 100, getVal: s => gScore(s, 'canyon_parkour_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_parkour_2', cat: 'game', rar: 'gold',   title: '🏔️ 峽谷傳說跑者', desc: '《無盡峽谷 3D》單局最高分達 10,000 分', target: 10000, reward: 260, titleBadge: '🏃 峽谷飛毛腿', getVal: s => gScore(s, 'canyon_parkour_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_star_1',    cat: 'game', rar: 'bronze', title: '🚀 銀河王牌駕駛', desc: '《星際彈幕射擊 3D》最高分達 3,000 分', target: 3000, reward: 100, getVal: s => gScore(s, 'star_blaster_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_star_2',    cat: 'game', rar: 'gold',   title: '🛸 星系艦隊司令', desc: '《星際彈幕射擊 3D》最高分達 15,000 分', target: 15000, reward: 280, titleBadge: '🚀 星際司令', getVal: s => gScore(s, 'star_blaster_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_drift_1',   cat: 'game', rar: 'bronze', title: '🏎️ 彎道飄移新星', desc: '《峽谷極速漂移 3D》最高分達 2,000 分', target: 2000, reward: 100, getVal: s => gScore(s, 'canyon_drift_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_drift_2',   cat: 'game', rar: 'gold',   title: '🏁 峽谷秋名山車神', desc: '《峽谷極速漂移 3D》最高分達 10,000 分', target: 10000, reward: 260, titleBadge: '🏎️ 峽谷車神', getVal: s => gScore(s, 'canyon_drift_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_blocks_1',  cat: 'game', rar: 'bronze', title: '🧊 霓虹消行巧手', desc: '《霓虹立體方塊》最高分達 2,000 分', target: 2000, reward: 100, getVal: s => gScore(s, 'neon_blocks_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_blocks_2',  cat: 'game', rar: 'gold',   title: '💎 方塊極速宗師', desc: '《霓虹立體方塊》最高分達 12,000 分', target: 12000, reward: 260, titleBadge: '🧊 方塊宗師', getVal: s => gScore(s, 'neon_blocks_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_arena_1',   cat: 'game', rar: 'bronze', title: '⚔️ 無雙競技初陣', desc: '《全明星無雙競技場 3D》最高分達 3,000 分', target: 3000, reward: 100, getVal: s => gScore(s, 'hero_arena_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_arena_2',   cat: 'game', rar: 'gold',   title: '🔥 一騎當千武神', desc: '《全明星無雙競技場 3D》最高分達 15,000 分', target: 15000, reward: 280, titleBadge: '⚔️ 無雙武神', getVal: s => gScore(s, 'hero_arena_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_brick_1',   cat: 'game', rar: 'bronze', title: '🧱 能量破壁新手', desc: '《全明星打磚塊 3D》最高分達 2,500 分', target: 2500, reward: 100, getVal: s => gScore(s, 'brick_breaker_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_brick_2',   cat: 'game', rar: 'gold',   title: '⚡ 霓虹破壁之王', desc: '《全明星打磚塊 3D》最高分達 12,000 分', target: 12000, reward: 260, titleBadge: '🧱 破壁之王', getVal: s => gScore(s, 'brick_breaker_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_slash_1',   cat: 'game', rar: 'bronze', title: '🗡️ 一刀流見習生', desc: '《全明星極速斬擊 3D》最高分達 2,500 分', target: 2500, reward: 100, getVal: s => gScore(s, 'hero_slash_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_slash_2',   cat: 'game', rar: 'gold',   title: '⚔️ 極速拔刀劍聖', desc: '《全明星極速斬擊 3D》最高分達 12,000 分', target: 12000, reward: 260, titleBadge: '🗡️ 斬擊劍聖', getVal: s => gScore(s, 'hero_slash_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_snake_1',   cat: 'game', rar: 'bronze', title: '🐉 霓虹幼龍覺醒', desc: '《全明星霓虹貪食蛇 3D》最高分達 2,000 分', target: 2000, reward: 100, getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_snake_2',   cat: 'game', rar: 'gold',   title: '👑 競技場巨龍霸主', desc: '《全明星霓虹貪食蛇 3D》最高分達 10,000 分', target: 10000, reward: 260, titleBadge: '🐉 巨龍霸主', getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_island_1',  cat: 'game', rar: 'bronze', title: '🏝️ 小島自然探險家', desc: '《森友小島 3D》收集達 5 種生物圖鑑', target: 5, reward: 110, getVal: s => gItems(s, 'cozy_island_3d'), fmt: v => `${v} 種` },
+      { id: 'g_island_2',  cat: 'game', rar: 'gold',   title: '🏛️ 博物館榮譽館長', desc: '《森友小島 3D》收集達 15 種生物圖鑑', target: 15, reward: 280, titleBadge: '🏝️ 島嶼館長', getVal: s => gItems(s, 'cozy_island_3d'), fmt: v => `${v} 種` },
+
+      // --- 3. Play Count & Exploration (6) ---
+      { id: 'p_play_1',  cat: 'play', rar: 'bronze',   title: '🎮 初次開玩！', desc: '於遊戲綜合區啟動任一款遊戲 1 次', target: 1, reward: 80, getVal: s => s.myPlays, fmt: v => `${v} 次` },
+      { id: 'p_play_10', cat: 'play', rar: 'silver',   title: '🕹️ 街機廳常客', desc: '累計遊玩綜合區遊戲達 10 次', target: 10, reward: 180, getVal: s => s.myPlays, fmt: v => `${v} 次` },
+      { id: 'p_play_30', cat: 'play', rar: 'gold',     title: '🔥 街機狂熱者', desc: '累計遊玩綜合區遊戲達 30 次', target: 30, reward: 340, titleBadge: '🎮 街機狂熱者', getVal: s => s.myPlays, fmt: v => `${v} 次` },
+      { id: 'p_exp_3',   cat: 'play', rar: 'silver',   title: '🧭 跨界探索家', desc: '親身體驗至少 3 款不同遊戲', target: 3, reward: 160, getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
+      { id: 'p_exp_6',   cat: 'play', rar: 'gold',     title: '🌟 全館鑑賞家', desc: '親身體驗至少 6 款不同遊戲', target: 6, reward: 300, titleBadge: '🌟 全館鑑賞家', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
+      { id: 'p_exp_all', cat: 'play', rar: 'platinum', title: '👑 全站制霸大滿貫', desc: '玩遍全站全部 9 款遊戲！', target: 9, reward: 500, titleBadge: '👑 全站傳說', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
+
+      // --- 4. Secret Achievements (4 — masked as ??? until reached!) ---
+      { id: 's_google_sso', cat: 'secret', secret: true, rar: 'silver',   title: '🔐 雲端同步達人', desc: '完成一次 Google 帳號全站單一登入', target: 1, reward: 120, getVal: s => (s.isSignedIn ? 1 : 0), fmt: v => (v >= 1 ? '已登入' : '未登入') },
+      { id: 's_spin_3',     cat: 'secret', secret: true, rar: 'silver',   title: '🍀 轉盤幸運之星', desc: '累計轉動每日幸運轉盤達 3 次', target: 3, reward: 160, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
+      { id: 's_rich_5k',    cat: 'secret', secret: true, rar: 'gold',     title: '💎 黃金金庫大亨', desc: '全站累積持有金幣突破 5,000 🪙', target: 5000, reward: 380, titleBadge: '💎 黃金大亨', getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` },
+      { id: 's_ach_20',     cat: 'secret', secret: true, rar: 'platinum', title: '🏆 傳奇白金獵人', desc: '累計領取達 20 座全站成就獎盃', target: 20, reward: 550, titleBadge: '🏆 白金獵人', getVal: s => s.claimedCount, fmt: v => `${v} 座` }
     ];
     let questTarget = 'all';
+    let activeAchCat = 'all';
+    let achBootDone = false;
 
     function questStorageKey() {
       const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
@@ -2999,20 +3165,43 @@
         const raw = localStorage.getItem(questStorageKey());
         if (raw) {
           const p = JSON.parse(raw);
-          if (p && Array.isArray(p.claimed)) return { claimed: p.claimed };
+          if (p && typeof p === 'object') {
+            return {
+              claimed: Array.isArray(p.claimed) ? p.claimed : [],
+              notified: Array.isArray(p.notified) ? p.notified : (Array.isArray(p.claimed) ? p.claimed.slice() : []),
+              equippedTitle: typeof p.equippedTitle === 'string' ? p.equippedTitle : ''
+            };
+          }
         }
       } catch (e) {}
-      return { claimed: [] };
+      return { claimed: [], notified: [], equippedTitle: '' };
     }
     function saveQuestState(obj) {
       try { localStorage.setItem(questStorageKey(), JSON.stringify(obj)); } catch (e) {}
     }
 
+    function computeMyPlayStats() {
+      const log = loadPlayLog();
+      const myUid = auth.currentUser && auth.currentUser.uid ? auth.currentUser.uid : 'guest';
+      let myPlays = 0, myDistinctGames = 0;
+      Object.values(log).forEach((entry) => {
+        if (!entry || !entry.players) return;
+        const mine = entry.players[myUid];
+        if (mine && Number(mine.count) > 0) {
+          myPlays += Number(mine.count) || 0;
+          myDistinctGames++;
+        }
+      });
+      return { myPlays, myDistinctGames };
+    }
+
     function computeGlobalSnapshot() {
       const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
       let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0, sumTotalItems = 0, sumUpgrades = 0;
+      const perGame = {};
       liveGames.forEach((g) => {
         const st = readStatsForGame(g.id);
+        perGame[g.id] = st;
         sumCoins += st.coins;
         sumBestScores += st.bestScore;
         if (st.bestScore > topScore) topScore = st.bestScore;
@@ -3022,11 +3211,56 @@
         sumUpgrades += Number(st.upgradeLevel) || 0;
       });
       const spinMeta = getDailySpinState();
+      const playMeta = computeMyPlayStats();
+      const qState = getQuestState();
       return {
         liveCount: liveGames.length,
         sumCoins, topScore, sumBestScores, sumStars, sumItems, sumTotalItems, sumUpgrades,
-        totalSpins: spinMeta.totalSpins || 0
+        perGame,
+        totalSpins: spinMeta.totalSpins || 0,
+        myPlays: playMeta.myPlays,
+        myDistinctGames: playMeta.myDistinctGames,
+        isSignedIn: !!(auth.currentUser && auth.currentUser.uid),
+        claimedCount: qState.claimed.length
       };
+    }
+
+    function getAchievementPoints(qState) {
+      let ap = 0;
+      (qState.claimed || []).forEach((qid) => {
+        const q = HUB_QUESTS.find(x => x.id === qid);
+        if (q) ap += (RARITY_META[q.rar] || RARITY_META.bronze).ap;
+      });
+      return ap;
+    }
+
+    function getUnlockedTitles(qState) {
+      const out = [];
+      HUB_QUESTS.forEach((q) => {
+        if (q.titleBadge && qState.claimed.includes(q.id)) out.push(q.titleBadge);
+      });
+      return out;
+    }
+
+    function syncEquippedTitleUI() {
+      const qState = getQuestState();
+      const titles = getUnlockedTitles(qState);
+      const eq = qState.equippedTitle && titles.includes(qState.equippedTitle) ? qState.equippedTitle : '';
+      ['navTitleBadge', 'heroTitleBadge'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = eq;
+        el.classList.toggle('show', !!eq);
+      });
+    }
+
+    function equipTitle(titleStr) {
+      const qState = getQuestState();
+      qState.equippedTitle = qState.equippedTitle === titleStr ? '' : titleStr;
+      saveQuestState(qState);
+      syncEquippedTitleUI();
+      renderQuestsModal();
+      showToast(qState.equippedTitle ? `🎖️ 已裝備稱號：【${qState.equippedTitle}】！` : '🎖️ 已卸下目前稱號');
     }
 
     function countClaimableQuests(snap) {
@@ -3035,7 +3269,50 @@
       HUB_QUESTS.forEach((q) => {
         if (!qState.claimed.includes(q.id) && q.getVal(snap) >= q.target) cnt++;
       });
+      if (achBootDone) {
+        syncEquippedTitleUI();
+        checkNewAchievementUnlocks(false);
+      }
       return cnt;
+    }
+
+    // Live Golden Achievement Unlock Banner Queue
+    const achBannerQueue = [];
+    let achBannerShowing = false;
+    let achBannerTimer = null;
+
+    function playNextAchBanner() {
+      if (achBannerShowing || !achBannerQueue.length) return;
+      const q = achBannerQueue.shift();
+      const el = document.getElementById('achBanner');
+      if (!el) return;
+      achBannerShowing = true;
+      const rm = RARITY_META[q.rar] || RARITY_META.bronze;
+      document.getElementById('achBannerIco').textContent = rm.lbl.split(' ')[0];
+      document.getElementById('achBannerTitle').textContent = q.title;
+      document.getElementById('achBannerSub').textContent = `${rm.lbl} +${rm.ap} AP · 獎金 +${q.reward} 🪙${q.titleBadge ? ` · 稱號「${q.titleBadge}」` : ''}`;
+      el.classList.add('show');
+      [659, 880, 1175].forEach((f, i) => setTimeout(() => playSpinTone(f, 0.16, 'triangle', 0.06), i * 70));
+      clearTimeout(achBannerTimer);
+      achBannerTimer = setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => { achBannerShowing = false; playNextAchBanner(); }, 340);
+      }, 3600);
+    }
+
+    function checkNewAchievementUnlocks(silent = false) {
+      const snap = computeGlobalSnapshot();
+      const qState = getQuestState();
+      let changed = false;
+      HUB_QUESTS.forEach((q) => {
+        if (q.getVal(snap) >= q.target && !qState.notified.includes(q.id)) {
+          qState.notified.push(q.id);
+          changed = true;
+          if (!silent && !qState.claimed.includes(q.id)) achBannerQueue.push(q);
+        }
+      });
+      if (changed) saveQuestState(qState);
+      if (!silent) playNextAchBanner();
     }
 
     function renderQuestsModal() {
@@ -3045,23 +3322,75 @@
       if (!list) return;
       list.innerHTML = '';
 
-      let claimableCount = 0;
+      // Render Equippable Titles Bar
+      const titles = getUnlockedTitles(qState);
+      const tWrap = document.getElementById('achTitleChips');
+      const tLbl = document.getElementById('achEquippedLbl');
+      if (tLbl) tLbl.textContent = qState.equippedTitle ? `裝備中：${qState.equippedTitle}` : '尚未裝備';
+      if (tWrap) {
+        tWrap.innerHTML = '';
+        if (!titles.length) {
+          tWrap.innerHTML = '<span style="font-size:11px;color:var(--muted);">領取金牌／白金成就即可解鎖專屬稱號！</span>';
+        } else {
+          titles.forEach((t) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'title-chip' + (qState.equippedTitle === t ? ' eq' : '');
+            btn.textContent = t;
+            btn.addEventListener('click', () => equipTitle(t));
+            tWrap.appendChild(btn);
+          });
+        }
+      }
+
+      // Compute totals across all 38 achievements
+      let totalClaimable = 0, totalClaimableCoins = 0;
       HUB_QUESTS.forEach((q) => {
+        if (!qState.claimed.includes(q.id) && q.getVal(snap) >= q.target) {
+          totalClaimable++;
+          totalClaimableCoins += q.reward;
+        }
+      });
+
+      const ap = getAchievementPoints(qState);
+      document.getElementById('questsProgressSummary').textContent = `🏅 已領取 ${qState.claimed.length} / ${HUB_QUESTS.length} 座獎盃`;
+      document.getElementById('questsRewardSummary').textContent = `✨ 成就點數：${ap} AP · ${totalClaimable > 0 ? `可領取 ${totalClaimable} 項 (+${totalClaimableCoins} 🪙)` : '可領取：0 項'}`;
+      const btnAll = document.getElementById('btnClaimAllQuests');
+      if (btnAll) {
+        btnAll.disabled = totalClaimable === 0;
+        btnAll.textContent = totalClaimable > 0 ? `✨ 一鍵領取全部 (+${totalClaimableCoins} 🪙)` : '✨ 一鍵全部領取';
+      }
+
+      // Filter by active category tab and sort: ready first -> in-progress -> claimed
+      const filtered = HUB_QUESTS.filter(q => activeAchCat === 'all' || q.cat === activeAchCat).sort((a, b) => {
+        const aC = qState.claimed.includes(a.id), bC = qState.claimed.includes(b.id);
+        const aR = !aC && a.getVal(snap) >= a.target, bR = !bC && b.getVal(snap) >= b.target;
+        if (aR !== bR) return aR ? -1 : 1;
+        if (aC !== bC) return aC ? 1 : -1;
+        return 0;
+      });
+
+      filtered.forEach((q) => {
         const val = q.getVal(snap);
         const claimed = qState.claimed.includes(q.id);
         const ready = !claimed && val >= q.target;
-        if (ready) claimableCount++;
         const pct = Math.min(100, Math.round((Math.min(val, q.target) / q.target) * 100));
+        const rm = RARITY_META[q.rar] || RARITY_META.bronze;
+        const masked = q.secret && !claimed && !ready;
 
         const card = document.createElement('div');
         card.className = 'quest-card' + (claimed ? ' claimed' : (ready ? ' ready' : ''));
         card.innerHTML = `
           <div class="quest-info">
-            <div class="quest-title">${escapeHtml(q.title)}</div>
-            <div class="quest-desc">${escapeHtml(q.desc)}</div>
+            <div class="ach-meta-row">
+              <span class="ach-rar ${q.rar || 'bronze'}">${rm.lbl} +${rm.ap} AP</span>
+              ${q.titleBadge ? `<span class="ach-tbadge">🎖️ 稱號：${escapeHtml(q.titleBadge)}</span>` : ''}
+            </div>
+            <div class="quest-title">${escapeHtml(masked ? '🕵️ 隱藏成就 ???' : q.title)}</div>
+            <div class="quest-desc">${escapeHtml(masked ? '探索綜合區各項功能與玩法以揭曉此神秘成就！' : q.desc)}</div>
             <div class="quest-prog-row">
-              <div class="quest-bar"><div class="quest-bar-fill" style="width:${pct}%"></div></div>
-              <div class="quest-prog-txt">${escapeHtml(q.fmt(Math.min(val, q.target)))} / ${escapeHtml(q.fmt(q.target))}</div>
+              <div class="quest-bar"><div class="quest-bar-fill" style="width:${masked ? 0 : pct}%"></div></div>
+              <div class="quest-prog-txt">${masked ? '???' : `${escapeHtml(q.fmt(Math.min(val, q.target)))} / ${escapeHtml(q.fmt(q.target))}`}</div>
             </div>
           </div>
           ${claimed
@@ -3075,9 +3404,22 @@
         }
         list.appendChild(card);
       });
+    }
 
-      document.getElementById('questsProgressSummary').textContent = `🏅 已領取 ${qState.claimed.length} / ${HUB_QUESTS.length} 座獎盃`;
-      document.getElementById('questsRewardSummary').textContent = claimableCount > 0 ? `✨ 可領取：${claimableCount} 項！` : '可領取：0 項';
+    function awardCoinsToQuestTarget(totalReward) {
+      const liveIds = GAMES_REGISTRY.filter(g => g.status === 'live').map(g => g.id);
+      const targets = questTarget === 'all' ? liveIds : [questTarget];
+      const perGame = Math.max(1, Math.round(totalReward / targets.length));
+      targets.forEach((gid) => {
+        const cur = SSO.readGameSave(gid, auth.currentUser) || {};
+        const prevCoins = typeof cur.coins === 'number' ? cur.coins : 40;
+        SSO.writeGameSave(gid, auth.currentUser, Object.assign({}, cur, { coins: prevCoins + perGame }));
+      });
+      return {
+        targetName: questTarget === 'all'
+          ? `全站 ${liveIds.length} 款遊戲（每款 +${perGame} 🪙）`
+          : (GAMES_REGISTRY.find(g => g.id === questTarget)?.title || questTarget)
+      };
     }
 
     function claimQuest(qid) {
@@ -3087,27 +3429,44 @@
       const qState = getQuestState();
       if (qState.claimed.includes(qid) || q.getVal(snap) < q.target) return;
 
-      const liveIds = GAMES_REGISTRY.filter(g => g.status === 'live').map(g => g.id);
-      const targets = questTarget === 'all' ? liveIds : [questTarget];
-      const perGame = Math.max(1, Math.round(q.reward / targets.length));
-      targets.forEach((gid) => {
-        const cur = SSO.readGameSave(gid, auth.currentUser) || {};
-        const prevCoins = typeof cur.coins === 'number' ? cur.coins : 40;
-        SSO.writeGameSave(gid, auth.currentUser, Object.assign({}, cur, { coins: prevCoins + perGame }));
-      });
-
+      const { targetName } = awardCoinsToQuestTarget(q.reward);
       qState.claimed.push(qid);
+      if (!qState.notified.includes(qid)) qState.notified.push(qid);
+      if (q.titleBadge && !qState.equippedTitle) qState.equippedTitle = q.titleBadge;
       saveQuestState(qState);
       [587, 784, 988, 1175].forEach((f, idx) => {
         setTimeout(() => playSpinTone(f, 0.18, 'sine', 0.08), idx * 65);
       });
       pushSsoToActiveGame();
+      syncEquippedTitleUI();
       renderHubUI();
       renderQuestsModal();
-      const targetName = questTarget === 'all'
-        ? `全站 ${liveIds.length} 款遊戲（每款 +${perGame} 🪙）`
-        : (GAMES_REGISTRY.find(g => g.id === questTarget)?.title || questTarget);
-      showToast(`🏆 領取成就【${q.title}】+${q.reward} 🪙 與 +150 XP → ${targetName}`);
+      showToast(`🏆 領取成就【${q.title}】+${q.reward} 🪙${q.titleBadge ? ` ＋稱號「${q.titleBadge}」` : ''} → ${targetName}`);
+    }
+
+    function claimAllQuests() {
+      const snap = computeGlobalSnapshot();
+      const qState = getQuestState();
+      const readyList = HUB_QUESTS.filter(q => !qState.claimed.includes(q.id) && q.getVal(snap) >= q.target);
+      if (!readyList.length) return;
+
+      let totalReward = 0;
+      readyList.forEach((q) => {
+        totalReward += q.reward;
+        qState.claimed.push(q.id);
+        if (!qState.notified.includes(q.id)) qState.notified.push(q.id);
+        if (q.titleBadge && !qState.equippedTitle) qState.equippedTitle = q.titleBadge;
+      });
+      const { targetName } = awardCoinsToQuestTarget(totalReward);
+      saveQuestState(qState);
+      [523, 659, 784, 1047, 1318].forEach((f, idx) => {
+        setTimeout(() => playSpinTone(f, 0.18, 'sine', 0.08), idx * 55);
+      });
+      pushSsoToActiveGame();
+      syncEquippedTitleUI();
+      renderHubUI();
+      renderQuestsModal();
+      showToast(`🏆 一鍵領取 ${readyList.length} 座成就！共 +${totalReward} 🪙 → ${targetName}`);
     }
 
     function openQuestsModal() {
@@ -3121,6 +3480,22 @@
     document.getElementById('btnNavQuests').addEventListener('click', openQuestsModal);
     document.getElementById('btnHeroQuests').addEventListener('click', openQuestsModal);
     document.getElementById('btnCloseQuests').addEventListener('click', closeQuestsModal);
+    document.getElementById('btnClaimAllQuests').addEventListener('click', claimAllQuests);
+    document.getElementById('achTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.ach-tab');
+      if (!btn) return;
+      activeAchCat = btn.dataset.cat || 'all';
+      document.querySelectorAll('#achTabs .ach-tab').forEach(b => b.classList.toggle('active', b === btn));
+      renderQuestsModal();
+    });
+    const achBannerEl = document.getElementById('achBanner');
+    if (achBannerEl) {
+      achBannerEl.addEventListener('click', () => {
+        achBannerEl.classList.remove('show');
+        if (activeGame) exitGameToHub();
+        openQuestsModal();
+      });
+    }
     document.getElementById('questsModal').addEventListener('click', (e) => {
       if (e.target.id === 'questsModal') closeQuestsModal();
     });
@@ -3142,11 +3517,15 @@
         if (document.getElementById('hubAuthModal').classList.contains('open')) closeAuthModal();
         if (document.getElementById('spinModal').classList.contains('open')) closeSpinModal();
         if (document.getElementById('questsModal').classList.contains('open')) closeQuestsModal();
+        if (document.getElementById('playLogModal').classList.contains('open')) document.getElementById('playLogModal').classList.remove('open');
       }
     });
 
     // Boot Hub
     renderHubUI();
+    syncEquippedTitleUI();
+    checkNewAchievementUnlocks(true);
+    achBootDone = true;
   })();
   </script>
 </body>
