@@ -1526,19 +1526,125 @@
     }
     .hub-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* Responsive */
-    @media (max-width: 860px) {
-      .hero-card { grid-template-columns: 1fr; padding: 20px 18px; }
-      .game-card.featured { grid-column: span 1; grid-template-columns: 1fr; }
-      .games-grid { grid-template-columns: 1fr; }
+    /* Compact Modern Arcade Lobby Overhaul */
+    .hub-shell { max-width: 1240px; }
+    .brand-sub { display: none; }
+    .hero-card {
+      margin-top: 14px;
+      padding: 13px 18px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
     }
-    @media (max-width: 600px) {
+    .hero-compact-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 240px;
+    }
+    .hero-compact-title {
+      font-size: 16px;
+      font-weight: 900;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .hero-compact-rank {
+      flex: 1;
+      min-width: 190px;
+      max-width: 340px;
+    }
+    .hero-compact-rank .rank-top {
+      margin-bottom: 5px;
+      font-size: 11.5px;
+    }
+    .hero-compact-rank .rank-bar-track { height: 6px; }
+    .hero-compact-stats {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .cstat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: rgba(9, 13, 24, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 12px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #f8fafc;
+    }
+    .cstat-chip .cl { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+    .cstat-chip.gold { color: #fbbf24; border-color: rgba(251, 191, 36, 0.25); }
+    .cstat-chip.green { color: #34d399; border-color: rgba(52, 211, 153, 0.25); }
+
+    .sec-head { margin-top: 18px; margin-bottom: 12px; }
+    .sec-head h2 { font-size: 17px; }
+
+    .games-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+    .game-card { border-radius: 18px; }
+    .game-card.featured { grid-column: span 1; display: flex; }
+    .game-cover {
+      min-height: 146px;
+      padding: 12px 13px;
+      cursor: pointer;
+    }
+    .game-card.featured .game-cover { min-height: 146px; }
+    .cover-order {
+      font-size: 10.5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      color: #e2e8f0;
+    }
+    .game-body {
+      padding: 13px 15px 14px;
+      gap: 10px;
+    }
+    .game-title { font-size: 16px; line-height: 1.25; }
+    .game-card.featured .game-title { font-size: 16px; }
+    .game-desc {
+      font-size: 12px;
+      line-height: 1.45;
+      color: #94a3b8;
+      margin-top: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .game-progress-strip {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 7px 8px;
+      border-radius: 11px;
+    }
+    .gp-v { font-size: 12.5px; }
+    .gp-l { font-size: 9.5px; }
+    .game-foot .btn-primary { padding: 8px 14px; font-size: 12.5px; border-radius: 11px; }
+    .game-foot .btn-secondary { padding: 7px 10px; font-size: 12px; border-radius: 11px; }
+
+    /* Responsive */
+    @media (max-width: 1020px) {
+      .games-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
       .hub-shell { padding: 10px 12px 28px; }
       .hub-nav { padding: 10px 12px; }
-      .brand-sub, .brand-tag { display: none; }
+      .brand-tag { display: none; }
       .brand-title { font-size: 15px; }
-      .hero-left h1 { font-size: 22px; }
-      .game-progress-strip { grid-template-columns: repeat(2, 1fr); }
+      .hero-card { padding: 12px 13px; gap: 10px; }
+      .games-grid { grid-template-columns: 1fr; gap: 13px; }
       .stage-sso-tag, .hide-xs { display: none; }
     }
   </style>
@@ -1600,24 +1706,11 @@
       </div>
     </header>
 
-    <!-- Hero Banner -->
+    <!-- Compact Player Status Strip -->
     <section class="hero-card">
-      <div class="hero-left">
-        <div class="sso-pill guest" id="heroSsoPill">🔑 訪客模式 · 登入一次即可全站通用</div>
-        <h1 id="heroTitle">歡迎來到 Dell 設計的遊戲綜合區！</h1>
-        <p id="heroSub">
-          只需在此登入一次 Google 帳號，進入《無盡峽谷 3D：極限跑酷》以及未來新增的每一款遊戲，皆會自動帶入您的身份、頭像與獨立存檔，完全無須重複登入。
-        </p>
-        <div class="hero-actions">
-          <button class="btn-primary" id="btnHeroPlayFirst" type="button">▶ 立即遊玩第 1 款：無盡峽谷 3D</button>
-          <button class="btn-secondary" id="btnHeroQuests" type="button">🏆 全站成就獎勵</button>
-          <button class="btn-secondary" id="btnHeroSpin" type="button">🎡 每日幸運轉盤</button>
-          <button class="btn-secondary" id="btnHeroAccount" type="button">🔐 登入 / 管理全站帳號</button>
-        </div>
-      </div>
-
-      <div class="global-stats">
-        <div class="rank-strip">
+      <div class="hero-compact-left">
+        <div class="hero-compact-title" id="heroTitle">👋 歡迎來到遊戲綜合區</div>
+        <div class="hero-compact-rank">
           <div class="rank-top">
             <span class="rank-badge" id="rankBadge">🏅 Lv.1 · 🌱 峽谷見習生</span>
             <span class="nav-title-badge" id="heroTitleBadge"></span>
@@ -1625,22 +1718,13 @@
           </div>
           <div class="rank-bar-track"><div class="rank-bar-fill" id="rankBarFill"></div></div>
         </div>
-        <div class="gstat-box">
-          <div class="gstat-label">已收錄可玩遊戲</div>
-          <div class="gstat-val cyan" id="statLiveGames">8 款</div>
-        </div>
-        <div class="gstat-box">
-          <div class="gstat-label">全站累積金幣</div>
-          <div class="gstat-val gold" id="statTotalCoins">320</div>
-        </div>
-        <div class="gstat-box">
-          <div class="gstat-label">跨遊戲最高紀錄</div>
-          <div class="gstat-val" id="statBestScore">0</div>
-        </div>
-        <div class="gstat-box">
-          <div class="gstat-label">全站英雄圖鑑 / 強化</div>
-          <div class="gstat-val green" id="statStarsChars">8/102 英雄 · ⚡Lv.0</div>
-        </div>
+      </div>
+
+      <div class="hero-compact-stats">
+        <span class="cstat-chip gold" title="全站累積金幣"><span class="cl">🪙</span><span id="statTotalCoins">320</span></span>
+        <span class="cstat-chip" title="跨遊戲最高紀錄"><span class="cl">🏆</span><span id="statBestScore">0</span></span>
+        <span class="cstat-chip green" title="全站英雄收藏"><span class="cl">⭐</span><span id="statStarsChars">8/102</span></span>
+        <button class="btn-primary" id="btnHeroAccount" type="button" style="padding:7px 13px;font-size:12px;border-radius:999px;">🔐 登入同步</button>
       </div>
     </section>
 
@@ -2617,32 +2701,23 @@
       document.getElementById('stageAcctName').textContent = u ? u.name : '訪客模式';
       document.getElementById('stageSsoBadge').textContent = u ? `SSO：${u.name}` : '訪客遊玩中';
 
-      // Hero Greeting & Global Stats across ALL 8 Live Games
-      const heroPill = document.getElementById('heroSsoPill');
+      // Compact Player Strip Greeting & Global Stats
+      const heroAcctBtn = document.getElementById('btnHeroAccount');
       if (u) {
-        heroPill.className = 'sso-pill';
-        heroPill.textContent = `✅ Google 單一登入已啟用 · ${u.email}`;
-        document.getElementById('heroTitle').textContent = `歡迎回來，${u.name}！`;
-        document.getElementById('heroSub').textContent =
-          '您已完成全站帳號登入。現在點擊下方 8 款 3D 遊戲皆會自動帶入您的身份、頭像與獨立存檔，完全無須二次登入！';
-        document.getElementById('btnHeroAccount').textContent = '👤 管理全站帳號與備份';
+        document.getElementById('heroTitle').textContent = `👋 歡迎回來，${u.name}`;
+        if (heroAcctBtn) heroAcctBtn.style.display = 'none';
       } else {
-        heroPill.className = 'sso-pill guest';
-        heroPill.textContent = '🔑 訪客模式 · 登入一次即可暢玩全站 8 款遊戲';
-        document.getElementById('heroTitle').textContent = '歡迎來到 Dell 設計的遊戲綜合區！';
-        document.getElementById('heroSub').textContent =
-          '只需在此登入一次 Google 帳號，暢玩《無盡峽谷 3D》、《星際彈幕射擊 3D》、《霓虹立體方塊》、《峽谷極速漂移 3D》、《全明星無雙競技場 3D》、《全明星霓虹打磚塊 3D》、《全明星極速斬擊 3D》與《全明星霓虹貪食蛇 3D》，皆會自動帶入您的身份與獨立存檔！';
-        document.getElementById('btnHeroAccount').textContent = '🔐 立即登入 Google 帳號';
+        document.getElementById('heroTitle').textContent = '🎮 遊戲綜合區';
+        if (heroAcctBtn) { heroAcctBtn.style.display = 'inline-flex'; heroAcctBtn.textContent = '🔐 登入同步'; }
       }
 
       const adminBtn = document.getElementById('btnNavAdmin');
       if (adminBtn) adminBtn.style.display = isAdminUser() ? 'inline-flex' : 'none';
 
       const snap = computeGlobalSnapshot();
-      document.getElementById('statLiveGames').textContent = `${snap.liveCount} 款`;
       document.getElementById('statTotalCoins').textContent = snap.sumCoins.toLocaleString();
       document.getElementById('statBestScore').textContent = snap.topScore.toLocaleString();
-      document.getElementById('statStarsChars').textContent = `${snap.sumItems}/${snap.sumTotalItems} 英雄 · ⚡Lv.${snap.sumUpgrades}`;
+      document.getElementById('statStarsChars').textContent = `${snap.sumItems}/${snap.sumTotalItems}`;
 
       // Arcade Rank & XP Bar
       const qState = getQuestState();
@@ -3757,52 +3832,52 @@
       items.forEach((g) => {
         const isLive = g.status === 'live';
         const stats = isLive ? readStatsForGame(g.id) : null;
-        const extraHeroes = stats ? Math.max(0, (stats.charsUnlocked || 1) - 1) : 0;
-        const synPct = g.id === 'star_blaster_3d' ? extraHeroes * 8 : extraHeroes * 10;
+        const SHORT_DESC = {
+          canyon_parkour_3d: '日夜光影峽谷跑酷，16 位英雄二段跳衝刺',
+          star_blaster_3d:   '星際彈幕肉鴿射擊，三選一強化激戰母艦',
+          canyon_drift_3d:   '極速彎道甩尾氮氣，14 台超跑競速超車',
+          neon_blocks_3d:    '霓虹立體方塊消行，炸彈連消觸發狂熱',
+          hero_arena_3d:     '360° 全明星割草無雙，撿空投箱戰魔王',
+          brick_breaker_3d:  '3D 霓虹破壁打磚塊，連擊破盾戰 Boss',
+          hero_slash_3d:     '極速滑動斬切水果，破黃金寶箱衝連斬',
+          neon_snake_3d:     '霓虹巨龍吞噬對決，閃避五大特殊敵蛇'
+        };
         const card = document.createElement('article');
-        card.className = 'game-card' + (isLive ? ' live' : ' soon') + (g.featured && activeFilter === 'all' ? ' featured' : '');
+        card.className = 'game-card' + (isLive ? ' live' : ' soon');
 
         const badgeMult = isLive && ECO ? ECO.getBadgeMult(g.id, hubEconomy) : 0;
-        const badgesHtml = `
-          <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
-          ${badgeMult > 1.0 ? `<span class="cbadge event-mult">🔥 ${badgeMult}x 金幣</span>` : ''}
-          ${isLive && stats ? `<span class="cbadge tech" style="color:#86efac;border-color:rgba(134,239,172,0.5);">🌟 英雄羈絆 +${synPct}%</span>` : ''}
-          ${isLive && stats ? `<span class="cbadge tech" style="color:#fde047;border-color:rgba(251,191,36,0.45);">⚡ 強化 Lv.${stats.upgradeLevel || 0}/${stats.upgradeMax || 15}</span>` : ''}
-          ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
-        `;
+        const badgesHtml = badgeMult > 1.0
+          ? `<span class="cbadge event-mult">🔥 ${badgeMult}x 金幣</span>`
+          : '';
+        const shortGenre = String(g.genre || '').split('·')[0].trim();
 
         const progressHtml = isLive && stats ? `
           <div class="game-progress-strip">
-            <div class="gp-item"><div class="gp-v" style="color:#fbbf24;">🪙 ${stats.coins}</div><div class="gp-l">帳號金幣</div></div>
-            <div class="gp-item"><div class="gp-v">${stats.bestScore.toLocaleString()}</div><div class="gp-l">最高分數</div></div>
-            <div class="gp-item"><div class="gp-v" style="color:#34d399;">${stats.stars}/${stats.maxStars}★</div><div class="gp-l">星等成就</div></div>
+            <div class="gp-item"><div class="gp-v" style="color:#fbbf24;">🪙 ${stats.coins.toLocaleString()}</div><div class="gp-l">金幣</div></div>
+            <div class="gp-item"><div class="gp-v">${stats.bestScore.toLocaleString()}</div><div class="gp-l">最高分</div></div>
             <div class="gp-item"><div class="gp-v" style="color:#7dd3fc;">${stats.charsUnlocked}/${stats.charsTotal}</div><div class="gp-l">${escapeHtml(g.itemLabel || '收藏')}</div></div>
           </div>
         ` : '';
 
         card.innerHTML = `
-          <div class="game-cover ${g.coverClass}">
+          <div class="game-cover ${g.coverClass}" title="點擊立即遊玩">
             ${coverArtworkSvg(g.id)}
             <div class="cover-badges">${badgesHtml}</div>
-            <div class="cover-order">${escapeHtml(g.order)} · ${g.icon}</div>
+            <div class="cover-order">${g.icon} ${escapeHtml(shortGenre)}</div>
           </div>
           <div class="game-body">
             <div>
               <div class="game-title-row">
-                <div class="game-title">${g.icon} ${escapeHtml(g.title)}</div>
-                <div class="game-genre">${escapeHtml(g.genre)}</div>
+                <div class="game-title">${escapeHtml(g.title)}</div>
               </div>
-              <p class="game-desc">${escapeHtml(g.desc)}</p>
-              <div class="game-feature-tags">
-                ${g.features.map(f => `<span class="ftag">${escapeHtml(f)}</span>`).join('')}
-              </div>
+              <p class="game-desc">${escapeHtml(SHORT_DESC[g.id] || g.desc)}</p>
             </div>
             ${progressHtml}
             <div class="game-foot" style="justify-content:flex-end;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <button class="btn-secondary btn-game-share" data-share-id="${g.id}" type="button" style="padding:8px 10px;font-size:12px;" title="生成並分享戰績圖卡">📸</button>
-                <button class="btn-secondary btn-game-lb" data-lb-id="${g.id}" type="button" style="padding:8px 12px;font-size:12px;">📊 分數榜</button>
-                <button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button">▶ 立即遊玩</button>
+              <div style="display:flex;align-items:center;gap:6px;width:100%;">
+                <button class="btn-secondary btn-game-share" data-share-id="${g.id}" type="button" title="戰績分享卡">📸</button>
+                <button class="btn-secondary btn-game-lb" data-lb-id="${g.id}" type="button" title="分數排行榜">📊 排行</button>
+                <button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button" style="flex:1;justify-content:center;">▶ 遊玩</button>
               </div>
             </div>
           </div>
@@ -3811,6 +3886,10 @@
         const launchBtn = card.querySelector('.btn-launch-game');
         if (launchBtn) {
           launchBtn.addEventListener('click', () => launchGame(g.id));
+        }
+        const coverEl = card.querySelector('.game-cover');
+        if (coverEl) {
+          coverEl.addEventListener('click', () => launchGame(g.id));
         }
         const shareBtn = card.querySelector('.btn-game-share');
         if (shareBtn) {
@@ -3990,7 +4069,6 @@
       if (e.target.id === 'hubAuthModal') closeAuthModal();
     });
 
-    document.getElementById('btnHeroPlayFirst').addEventListener('click', () => launchGame('canyon_parkour_3d'));
     document.getElementById('btnBackToHub').addEventListener('click', exitGameToHub);
 
     document.getElementById('btnStageFullscreen').addEventListener('click', () => {
@@ -4315,7 +4393,6 @@
     }
 
     document.getElementById('btnNavSpin').addEventListener('click', openSpinModal);
-    document.getElementById('btnHeroSpin').addEventListener('click', openSpinModal);
     document.getElementById('btnCloseSpin').addEventListener('click', closeSpinModal);
     document.getElementById('spinModal').addEventListener('click', (e) => {
       if (e.target.id === 'spinModal') closeSpinModal();
@@ -4752,7 +4829,6 @@
     }
 
     document.getElementById('btnNavQuests').addEventListener('click', openQuestsModal);
-    document.getElementById('btnHeroQuests').addEventListener('click', openQuestsModal);
     document.getElementById('btnCloseQuests').addEventListener('click', closeQuestsModal);
     document.getElementById('btnClaimAllQuests').addEventListener('click', claimAllQuests);
     document.getElementById('achTabs').addEventListener('click', (e) => {
