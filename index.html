@@ -4421,15 +4421,36 @@
       });
     }
 
-    function awardCoinsToQuestTarget(totalReward) {
+    function getQuestBoundGameId(q) {
+      if (!q || q.cat !== 'game') return null;
+      const id = String(q.id || '');
+      if (id.startsWith('g_parkour_')) return 'canyon_parkour_3d';
+      if (id.startsWith('g_star_')) return 'star_blaster_3d';
+      if (id.startsWith('g_drift_')) return 'canyon_drift_3d';
+      if (id.startsWith('g_blocks_')) return 'neon_blocks_3d';
+      if (id.startsWith('g_arena_')) return 'hero_arena_3d';
+      if (id.startsWith('g_brick_')) return 'brick_breaker_3d';
+      if (id.startsWith('g_slash_')) return 'hero_slash_3d';
+      if (id.startsWith('g_snake_')) return 'neon_snake_3d';
+      if (id.startsWith('g_island_')) return 'cozy_island_3d';
+      return null;
+    }
+
+    function awardCoinsToQuestTarget(totalReward, forcedGameId = null) {
       const liveIds = GAMES_REGISTRY.filter(g => g.status === 'live').map(g => g.id);
-      const targets = questTarget === 'all' ? liveIds : [questTarget];
+      const targets = forcedGameId
+        ? [forcedGameId]
+        : (questTarget === 'all' ? liveIds : [questTarget]);
       const perGame = Math.max(1, Math.round(totalReward / targets.length));
       targets.forEach((gid) => {
         const cur = SSO.readGameSave(gid, auth.currentUser) || {};
         const prevCoins = typeof cur.coins === 'number' ? cur.coins : 40;
         SSO.writeGameSave(gid, auth.currentUser, Object.assign({}, cur, { coins: prevCoins + perGame }));
       });
+      if (forcedGameId) {
+        const gTitle = GAMES_REGISTRY.find(g => g.id === forcedGameId)?.title || forcedGameId;
+        return { targetName: `${gTitle}（專屬成就）` };
+      }
       return {
         targetName: questTarget === 'all'
           ? `全站 ${liveIds.length} 款遊戲（每款 +${perGame} 🪙）`
@@ -4444,7 +4465,8 @@
       const qState = getQuestState();
       if (qState.claimed.includes(qid) || q.getVal(snap) < q.target) return;
 
-      const { targetName } = awardCoinsToQuestTarget(q.reward);
+      const boundGid = getQuestBoundGameId(q);
+      const { targetName } = awardCoinsToQuestTarget(q.reward, boundGid);
       qState.claimed.push(qid);
       if (!qState.notified.includes(qid)) qState.notified.push(qid);
       if (q.titleBadge && !qState.equippedTitle) qState.equippedTitle = q.titleBadge;
@@ -4466,13 +4488,25 @@
       if (!readyList.length) return;
 
       let totalReward = 0;
+      let sharedReward = 0;
+      let boundCount = 0;
       readyList.forEach((q) => {
         totalReward += q.reward;
+        const boundGid = getQuestBoundGameId(q);
+        if (boundGid) {
+          awardCoinsToQuestTarget(q.reward, boundGid);
+          boundCount++;
+        } else {
+          sharedReward += q.reward;
+        }
         qState.claimed.push(q.id);
         if (!qState.notified.includes(q.id)) qState.notified.push(q.id);
         if (q.titleBadge && !qState.equippedTitle) qState.equippedTitle = q.titleBadge;
       });
-      const { targetName } = awardCoinsToQuestTarget(totalReward);
+      let sharedInfo = null;
+      if (sharedReward > 0) {
+        sharedInfo = awardCoinsToQuestTarget(sharedReward, null);
+      }
       saveQuestState(qState);
       [523, 659, 784, 1047, 1318].forEach((f, idx) => {
         setTimeout(() => playSpinTone(f, 0.18, 'sine', 0.08), idx * 55);
@@ -4481,7 +4515,10 @@
       syncEquippedTitleUI();
       renderHubUI();
       renderQuestsModal();
-      showToast(`🏆 一鍵領取 ${readyList.length} 座成就！共 +${totalReward} 🪙 → ${targetName}`);
+      const destTxt = boundCount > 0 && sharedInfo
+        ? `專屬遊戲 + ${sharedInfo.targetName}`
+        : (boundCount > 0 ? '各對應專屬遊戲' : (sharedInfo ? sharedInfo.targetName : ''));
+      showToast(`🏆 一鍵領取 ${readyList.length} 座成就！共 +${totalReward} 🪙 → ${destTxt}`);
     }
 
     function openQuestsModal() {

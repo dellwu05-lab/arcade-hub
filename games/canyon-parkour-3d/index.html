@@ -6316,7 +6316,7 @@
       const syn = getHeroSynergy();
       const coinGain = Math.max(1, Math.round((state.buffs.double > 0 ? 6 : 3) * syn.coinMult));
       const pts = Math.round(140 * getComboMult() * (state.buffs.double > 0 ? 2 : 1) * syn.scoreMult);
-      state.stageCoins += coinGain;
+      state.stageCoins += window.__ARCADE_ECO__.scale(coinGain, 'normal', state.stageCoins);
       save.stats.totalCoins += coinGain;
       state.score += pts;
       state.shakeTime = 0.16;
@@ -6413,7 +6413,7 @@
       AudioFX.playStageClear();
       const synB = getHeroSynergy();
       const bonusCoins = Math.round((state.buffs.double > 0 ? 60 : 30) * synB.coinMult);
-      state.stageCoins += bonusCoins;
+      state.stageCoins += window.__ARCADE_ECO__.scale(bonusCoins, 'bonus', state.stageCoins);
       save.stats.totalCoins += bonusCoins;
       save.stats.bossesDefeated += 1;
       const bossPts = Math.round(450 * synB.scoreMult);
@@ -6753,7 +6753,7 @@
           const dbl = state.buffs.double > 0 ? 2 : 1;
           const gained = Math.max(1, Math.round(c.value * ch.coinMult * (1 + goldLvC * 0.2) * synC.coinMult * dbl));
           const pts = Math.round((c.isGem ? 120 : 25) * getComboMult() * (1 + goldLvC * 0.12) * synC.scoreMult * dbl);
-          state.stageCoins += gained;
+          state.stageCoins += window.__ARCADE_ECO__.scale(gained, 'normal', state.stageCoins);
           save.stats.totalCoins += gained;
           state.score += pts;
           addSkillCharge(c.isGem ? 4.5 : 1.6);
@@ -7328,7 +7328,7 @@
       const stage = getCurrentStage();
       const ch = getEquippedChar();
 
-      const clearBonus = Math.round(stage.clearCoins * ch.coinMult);
+      const clearBonus = window.__ARCADE_ECO__.scale(Math.round(stage.clearCoins * ch.coinMult), 'bonus', state.stageCoins);
       const totalEarned = state.stageCoins + clearBonus;
       const finalScore = Math.floor(state.score + 500 * stage.id);
 
@@ -7336,7 +7336,7 @@
       const ratio = state.stageCoinsTotal > 0 ? state.stageCoins / state.stageCoinsTotal : 1;
       const stars = ratio >= 0.62 ? 3 : (ratio >= 0.30 ? 2 : 1);
 
-      save.coins += window.__ARCADE_ECO__.scale(totalEarned, 'normal', 0);
+      save.coins += totalEarned;
       if (finalScore > save.bestScore) save.bestScore = finalScore;
       if (stage.id >= save.unlockedStage && stage.id < STAGES.length) {
         save.unlockedStage = stage.id + 1;
@@ -7419,7 +7419,7 @@
       const finalScore = Math.floor(state.score);
 
       // Keep coins picked up during run!
-      save.coins += window.__ARCADE_ECO__.scale(state.stageCoins, 'normal', 0);
+      save.coins += state.stageCoins;
       if (finalScore > save.bestScore) save.bestScore = finalScore;
       if (state.endless && distInt > save.stats.bestEndless) save.stats.bestEndless = distInt;
       persistSave();
