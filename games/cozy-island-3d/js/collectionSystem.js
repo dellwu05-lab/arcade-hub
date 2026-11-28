@@ -154,14 +154,14 @@ export class CollectionSystem {
       this.saveManager.data.encyclopedia[bucket][sl.itemId] = { count: 1, maxCm: 0 };
     }
     this.saveManager.data.miles += 120;
-    this.saveManager.data.bells += 200;
+    this.saveManager.data.bells += (window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(200, 'bonus') : 200);
     this.recordProgress('museumDonated', 1);
 
     const nextStage = this.getMuseumStage();
     let stageUpgraded = null;
     if (nextStage > prevStage) {
       stageUpgraded = MUSEUM_STAGES[nextStage];
-      this.saveManager.data.bells += 500;
+      this.saveManager.data.bells += (window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(500, 'bonus') : 500);
       if (nextStage === 1) this.inventory.addItem('owl_statue', 1);
     }
 
@@ -256,7 +256,7 @@ export class CollectionSystem {
 
     if (rw.kind === 'bells') {
       this.saveManager.data.miles -= rw.cost;
-      this.saveManager.data.bells += rw.amount;
+      this.saveManager.data.bells += (window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(rw.amount, 'bonus') : rw.amount);
       this.saveManager.saveNow();
       return { ok: true, rw, message: `🎟️ 兌換成功！獲得 +${rw.amount.toLocaleString()} 🪙 鈴錢！` };
     }
