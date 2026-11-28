@@ -1369,6 +1369,9 @@
       </div>
 
       <div class="nav-right">
+        <button class="btn-quests-nav" id="btnNavLeaderboard" type="button" title="查看全站各遊戲分數排行榜">
+          <span>📊 分數榜</span>
+        </button>
         <button class="btn-quests-nav" id="btnNavQuests" type="button" title="查看全站成就並領取跨遊戲金幣獎勵">
           <span>🏆 全站成就</span>
           <span class="quest-dot used" id="navQuestDot"></span>
@@ -1376,6 +1379,9 @@
         <button class="btn-spin-nav" id="btnNavSpin" type="button" title="每日免費幸運轉盤抽全站金幣">
           <span>🎡 幸運轉盤</span>
           <span class="spin-dot" id="navSpinDot"></span>
+        </button>
+        <button class="btn-quests-nav" id="btnNavAdmin" type="button" style="display:none;border-color:rgba(244,63,94,0.55);color:#fda4af;" title="管理者專屬：全球跨裝置遊玩次數與玩家榜">
+          <span>🛡️ 管理後台</span>
         </button>
         <button class="btn-google-nav" id="btnNavGoogle" type="button">
           <svg viewBox="0 0 48 48" aria-hidden="true">
@@ -1693,6 +1699,52 @@
         <div class="playlog-stat"><div class="l">累計遊玩者</div><div class="v" id="playLogPlayersCnt" style="color:#7dd3fc;">0 位</div></div>
       </div>
       <div class="playlog-list" id="playLogList"></div>
+    </div>
+  </div>
+
+  <!-- ================= PUBLIC GLOBAL SCORE LEADERBOARD MODAL ================= -->
+  <div class="modal-backdrop" id="leaderboardModal">
+    <div class="auth-panel" style="max-width:540px;">
+      <div class="modal-head">
+        <div>
+          <h2>📊 全站分數排行榜</h2>
+          <div class="modal-sub" id="lbSub">各款遊戲最高分榮譽榜（雲端即時同步）</div>
+        </div>
+        <button class="close-btn" id="btnCloseLb" type="button" aria-label="關閉">✕</button>
+      </div>
+      <div class="spin-targets" id="lbGameTabs" style="margin-bottom:10px;">
+        <button class="starget-btn active" data-gid="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
+        <button class="starget-btn" data-gid="star_blaster_3d" type="button">🚀 射擊</button>
+        <button class="starget-btn" data-gid="canyon_drift_3d" type="button">🏎️ 漂移</button>
+        <button class="starget-btn" data-gid="neon_blocks_3d" type="button">🧩 方塊</button>
+        <button class="starget-btn" data-gid="hero_arena_3d" type="button">⚔️ 無雙</button>
+        <button class="starget-btn" data-gid="brick_breaker_3d" type="button">🧱 破壁</button>
+        <button class="starget-btn" data-gid="hero_slash_3d" type="button">🗡️ 斬擊</button>
+        <button class="starget-btn" data-gid="neon_snake_3d" type="button">🐉 巨龍</button>
+        <button class="starget-btn" data-gid="cozy_island_3d" type="button">🏝️ 小島</button>
+      </div>
+      <div class="playlog-list" id="lbList"></div>
+    </div>
+  </div>
+
+  <!-- ================= ADMIN-ONLY GLOBAL PLAY ANALYTICS MODAL ================= -->
+  <div class="modal-backdrop" id="adminModal">
+    <div class="auth-panel" style="max-width:580px;">
+      <div class="modal-head">
+        <div>
+          <h2>🛡️ 管理者雲端數據後台</h2>
+          <div class="modal-sub" id="adminSub">僅管理者可見 · 全球跨裝置遊玩次數與玩家名單</div>
+        </div>
+        <button class="close-btn" id="btnCloseAdmin" type="button" aria-label="關閉">✕</button>
+      </div>
+      <div class="ach-top-bar" style="margin-bottom:10px;">
+        <div class="ach-stats-col">
+          <span id="adminCloudBadge">☁️ 正在同步全球雲端數據…</span>
+          <span class="ach-ap-sub" id="adminSummaryLine">總遊玩：0 次 · 不重複玩家：0 位</span>
+        </div>
+        <button class="btn-secondary" id="btnRefreshAdmin" type="button" style="padding:6px 12px;font-size:12px;">🔄 立即同步</button>
+      </div>
+      <div class="playlog-list" id="adminGamesList" style="max-height:380px;"></div>
     </div>
   </div>
 
@@ -2035,6 +2087,7 @@
         showToast('⚠️ Google 憑證解析失敗，請重試');
         return;
       }
+      try { sessionStorage.setItem('arcade_hub_gis_jwt', String(response.credential || '')); } catch (e) {}
       const chk = document.getElementById('hubChkInherit');
       signInAccount({
         uid: 'g_' + payload.sub,
@@ -2202,10 +2255,13 @@
         document.getElementById('btnHeroAccount').textContent = '🔐 立即登入 Google 帳號';
       }
 
+      const adminBtn = document.getElementById('btnNavAdmin');
+      if (adminBtn) adminBtn.style.display = isAdminUser() ? 'inline-flex' : 'none';
+
       const snap = computeGlobalSnapshot();
       const sitePlay = getTotalPlayStats();
-      document.getElementById('statLiveGames').textContent = sitePlay.totalPlays > 0
-        ? `${snap.liveCount} 款 · 🎮 ${sitePlay.totalPlays} 次`
+      document.getElementById('statLiveGames').textContent = (isAdminUser() && sitePlay.totalPlays > 0)
+        ? `${snap.liveCount} 款 · 🛡️ ${sitePlay.totalPlays} 次`
         : `${snap.liveCount} 款`;
       document.getElementById('statTotalCoins').textContent = snap.sumCoins.toLocaleString();
       document.getElementById('statBestScore').textContent = snap.topScore.toLocaleString();
@@ -2358,9 +2414,24 @@
     }
 
     // =========================================================================
-    // PER-GAME PLAY COUNT & PLAYERS ROSTER (arcade_hub_play_log_v1)
+    // ADMIN ROLE, CLOUD SYNC API & PUBLIC GLOBAL SCORE LEADERBOARD
     // =========================================================================
+    const ADMIN_EMAILS = new Set(['dellwu05@gmail.com']);
     const PLAY_LOG_KEY = 'arcade_hub_play_log_v1';
+    let cloudAdminPlays = null;
+    let cloudAdminStorage = 'local';
+    let activeLbGameId = 'canyon_parkour_3d';
+
+    function isAdminUser() {
+      const email = auth && auth.currentUser && auth.currentUser.email
+        ? String(auth.currentUser.email).trim().toLowerCase()
+        : '';
+      return !!(email && ADMIN_EMAILS.has(email));
+    }
+
+    function canUseCloudApi() {
+      return window.location.protocol === 'https:' || window.location.protocol === 'http:';
+    }
 
     function loadPlayLog() {
       try {
@@ -2392,6 +2463,96 @@
       return { uid: 'guest', name: '訪客玩家', email: '', picture: '', color: '#64748b' };
     }
 
+    function cloudPostPlay(gameId, me) {
+      if (!canUseCloudApi()) return;
+      try {
+        fetch('/api/play', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId, uid: me.uid, name: me.name, email: me.email, picture: me.picture, color: me.color
+          }),
+          keepalive: true
+        }).catch(() => {});
+      } catch (e) { /* offline fallback */ }
+    }
+
+    function cloudPostScore(gameId, score) {
+      const numScore = Math.floor(Number(score) || 0);
+      if (!canUseCloudApi() || !gameId || numScore <= 0) return;
+      const me = getCurrentPlayerIdentity();
+      const qState = getQuestState();
+      try {
+        fetch('/api/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId, uid: me.uid, name: me.name, picture: me.picture, color: me.color,
+            title: qState.equippedTitle || '', score: numScore
+          }),
+          keepalive: true
+        }).catch(() => {});
+      } catch (e) { /* offline fallback */ }
+    }
+
+    function syncAllMyScoresToCloud() {
+      if (!canUseCloudApi()) return;
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        const st = readStatsForGame(g.id);
+        if (st && st.bestScore > 0) cloudPostScore(g.id, st.bestScore);
+      });
+    }
+
+    async function fetchAdminCloudStats(showFeedback = false) {
+      if (!isAdminUser()) return null;
+      if (!canUseCloudApi()) {
+        cloudAdminStorage = 'local';
+        if (showFeedback) showToast('ℹ️ 離線預覽模式：顯示本機統計紀錄');
+        return null;
+      }
+      try {
+        const headers = { 'X-Arcade-Admin-Email': auth.currentUser.email };
+        const jwt = sessionStorage.getItem('arcade_hub_gis_jwt');
+        if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+        const res = await fetch('/api/admin/stats', { headers, cache: 'no-store' });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data && data.ok && data.plays) {
+          cloudAdminPlays = data.plays;
+          cloudAdminStorage = data.storage || 'memory';
+          renderHubUI();
+          if (document.getElementById('adminModal').classList.contains('open')) renderAdminModal();
+          if (showFeedback) showToast('✅ 已同步全球跨裝置雲端數據！');
+          return data;
+        }
+      } catch (e) { /* offline fallback */ }
+      return null;
+    }
+
+    function getMergedAdminPlayLog() {
+      const local = loadPlayLog();
+      if (!cloudAdminPlays) return local;
+      const merged = JSON.parse(JSON.stringify(cloudAdminPlays));
+      Object.keys(local).forEach((gid) => {
+        if (!merged[gid]) {
+          merged[gid] = local[gid];
+        } else {
+          // Ensure local counts never lag behind cloud
+          const lp = local[gid].players || {};
+          const mp = merged[gid].players || (merged[gid].players = {});
+          Object.keys(lp).forEach((uid) => {
+            if (!mp[uid] || (Number(lp[uid].count) || 0) > (Number(mp[uid].count) || 0)) {
+              mp[uid] = Object.assign({}, mp[uid] || {}, lp[uid]);
+            }
+          });
+          const sum = Object.values(mp).reduce((s, p) => s + (Number(p.count) || 0), 0);
+          merged[gid].totalPlays = Math.max(Number(merged[gid].totalPlays) || 0, sum);
+          merged[gid].lastPlayedAt = Math.max(Number(merged[gid].lastPlayedAt) || 0, Number(local[gid].lastPlayedAt) || 0);
+        }
+      });
+      return merged;
+    }
+
     function recordGamePlay(gameId) {
       const log = loadPlayLog();
       if (!log[gameId] || typeof log[gameId] !== 'object') {
@@ -2414,11 +2575,12 @@
         lastPlayedAt: now
       };
       savePlayLog(log);
+      cloudPostPlay(gameId, me);
       return entry;
     }
 
     function getGamePlaySummary(gameId) {
-      const log = loadPlayLog();
+      const log = isAdminUser() ? getMergedAdminPlayLog() : loadPlayLog();
       const entry = log[gameId];
       if (!entry || typeof entry !== 'object') {
         return { totalPlays: 0, lastPlayedAt: 0, players: [] };
@@ -2434,7 +2596,7 @@
     }
 
     function getTotalPlayStats() {
-      const log = loadPlayLog();
+      const log = isAdminUser() ? getMergedAdminPlayLog() : loadPlayLog();
       let totalPlays = 0;
       const uniqueUids = new Set();
       Object.values(log).forEach((entry) => {
@@ -2463,20 +2625,22 @@
       return `<span class="player-chip-av" style="background:${escapeHtml(p.color || '#64748b')};">${init}</span>`;
     }
 
+    // Admin-Only Per-Game Play Detail Modal
     function openPlayLogModal(gameId) {
+      if (!isAdminUser()) return;
       const g = GAMES_REGISTRY.find(x => x.id === gameId);
       if (!g) return;
       const summary = getGamePlaySummary(gameId);
-      document.getElementById('playLogTitle').textContent = `${g.icon} ${g.title} · 遊玩紀錄`;
+      document.getElementById('playLogTitle').textContent = `🛡️ ${g.icon} ${g.title} · 遊玩者明細`;
       document.getElementById('playLogSub').textContent = summary.lastPlayedAt
-        ? `最近遊玩：${formatRelativeTime(summary.lastPlayedAt)} · 依遊玩次數排序`
-        : '尚無遊玩紀錄，點擊「立即遊玩」開始累積次數！';
+        ? `僅管理者可見 · 最近遊玩：${formatRelativeTime(summary.lastPlayedAt)}`
+        : '尚無遊玩紀錄';
       document.getElementById('playLogTotal').textContent = `${summary.totalPlays.toLocaleString()} 次`;
       document.getElementById('playLogPlayersCnt').textContent = `${summary.players.length} 位`;
       const list = document.getElementById('playLogList');
       list.innerHTML = '';
       if (!summary.players.length) {
-        list.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--muted);font-size:13px;">🎮 目前還沒有人玩過這款遊戲，成為第一位挑戰者吧！</div>';
+        list.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--muted);font-size:13px;">尚無遊玩紀錄</div>';
       } else {
         summary.players.forEach((pl, idx) => {
           const pct = summary.totalPlays > 0 ? Math.round((pl.count / summary.totalPlays) * 100) : 0;
@@ -2499,15 +2663,151 @@
       document.getElementById('playLogModal').classList.add('open');
     }
 
+    // Admin-Only Global Cloud Analytics Dashboard Modal
+    function renderAdminModal() {
+      const total = getTotalPlayStats();
+      const badge = document.getElementById('adminCloudBadge');
+      if (badge) {
+        badge.textContent = cloudAdminStorage === 'kv'
+          ? '☁️ Cloudflare KV 全球跨裝置永久同步中'
+          : (canUseCloudApi() ? '⚡ 雲端 Worker 即時同步中（於 CF 綁定 ARCADE_KV 即永久保存）' : '💻 本機預覽模式（部署線上後自動啟用雲端同步）');
+      }
+      document.getElementById('adminSummaryLine').textContent = `全站總遊玩：${total.totalPlays.toLocaleString()} 次 · 不重複遊玩者：${total.uniquePlayers} 位`;
+      const list = document.getElementById('adminGamesList');
+      list.innerHTML = '';
+      const rankedGames = GAMES_REGISTRY.filter(g => g.status === 'live')
+        .map(g => ({ g, info: getGamePlaySummary(g.id) }))
+        .sort((a, b) => b.info.totalPlays - a.info.totalPlays);
+
+      rankedGames.forEach(({ g, info }, idx) => {
+        const pct = total.totalPlays > 0 ? Math.round((info.totalPlays / total.totalPlays) * 100) : 0;
+        const row = document.createElement('div');
+        row.className = 'playlog-row';
+        row.style.cursor = 'pointer';
+        const topNames = info.players.slice(0, 3).map(p => `${escapeHtml(p.name)}×${p.count}`).join(' · ') || '尚無紀錄';
+        row.innerHTML = `
+          <div class="playlog-rank">#${idx + 1}</div>
+          <div style="font-size:22px;flex-shrink:0;">${g.icon}</div>
+          <div class="playlog-info">
+            <div class="playlog-name">${escapeHtml(g.title)}</div>
+            <div class="playlog-meta">${info.players.length} 位玩家 · ${topNames}</div>
+            <div class="playlog-bar-track"><div class="playlog-bar-fill" style="width:${Math.max(info.totalPlays > 0 ? 6 : 0, pct)}%;"></div></div>
+          </div>
+          <div style="text-align:right;">
+            <div class="playlog-count">${info.totalPlays} 次</div>
+            <div style="font-size:10px;color:#c4b5fd;">點看明細 ▸</div>
+          </div>
+        `;
+        row.addEventListener('click', () => openPlayLogModal(g.id));
+        list.appendChild(row);
+      });
+    }
+
+    function openAdminModal() {
+      if (!isAdminUser()) {
+        showToast('⚠️ 僅管理者帳號可檢視全球遊玩統計');
+        return;
+      }
+      renderAdminModal();
+      document.getElementById('adminModal').classList.add('open');
+      fetchAdminCloudStats(false);
+    }
+
+    // Public Global Score Leaderboard Modal (Visible to ALL users — NO play counts, NO emails!)
+    function collectLocalScoreEntries(gameId) {
+      const out = [];
+      const me = getCurrentPlayerIdentity();
+      const qState = getQuestState();
+      const mySt = readStatsForGame(gameId);
+      if (mySt && mySt.bestScore > 0) {
+        out.push({
+          name: me.name, picture: me.picture, color: me.color,
+          title: qState.equippedTitle || '', score: mySt.bestScore, updatedAt: Date.now()
+        });
+      }
+      (auth.savedAccounts || []).forEach((acct) => {
+        if (!acct || !acct.uid || acct.uid === me.uid) return;
+        const raw = SSO.readGameSave(gameId, acct);
+        const sc = raw ? Math.floor(Number(raw.bestScore) || 0) : 0;
+        if (sc > 0) {
+          out.push({
+            name: acct.name || 'Google 玩家', picture: acct.picture || '',
+            color: acct.color || '#38bdf8', title: '', score: sc, updatedAt: 0
+          });
+        }
+      });
+      return out.sort((a, b) => b.score - a.score);
+    }
+
+    function renderLeaderboardRows(entries, gameObj) {
+      const list = document.getElementById('lbList');
+      list.innerHTML = '';
+      if (!entries.length) {
+        list.innerHTML = `<div style="text-align:center;padding:28px 12px;color:var(--muted);font-size:13px;">🏆 《${escapeHtml(gameObj ? gameObj.title : '此遊戲')}》目前尚無上榜紀錄，快去創下第一筆高分！</div>`;
+        return;
+      }
+      const topScore = entries[0].score || 1;
+      entries.forEach((en, idx) => {
+        const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+        const pct = Math.max(8, Math.round((en.score / topScore) * 100));
+        const row = document.createElement('div');
+        row.className = 'playlog-row';
+        row.innerHTML = `
+          <div class="playlog-rank">${medal}</div>
+          ${renderMiniPlayerAvatarHtml({ uid: en.name === '訪客玩家' ? 'guest' : 'u', name: en.name, picture: en.picture, color: en.color }).replace('player-chip-av', 'g-avatar sm')}
+          <div class="playlog-info">
+            <div class="playlog-name">${escapeHtml(en.name)}${en.title ? ` <span class="nav-title-badge show">${escapeHtml(en.title)}</span>` : ''}</div>
+            <div class="playlog-meta">${en.updatedAt ? `更新於 ${formatRelativeTime(en.updatedAt)}` : '最高分紀錄'}</div>
+            <div class="playlog-bar-track"><div class="playlog-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,#f59e0b,#fde047);"></div></div>
+          </div>
+          <div class="playlog-count">${Number(en.score).toLocaleString()} 分</div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    async function loadLeaderboardForGame(gameId) {
+      activeLbGameId = gameId;
+      document.querySelectorAll('#lbGameTabs .starget-btn').forEach(b => b.classList.toggle('active', b.dataset.gid === gameId));
+      const g = GAMES_REGISTRY.find(x => x.id === gameId);
+      const localEntries = collectLocalScoreEntries(gameId);
+      renderLeaderboardRows(localEntries, g);
+      document.getElementById('lbSub').textContent = `${g ? `${g.icon} ${g.title}` : ''} · 最高分榮譽榜`;
+
+      if (!canUseCloudApi()) return;
+      try {
+        const res = await fetch(`/api/leaderboard?gameId=${encodeURIComponent(gameId)}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.ok && Array.isArray(data.entries)) {
+          // Merge cloud entries with local high score if higher
+          const map = new Map();
+          data.entries.forEach(e => map.set(e.name, e));
+          localEntries.forEach(e => {
+            const cur = map.get(e.name);
+            if (!cur || e.score > cur.score) map.set(e.name, e);
+          });
+          const merged = Array.from(map.values()).sort((a, b) => b.score - a.score).slice(0, 30);
+          if (activeLbGameId === gameId) renderLeaderboardRows(merged, g);
+        }
+      } catch (e) { /* keep local fallback */ }
+    }
+
+    function openLeaderboardModal(gameId = activeLbGameId) {
+      document.getElementById('leaderboardModal').classList.add('open');
+      loadLeaderboardForGame(gameId || 'canyon_parkour_3d');
+    }
+
     function renderGamesGrid() {
       const grid = document.getElementById('gamesGrid');
       grid.innerHTML = '';
+      const admin = isAdminUser();
 
       const items = GAMES_REGISTRY.filter(g => activeFilter === 'all' || g.category === activeFilter);
       items.forEach((g) => {
         const isLive = g.status === 'live';
         const stats = isLive ? readStatsForGame(g.id) : null;
-        const playInfo = isLive ? getGamePlaySummary(g.id) : null;
+        const playInfo = isLive && admin ? getGamePlaySummary(g.id) : null;
         const extraHeroes = stats ? Math.max(0, (stats.charsUnlocked || 1) - 1) : 0;
         const synPct = g.id === 'star_blaster_3d' ? extraHeroes * 8 : extraHeroes * 10;
         const card = document.createElement('article');
@@ -2515,7 +2815,7 @@
 
         const badgesHtml = `
           <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
-          ${isLive && playInfo ? `<span class="cbadge tech" style="color:#c4b5fd;border-color:rgba(167,139,250,0.5);">🎮 ${playInfo.totalPlays} 次 · ${playInfo.players.length} 人</span>` : ''}
+          ${admin && isLive && playInfo ? `<span class="cbadge tech" style="color:#fda4af;border-color:rgba(244,63,94,0.5);">🛡️ ${playInfo.totalPlays} 次 · ${playInfo.players.length} 人</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#86efac;border-color:rgba(134,239,172,0.5);">🌟 英雄羈絆 +${synPct}%</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#fde047;border-color:rgba(251,191,36,0.45);">⚡ 強化 Lv.${stats.upgradeLevel || 0}/${stats.upgradeMax || 15}</span>` : ''}
           ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
@@ -2530,8 +2830,9 @@
           </div>
         ` : '';
 
+        // Strictly Admin-Only play count & player chips strip (never rendered for regular users!)
         let playersBarHtml = '';
-        if (isLive && playInfo) {
+        if (admin && isLive && playInfo) {
           if (playInfo.totalPlays > 0) {
             const topChips = playInfo.players.slice(0, 4).map(pl =>
               `<span class="player-chip">${renderMiniPlayerAvatarHtml(pl)}<span>${escapeHtml(pl.name)}</span><span class="player-chip-cnt">×${pl.count}</span></span>`
@@ -2540,20 +2841,20 @@
               ? `<span class="player-chip" style="padding:2.5px 8px;color:#c4b5fd;">+${playInfo.players.length - 4} 位</span>`
               : '';
             playersBarHtml = `
-              <div class="game-players-bar">
-                <div class="gpb-head">
-                  <span>🎮 遊玩次數：${playInfo.totalPlays} 次（${playInfo.players.length} 位遊玩者）</span>
-                  <button class="gpb-detail-btn" data-playlog-id="${g.id}" type="button">📋 明細</button>
+              <div class="game-players-bar" style="border-color:rgba(244,63,94,0.32);">
+                <div class="gpb-head" style="color:#fda4af;">
+                  <span>🛡️ 管理者統計：${playInfo.totalPlays} 次（${playInfo.players.length} 位玩家）</span>
+                  <button class="gpb-detail-btn" data-playlog-id="${g.id}" type="button">📋 玩家明細</button>
                 </div>
                 <div class="gpb-chips">${topChips}${moreChip}</div>
               </div>
             `;
           } else {
             playersBarHtml = `
-              <div class="game-players-bar">
-                <div class="gpb-head">
-                  <span>🎮 遊玩次數：0 次</span>
-                  <span class="gpb-empty">成為第一位遊玩者！</span>
+              <div class="game-players-bar" style="border-color:rgba(244,63,94,0.24);">
+                <div class="gpb-head" style="color:#fda4af;">
+                  <span>🛡️ 管理者統計：0 次遊玩</span>
+                  <span class="gpb-empty">僅管理者可見</span>
                 </div>
               </div>
             `;
@@ -2585,7 +2886,10 @@
             ${playersBarHtml}
             <div class="game-foot">
               ${ssoNoteHtml}
-              <button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button">▶ 立即遊玩</button>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <button class="btn-secondary btn-game-lb" data-lb-id="${g.id}" type="button" style="padding:8px 11px;font-size:12px;">📊 分數榜</button>
+                <button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button">▶ 立即遊玩</button>
+              </div>
             </div>
           </div>
         `;
@@ -2593,6 +2897,13 @@
         const launchBtn = card.querySelector('.btn-launch-game');
         if (launchBtn) {
           launchBtn.addEventListener('click', () => launchGame(g.id));
+        }
+        const lbBtn = card.querySelector('.btn-game-lb');
+        if (lbBtn) {
+          lbBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            openLeaderboardModal(g.id);
+          });
         }
         const detailBtn = card.querySelector('.gpb-detail-btn');
         if (detailBtn) {
@@ -2725,6 +3036,7 @@
       } else if (d.type === 'ARCADE_GAME_STATS' && d.gameId && d.stats) {
         const uid = d.uid || (auth.currentUser ? auth.currentUser.uid : 'guest');
         liveStatsCache[`${d.gameId}::${uid}`] = d.stats;
+        if (d.stats.bestScore > 0) cloudPostScore(d.gameId, d.stats.bestScore);
         if (!activeGame) renderHubUI();
       } else if (d.type === 'ARCADE_SSO_SYNC' && d.source !== 'arcade_hub' && d.auth) {
         auth = SSO.saveAuth(d.auth);
@@ -3518,14 +3830,36 @@
         if (document.getElementById('spinModal').classList.contains('open')) closeSpinModal();
         if (document.getElementById('questsModal').classList.contains('open')) closeQuestsModal();
         if (document.getElementById('playLogModal').classList.contains('open')) document.getElementById('playLogModal').classList.remove('open');
+        if (document.getElementById('leaderboardModal').classList.contains('open')) document.getElementById('leaderboardModal').classList.remove('open');
+        if (document.getElementById('adminModal').classList.contains('open')) document.getElementById('adminModal').classList.remove('open');
       }
     });
+
+    document.getElementById('btnNavLeaderboard').addEventListener('click', () => openLeaderboardModal(activeLbGameId));
+    document.getElementById('btnCloseLb').addEventListener('click', () => document.getElementById('leaderboardModal').classList.remove('open'));
+    document.getElementById('leaderboardModal').addEventListener('click', (e) => {
+      if (e.target.id === 'leaderboardModal') document.getElementById('leaderboardModal').classList.remove('open');
+    });
+    document.getElementById('lbGameTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.starget-btn');
+      if (!btn) return;
+      loadLeaderboardForGame(btn.dataset.gid);
+    });
+
+    document.getElementById('btnNavAdmin').addEventListener('click', openAdminModal);
+    document.getElementById('btnCloseAdmin').addEventListener('click', () => document.getElementById('adminModal').classList.remove('open'));
+    document.getElementById('adminModal').addEventListener('click', (e) => {
+      if (e.target.id === 'adminModal') document.getElementById('adminModal').classList.remove('open');
+    });
+    document.getElementById('btnRefreshAdmin').addEventListener('click', () => fetchAdminCloudStats(true));
 
     // Boot Hub
     renderHubUI();
     syncEquippedTitleUI();
     checkNewAchievementUnlocks(true);
     achBootDone = true;
+    syncAllMyScoresToCloud();
+    if (isAdminUser()) fetchAdminCloudStats(false);
   })();
   </script>
 </body>

@@ -1,6 +1,9 @@
 name = "arcade-hub"
+main = "worker.js"
 compatibility_date = "2025-11-01"
 workers_dev = true
 
 [assets]
 directory = "."
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
