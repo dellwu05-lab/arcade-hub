@@ -2259,10 +2259,7 @@
       if (adminBtn) adminBtn.style.display = isAdminUser() ? 'inline-flex' : 'none';
 
       const snap = computeGlobalSnapshot();
-      const sitePlay = getTotalPlayStats();
-      document.getElementById('statLiveGames').textContent = (isAdminUser() && sitePlay.totalPlays > 0)
-        ? `${snap.liveCount} 款 · 🛡️ ${sitePlay.totalPlays} 次`
-        : `${snap.liveCount} 款`;
+      document.getElementById('statLiveGames').textContent = `${snap.liveCount} 款`;
       document.getElementById('statTotalCoins').textContent = snap.sumCoins.toLocaleString();
       document.getElementById('statBestScore').textContent = snap.topScore.toLocaleString();
       document.getElementById('statStarsChars').textContent = `${snap.sumItems}/${snap.sumTotalItems} 英雄 · ⚡Lv.${snap.sumUpgrades}`;
@@ -2801,13 +2798,11 @@
     function renderGamesGrid() {
       const grid = document.getElementById('gamesGrid');
       grid.innerHTML = '';
-      const admin = isAdminUser();
 
       const items = GAMES_REGISTRY.filter(g => activeFilter === 'all' || g.category === activeFilter);
       items.forEach((g) => {
         const isLive = g.status === 'live';
         const stats = isLive ? readStatsForGame(g.id) : null;
-        const playInfo = isLive && admin ? getGamePlaySummary(g.id) : null;
         const extraHeroes = stats ? Math.max(0, (stats.charsUnlocked || 1) - 1) : 0;
         const synPct = g.id === 'star_blaster_3d' ? extraHeroes * 8 : extraHeroes * 10;
         const card = document.createElement('article');
@@ -2815,7 +2810,6 @@
 
         const badgesHtml = `
           <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
-          ${admin && isLive && playInfo ? `<span class="cbadge tech" style="color:#fda4af;border-color:rgba(244,63,94,0.5);">🛡️ ${playInfo.totalPlays} 次 · ${playInfo.players.length} 人</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#86efac;border-color:rgba(134,239,172,0.5);">🌟 英雄羈絆 +${synPct}%</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#fde047;border-color:rgba(251,191,36,0.45);">⚡ 強化 Lv.${stats.upgradeLevel || 0}/${stats.upgradeMax || 15}</span>` : ''}
           ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
@@ -2829,41 +2823,6 @@
             <div class="gp-item"><div class="gp-v" style="color:#7dd3fc;">${stats.charsUnlocked}/${stats.charsTotal}</div><div class="gp-l">${escapeHtml(g.itemLabel || '收藏')}</div></div>
           </div>
         ` : '';
-
-        // Strictly Admin-Only play count & player chips strip (never rendered for regular users!)
-        let playersBarHtml = '';
-        if (admin && isLive && playInfo) {
-          if (playInfo.totalPlays > 0) {
-            const topChips = playInfo.players.slice(0, 4).map(pl =>
-              `<span class="player-chip">${renderMiniPlayerAvatarHtml(pl)}<span>${escapeHtml(pl.name)}</span><span class="player-chip-cnt">×${pl.count}</span></span>`
-            ).join('');
-            const moreChip = playInfo.players.length > 4
-              ? `<span class="player-chip" style="padding:2.5px 8px;color:#c4b5fd;">+${playInfo.players.length - 4} 位</span>`
-              : '';
-            playersBarHtml = `
-              <div class="game-players-bar" style="border-color:rgba(244,63,94,0.32);">
-                <div class="gpb-head" style="color:#fda4af;">
-                  <span>🛡️ 管理者統計：${playInfo.totalPlays} 次（${playInfo.players.length} 位玩家）</span>
-                  <button class="gpb-detail-btn" data-playlog-id="${g.id}" type="button">📋 玩家明細</button>
-                </div>
-                <div class="gpb-chips">${topChips}${moreChip}</div>
-              </div>
-            `;
-          } else {
-            playersBarHtml = `
-              <div class="game-players-bar" style="border-color:rgba(244,63,94,0.24);">
-                <div class="gpb-head" style="color:#fda4af;">
-                  <span>🛡️ 管理者統計：0 次遊玩</span>
-                  <span class="gpb-empty">僅管理者可見</span>
-                </div>
-              </div>
-            `;
-          }
-        }
-
-        const ssoNoteHtml = auth.currentUser
-          ? `<div class="sso-sync-hint">✓ 自動帶入 ${escapeHtml(auth.currentUser.name)}</div>`
-          : `<div class="sso-sync-hint guest">👤 訪客可直接開玩</div>`;
 
         card.innerHTML = `
           <div class="game-cover ${g.coverClass}">
@@ -2883,11 +2842,9 @@
               </div>
             </div>
             ${progressHtml}
-            ${playersBarHtml}
-            <div class="game-foot">
-              ${ssoNoteHtml}
-              <div style="display:flex;align-items:center;gap:6px;">
-                <button class="btn-secondary btn-game-lb" data-lb-id="${g.id}" type="button" style="padding:8px 11px;font-size:12px;">📊 分數榜</button>
+            <div class="game-foot" style="justify-content:flex-end;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <button class="btn-secondary btn-game-lb" data-lb-id="${g.id}" type="button" style="padding:8px 12px;font-size:12px;">📊 分數榜</button>
                 <button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button">▶ 立即遊玩</button>
               </div>
             </div>
@@ -2903,13 +2860,6 @@
           lbBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             openLeaderboardModal(g.id);
-          });
-        }
-        const detailBtn = card.querySelector('.gpb-detail-btn');
-        if (detailBtn) {
-          detailBtn.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            openPlayLogModal(g.id);
           });
         }
 

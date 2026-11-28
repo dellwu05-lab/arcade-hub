@@ -807,7 +807,7 @@
         SFX.gold();
 
         if (t.hp > 0) {
-          const hitCoin = Math.max(2, Math.round(3 * getCoinMult()));
+          const hitCoin = Math.max(1, Math.round(0.75 * getCoinMult()));
           st.runCoins += hitCoin;
           st.score += Math.round(120 * syn.scoreMult);
           t.vy = Math.min(t.vy, -260); // Juggle bounce upward!
@@ -816,9 +816,9 @@
           return;
         }
 
-        // Chest broken open — Jackpot Coin Explosion!
+        // Chest broken open — Jackpot Coin Explosion (balanced to 25% drop economy)
         t.sliced = true;
-        const jackpot = Math.max(12, Math.round(15 * getCoinMult()));
+        const jackpot = Math.max(3, Math.round(4 * getCoinMult()));
         const pts = Math.round(450 * syn.scoreMult * (st.slowTimer > 0 ? 1.5 : 1));
         st.runCoins += jackpot;
         st.score += pts;
@@ -865,14 +865,18 @@
         SFX.slice(st.swipeCount);
       }
 
-      // Simultaneous Multi-Slash Coin Bonus (scales with simultaneous slash count!)
+      // Simultaneous Multi-Slash Bonus (coin bonus scaled to 25% economy)
       if (st.swipeCount >= 2 && !fromUlt) {
         const bonusPts = st.swipeCount * 40;
-        const baseComboCoin = st.swipeCount === 2 ? 1 : (st.swipeCount === 3 ? 2 : (st.swipeCount === 4 ? 3 : Math.min(10, st.swipeCount + 1)));
-        const bonusCoin = Math.max(1, Math.round(baseComboCoin * getCoinMult()));
         st.score += bonusPts;
-        st.runCoins += bonusCoin;
-        addFloat(t.x, t.y - 24, `⚡ ${st.swipeCount} 連斬加成! +${bonusPts} +${bonusCoin}🪙`, '#fde047', st.swipeCount >= 4 ? 20 : 18);
+        if (st.swipeCount >= 3) {
+          const baseComboCoin = st.swipeCount <= 5 ? 1 : Math.min(3, Math.floor(st.swipeCount * 0.28));
+          const bonusCoin = Math.max(1, Math.round(baseComboCoin * getCoinMult() * 0.5));
+          st.runCoins += bonusCoin;
+          addFloat(t.x, t.y - 24, `⚡ ${st.swipeCount} 連斬加成! +${bonusPts} +${bonusCoin}🪙`, '#fde047', st.swipeCount >= 4 ? 20 : 18);
+        } else {
+          addFloat(t.x, t.y - 24, `⚡ ${st.swipeCount} 連斬! +${bonusPts}`, '#fde047', 17);
+        }
       }
     }
 
@@ -918,7 +922,8 @@
         const roll = Math.random();
         // Bomb spawn rate reduced to 10% of previous 12% (0.012), max 1 per wave, never on Wave 1
         const bombRate = (st.wave >= 2 && waveBombs === 0) ? 0.012 : 0;
-        const goldRate = hero.id === 'doraemon' ? 0.16 : 0.11;
+        // Golden coin fruit spawn rate reduced to 25% of previous (0.16/0.11 -> 0.04/0.0275)
+        const goldRate = hero.id === 'doraemon' ? 0.04 : 0.0275;
         let obj;
         if (roll < bombRate) {
           waveBombs++;
@@ -953,7 +958,7 @@
       st.boss = null;
       const syn = getHeroSynergy();
       const pts = Math.round((850 * b.tier) * syn.scoreMult);
-      const coins = Math.max(12, Math.round((14 + b.tier * 4) * getCoinMult()));
+      const coins = Math.max(3, Math.round((3.5 + b.tier) * getCoinMult()));
       st.score += pts; st.runCoins += coins;
       save.bossesDefeated++;
       st.lives = Math.min(5, st.lives + 1);
