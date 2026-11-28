@@ -1,0 +1,146 @@
+{
+  "recipes": [
+    {
+      "id": "rec_wooden_stool",
+      "outputId": "wooden_stool",
+      "yield": 1,
+      "ingredients": [{ "itemId": "softwood", "count": 2 }]
+    },
+    {
+      "id": "rec_wood_bench",
+      "outputId": "wood_bench",
+      "yield": 1,
+      "ingredients": [{ "itemId": "softwood", "count": 3 }]
+    },
+    {
+      "id": "rec_wood_fence",
+      "outputId": "wood_fence",
+      "yield": 4,
+      "ingredients": [{ "itemId": "softwood", "count": 2 }]
+    },
+    {
+      "id": "rec_wood_table",
+      "outputId": "wood_table",
+      "yield": 1,
+      "ingredients": [{ "itemId": "softwood", "count": 2 }, { "itemId": "hardwood", "count": 2 }]
+    },
+    {
+      "id": "rec_flower_pot",
+      "outputId": "flower_pot",
+      "yield": 1,
+      "ingredients": [{ "itemId": "clay", "count": 3 }]
+    },
+    {
+      "id": "rec_garden_lantern",
+      "outputId": "garden_lantern",
+      "yield": 1,
+      "ingredients": [{ "itemId": "stone", "count": 4 }]
+    },
+    {
+      "id": "rec_mini_campfire",
+      "outputId": "mini_campfire",
+      "yield": 1,
+      "ingredients": [{ "itemId": "softwood", "count": 2 }, { "itemId": "stone", "count": 2 }]
+    },
+    {
+      "id": "rec_tea_table",
+      "outputId": "tea_table",
+      "yield": 1,
+      "ingredients": [{ "itemId": "softwood", "count": 3 }, { "itemId": "clay", "count": 2 }]
+    },
+    {
+      "id": "rec_bookshelf",
+      "outputId": "bookshelf",
+      "yield": 1,
+      "ingredients": [{ "itemId": "hardwood", "count": 4 }, { "itemId": "softwood", "count": 2 }]
+    },
+    {
+      "id": "rec_cozy_bed",
+      "outputId": "cozy_bed",
+      "yield": 1,
+      "ingredients": [{ "itemId": "hardwood", "count": 4 }, { "itemId": "softwood", "count": 3 }]
+    },
+    {
+      "id": "rec_golden_trophy",
+      "outputId": "golden_trophy",
+      "yield": 1,
+      "ingredients": [{ "itemId": "gold_nugget", "count": 1 }, { "itemId": "stone", "count": 3 }]
+    },
+    {
+      "id": "rec_sakura_table",
+      "outputId": "sakura_table",
+      "yield": 1,
+      "rare": true,
+      "unlockBy": "peach_cat",
+      "unlockHint": "完成蜜桃的委託或好感達 Lv.3 解鎖",
+      "ingredients": [{ "itemId": "softwood", "count": 3 }, { "itemId": "island_fruit", "count": 2 }]
+    },
+    {
+      "id": "rec_moon_lamp",
+      "outputId": "moon_lamp",
+      "yield": 1,
+      "rare": true,
+      "unlockBy": "afu_shiba",
+      "unlockHint": "完成阿福的委託或好感達 Lv.3 解鎖",
+      "ingredients": [{ "itemId": "stone", "count": 3 }, { "itemId": "clay", "count": 2 }]
+    },
+    {
+      "id": "rec_plush_bear",
+      "outputId": "plush_bear",
+      "yield": 1,
+      "rare": true,
+      "unlockBy": "ruby_bunny",
+      "unlockHint": "完成露比的委託或好感達 Lv.3 解鎖",
+      "ingredients": [{ "itemId": "softwood", "count": 2 }, { "itemId": "clay", "count": 2 }]
+    },
+    {
+      "id": "rec_star_fountain",
+      "outputId": "star_fountain",
+      "yield": 1,
+      "rare": true,
+      "unlockBy": "baloo_bear",
+      "unlockHint": "完成巴魯的委託或好感達 Lv.3 解鎖",
+      "ingredients": [{ "itemId": "stone", "count": 4 }, { "itemId": "hardwood", "count": 2 }]
+    }
+  ],
+  "shopPool": [
+    "cozy_bed",
+    "bookshelf",
+    "round_rug",
+    "tea_table",
+    "wood_bench",
+    "garden_lantern",
+    "flower_pot",
+    "picnic_rug",
+    "parasol",
+    "mailbox_deco",
+    "mini_campfire",
+    "wood_table"
+  ],
+  "houseStages": [
+    {
+      "stage": 0,
+      "name": "黃頂露營帳篷",
+      "icon": "⛺",
+      "gridSize": 6,
+      "upgradeCost": 0,
+      "desc": "溫馨起步的 6×6 帆布帳篷室內空間。"
+    },
+    {
+      "stage": 1,
+      "name": "溫馨原木小屋",
+      "icon": "🏡",
+      "gridSize": 8,
+      "upgradeCost": 2500,
+      "desc": "外觀變身帶煙囪的原木小屋，室內擴建至 8×8 採光空間！"
+    },
+    {
+      "stage": 2,
+      "name": "森友寬敞大屋",
+      "icon": "🏰",
+      "gridSize": 10,
+      "upgradeCost": 6000,
+      "desc": "外觀升級雙層花窗大屋，室內擴建至 10×10 並附設溫暖壁爐！"
+    }
+  ]
+}

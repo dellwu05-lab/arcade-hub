@@ -1,0 +1,247 @@
+{
+  "islandDefaultName": "微風森友島",
+  "bulletinNotes": [
+    "📢 Week 5 住民深化系統登場！島上現有 4 位不同性格的可愛住民：蜜桃（元氣貓）、阿福（悠閒柴）、露比（溫柔兔）與巴魯（運動熊）！",
+    "🐾 按 V 鍵或點「🐾 住民」查看 4 位住民的即時每日作息、好感度愛心與「今日小委託」，完成委託即可解鎖 4 張稀有 DIY 藍圖！",
+    "🎁 和住民聊天時可直接送出背包禮物提升好感，送中他們最愛的類別還有雙倍好感與驚喜回禮喔！"
+  ],
+  "villagers": [
+    {
+      "id": "peach_cat",
+      "name": "蜜桃",
+      "species": "cat",
+      "icon": "🐱",
+      "personality": "peppy",
+      "personalityLabel": "元氣系",
+      "voicePitch": 580,
+      "favoriteCats": ["furniture", "material"],
+      "favoriteHint": "家具、島嶼鮮果與花盆",
+      "rareRecipeId": "rec_sakura_table",
+      "rareName": "🌸 櫻花野餐桌",
+      "colors": {
+        "fur": "#f9b4a0",
+        "accent": "#fff1e6",
+        "shirt": "#52b788",
+        "cheek": "#ff6b8b"
+      },
+      "homePos": [-8.5, 8.2],
+      "wanderCenter": [-4.5, 4.5],
+      "wanderRadius": 5.5,
+      "schedule": {
+        "morning": { "center": [-4.5, 4.5], "activity": "🌅 廣場晨間伸展" },
+        "day":     { "center": [-1.5, 3.2], "activity": "💃 廣場練舞唱歌" },
+        "sunset":  { "center": [-7.5, 9.0], "activity": "🌇 沙灘看晚霞" },
+        "night":   { "center": [-1.2, 2.2], "activity": "🔥 營火旁聊天" },
+        "rain":    { "center": [-6.5, 6.8], "activity": "☔ 屋簷聽雨寫日記" }
+      },
+      "questTemplates": [
+        { "kind": "item", "itemId": "island_fruit", "count": 2, "title": "收集 2 顆島嶼鮮果做水果塔", "bells": 600, "miles": 80 },
+        { "kind": "category", "category": "bug", "count": 1, "title": "幫忙抓 1 隻可愛昆蟲當創作靈感", "bells": 650, "miles": 80 }
+      ],
+      "toolLines": {
+        "rod": "哇！{player} 拿著釣竿要去海邊嗎？釣到大魚的話記得給我看看喔♪",
+        "net": "捕蟲網超帥的！如果捉到漂亮的蝴蝶，蜜桃會超崇拜你的✨",
+        "water": "謝謝你幫島上的小花澆水呀～花朵開得滿滿的小島最可愛了！"
+      },
+      "dialogues": {
+        "morning": [
+          "早安呀 {player}！剛才海風吹過來超舒服的，今天也要元氣滿滿地探索小島喔！",
+          "早上的露水讓花朵亮晶晶的～對了，你有沒有看到我的今日小委託呀？"
+        ],
+        "day": [
+          "嗨 {player}！我剛才在廣場轉圈圈練習跳舞，這座小島的陽光真的太治癒了♪",
+          "你看過北邊二層高地的風景了嗎？露比也很常在那邊看花呢！"
+        ],
+        "sunset": [
+          "哇～夕陽把整個海面都染成橘子汽水的顏色了！{player}，這時候拍照最夢幻！",
+          "黃昏時分路燈一盞一盞亮起來的時候，是我每天最喜歡的瞬間呢～"
+        ],
+        "night": [
+          "晚安 {player}！營火暖呼呼的，大家聚在一起聊天的感覺最幸福了✨",
+          "這麼晚還在島上散步呀？累了就回你的小屋休息一下吧！"
+        ],
+        "rain": [
+          "滴答滴答～下雨天的海浪聲配雨聲超好聽的！雨天不用幫花澆水真方便☔",
+          "{player}，雨天在屋簷下聽音樂其實好浪漫呢♪"
+        ]
+      }
+    },
+    {
+      "id": "afu_shiba",
+      "name": "阿福",
+      "species": "shiba",
+      "icon": "🐶",
+      "personality": "lazy",
+      "personalityLabel": "悠閒系",
+      "voicePitch": 360,
+      "favoriteCats": ["fish", "material"],
+      "favoriteHint": "新鮮魚類與島嶼鮮果",
+      "rareRecipeId": "rec_moon_lamp",
+      "rareName": "🌙 新月許願燈",
+      "colors": {
+        "fur": "#e8a858",
+        "accent": "#fff6e5",
+        "shirt": "#4ea8de",
+        "cheek": "#f28482"
+      },
+      "homePos": [5.5, -13.5],
+      "wanderCenter": [4.2, -5.8],
+      "wanderRadius": 4.8,
+      "schedule": {
+        "morning": { "center": [4.2, -5.8], "activity": "😴 剛睡醒慢步醒腦" },
+        "day":     { "center": [5.8, -1.5], "activity": "🎣 河邊發呆看魚影" },
+        "sunset":  { "center": [2.2, 2.5],  "activity": "🍡 廣場散步想晚餐" },
+        "night":   { "center": [1.8, 1.5],  "activity": "⭐ 營火旁數星星" },
+        "rain":    { "center": [3.5, -6.5], "activity": "☔ 聽雨打盹中" }
+      },
+      "questTemplates": [
+        { "kind": "category", "category": "fish", "count": 1, "title": "幫忙釣 1 條新鮮魚兒給阿福研究", "bells": 700, "miles": 80 },
+        { "kind": "item", "itemId": "softwood", "count": 3, "title": "收集 3 份柔軟木材修補午睡吊床", "bells": 620, "miles": 80 }
+      ],
+      "toolLines": {
+        "rod": "喔喔，{player} 要去釣魚嗎？河裡跟海裡的魚影游得好悠哉喔～",
+        "shovel": "拿著鏟子是要挖星星裂縫嗎？聽說地底埋著超厲害的恐龍化石呢！"
+      },
+      "dialogues": {
+        "morning": [
+          "哈欠……早安 {player}。我才剛睡醒，聞到海風跟蘋果的香味就走出來逛逛了～",
+          "早上慢慢散步最棒了，不用趕時間，想走去木橋發呆就去發呆吧。"
+        ],
+        "day": [
+          "{player} 你好呀～我剛剛在河邊看魚影游來游去，不知不覺就過了二十分鐘，好平靜喔。",
+          "如果在雜貨店看到喜歡的家具，別忘了每天商品都會輪替喔！"
+        ],
+        "sunset": [
+          "太陽快下山囉～這時候的微風吹起來涼涼的，晚餐不知道要吃什麼好呢……",
+          "夕陽照在木頭小橋上的樣子，看起來好像點心上的焦糖喔，嘿嘿。"
+        ],
+        "night": [
+          "晚上的小島特別安靜呢，{player}。聽著輕輕的音樂散步，感覺煩惱都飛走了～",
+          "天上的星星一閃一閃的，我數到第三十二顆就忘記數到哪裡了……"
+        ],
+        "rain": [
+          "下雨囉～我很喜歡聽雨滴落在樹葉上的聲音，聽著聽著就想打盹了呢。",
+          "{player} 也喜歡雨天嗎？聽說下雨天在海邊有機會釣到超稀有的腔棘魚喔！"
+        ]
+      }
+    },
+    {
+      "id": "ruby_bunny",
+      "name": "露比",
+      "species": "bunny",
+      "icon": "🐰",
+      "personality": "normal",
+      "personalityLabel": "溫柔系",
+      "voicePitch": 650,
+      "favoriteCats": ["bug", "furniture"],
+      "favoriteHint": "蝴蝶昆蟲與室內家具",
+      "rareRecipeId": "rec_plush_bear",
+      "rareName": "🧸 泰迪熊玩偶",
+      "colors": {
+        "fur": "#f7f1e5",
+        "accent": "#ffd6e0",
+        "shirt": "#c38cd4",
+        "cheek": "#f598b2"
+      },
+      "homePos": [-10.5, -5.5],
+      "wanderCenter": [-8.0, -2.5],
+      "wanderRadius": 4.8,
+      "schedule": {
+        "morning": { "center": [-8.2, -2.5], "activity": "📖 晨間閱讀繪本" },
+        "day":     { "center": [-5.2, 0.8],  "activity": "💐 花叢散步賞蝶" },
+        "sunset":  { "center": [-2.8, 3.6],  "activity": "🫖 廣場泡花草茶" },
+        "night":   { "center": [-7.5, -3.0], "activity": "🌙 燈下寫信給朋友" },
+        "rain":    { "center": [-8.0, -3.5], "activity": "☔ 泡杯熱茶聽雨聲" }
+      },
+      "questTemplates": [
+        { "kind": "item", "itemId": "clay", "count": 2, "title": "幫忙收集 2 份黏土捏手工茶杯", "bells": 680, "miles": 85 },
+        { "kind": "item", "itemId": "stone", "count": 2, "title": "收集 2 顆石頭佈置迷你花壇", "bells": 640, "miles": 85 }
+      ],
+      "toolLines": {
+        "net": "{player} 拿著捕蟲網呢～花叢附近有很多溫柔飛舞的蝴蝶喔，要輕輕靠近它們♪",
+        "axe": "小心揮動輕巧斧頭喔～收集到的木材可以拿去 DIY 工作台做成溫馨書架呢。"
+      },
+      "dialogues": {
+        "morning": [
+          "早安，{player}。泡了一杯溫熱的洋甘菊茶，你要不要一起感受清晨的微風呢？",
+          "今天的花草都長得很有精神，我剛才還看見一隻紋白蝶停在花瓣上喔。"
+        ],
+        "day": [
+          "{player}，你去過自己的小屋室內了嗎？擺上繪本書架跟編織圓地毯一定會很溫暖♪",
+          "批量 DIY 工作台真的好方便呢，一次就能做出好幾段圍出花園的小柵欄。"
+        ],
+        "sunset": [
+          "傍晚的天空粉粉橘橘的，就像水彩畫一樣柔和，讓人忍不住想一直看著呢。",
+          "辛苦了一整天，{player} 也別忘了放慢腳步休息一下喔。"
+        ],
+        "night": [
+          "晚安 {player}，夜晚的微風輕輕吹過，連路燈的光都顯得特別溫柔呢。",
+          "如果你有空的話，隨時都可以送小禮物給我，我會好好珍藏的♡"
+        ],
+        "rain": [
+          "下雨天的空氣帶著泥土跟青草的香氣，很適合待在屋裡讀一本繪本呢。",
+          "{player} 沒有淋濕吧？記得回溫暖的小屋擦乾喔☔"
+        ]
+      }
+    },
+    {
+      "id": "baloo_bear",
+      "name": "巴魯",
+      "species": "bear",
+      "icon": "🐻",
+      "personality": "jock",
+      "personalityLabel": "運動系",
+      "voicePitch": 280,
+      "favoriteCats": ["fish", "fossil"],
+      "favoriteHint": "大魚、化石與礦石素材",
+      "rareRecipeId": "rec_star_fountain",
+      "rareName": "⭐ 星光噴泉",
+      "colors": {
+        "fur": "#b07146",
+        "accent": "#f5dfb8",
+        "shirt": "#e05a4f",
+        "cheek": "#e8846b"
+      },
+      "homePos": [14.0, 9.0],
+      "wanderCenter": [11.5, 6.2],
+      "wanderRadius": 5.2,
+      "schedule": {
+        "morning": { "center": [10.5, 4.5],  "activity": "🏃 木橋晨跑暖身" },
+        "day":     { "center": [13.2, 8.2],  "activity": "💪 東岸海灘重訓" },
+        "sunset":  { "center": [6.5, 6.2],   "activity": "🥊 夕陽折返跑" },
+        "night":   { "center": [2.2, 4.0],   "activity": "🔥 營火伸展收操" },
+        "rain":    { "center": [12.0, 7.0],  "activity": "☔ 雨中核心訓練" }
+      },
+      "questTemplates": [
+        { "kind": "item", "itemId": "hardwood", "count": 2, "title": "幫忙收集 2 份硬木材做健身單槓", "bells": 720, "miles": 90 },
+        { "kind": "item", "itemId": "stone", "count": 3, "title": "收集 3 顆結實石頭當訓練啞鈴", "bells": 750, "miles": 90 }
+      ],
+      "toolLines": {
+        "axe": "喔喔！{player} 拿著斧頭準備鍛鍊臂力了嗎？輕敲樹幹收集硬木材超有感的！",
+        "shovel": "用鏟子敲岩石跟挖化石可是絕佳的核心訓練！衝呀 {player}！"
+      },
+      "dialogues": {
+        "morning": [
+          "早安 {player}！我已經繞著微風森友島跑完三圈了，今天肌肉狀態滿分💪！",
+          "按住 Shift 鍵奔跑超爽快的！一起來場晨間慢跑怎麼樣？"
+        ],
+        "day": [
+          "哈囉 {player}！東邊過了木橋就是森友雜貨店，我剛去確認過今天的熱門收購品囉！",
+          "聽說把海裡的鮪魚拉起來需要超強臂力，改天我也要挑戰看看！"
+        ],
+        "sunset": [
+          "夕陽下的海灘折返跑最熱血了！{player}，看我的汗水都在發光！",
+          "鍛鍊完再擴建小屋，整個人的成就感都會爆棚啊！"
+        ],
+        "night": [
+          "晚安 {player}！訓練完最重要的就是充足睡眠，我也準備回小屋拉筋收操了！",
+          "星星這麼亮，感覺連夜跑都充滿能量呢！"
+        ],
+        "rain": [
+          "下雨也擋不住熱血！不過路面有點滑，{player} 跑步記得注意安全喔！",
+          "雨天正好來做室內俯臥撐，等太陽出來我們再去海邊比一場！"
+        ]
+      }
+    }
+  ]
+}

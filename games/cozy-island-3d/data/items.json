@@ -1,0 +1,139 @@
+{
+  "starterInventory": [
+    { "itemId": "wood_bench", "count": 2 },
+    { "itemId": "wood_table", "count": 2 },
+    { "itemId": "wooden_stool", "count": 4 },
+    { "itemId": "garden_lantern", "count": 3 },
+    { "itemId": "flower_pot", "count": 4 },
+    { "itemId": "wood_fence", "count": 8 },
+    { "itemId": "picnic_rug", "count": 2 },
+    { "itemId": "parasol", "count": 2 },
+    { "itemId": "signpost", "count": 2 },
+    { "itemId": "mailbox_deco", "count": 1 },
+    { "itemId": "mini_campfire", "count": 2 },
+    { "itemId": "island_fruit", "count": 3 },
+    { "itemId": "softwood", "count": 6 },
+    { "itemId": "hardwood", "count": 4 },
+    { "itemId": "stone", "count": 4 },
+    { "itemId": "clay", "count": 3 }
+  ],
+  "paths": [
+    { "id": "path_stone", "name": "圓石小徑", "icon": "🪨", "color": "#cbc3b4" },
+    { "id": "path_wood", "name": "木板步道", "icon": "🪵", "color": "#b2875e" },
+    { "id": "path_brick", "name": "紅磚小路", "icon": "🧱", "color": "#c57c66" }
+  ],
+  "items": {
+    "wood_bench": {
+      "id": "wood_bench", "name": "原木長椅", "icon": "🪑", "category": "furniture",
+      "stackMax": 10, "sellPrice": 180, "buyPrice": 720, "walkable": false, "desc": "溫暖的公園原木長椅，適合放在廣場或河邊吹風。"
+    },
+    "wood_table": {
+      "id": "wood_table", "name": "圓形木桌", "icon": "🪵", "category": "furniture",
+      "stackMax": 10, "sellPrice": 150, "buyPrice": 600, "walkable": false, "desc": "小巧可愛的戶外原木圓桌。"
+    },
+    "wooden_stool": {
+      "id": "wooden_stool", "name": "溫馨圓凳", "icon": "🍄", "category": "furniture",
+      "stackMax": 20, "sellPrice": 80, "buyPrice": 320, "walkable": false, "desc": "輕巧原木小凳，和圓桌絕配。"
+    },
+    "garden_lantern": {
+      "id": "garden_lantern", "name": "庭院石燈籠", "icon": "🏮", "category": "furniture",
+      "stackMax": 10, "sellPrice": 220, "buyPrice": 880, "walkable": false, "desc": "入夜後會自動散發柔和暖光的石燈籠。"
+    },
+    "flower_pot": {
+      "id": "flower_pot", "name": "森友花盆", "icon": "🪴", "category": "furniture",
+      "stackMax": 20, "sellPrice": 90, "buyPrice": 360, "walkable": false, "desc": "盛開粉彩小花的素陶花盆。"
+    },
+    "wood_fence": {
+      "id": "wood_fence", "name": "鄉村木柵欄", "icon": "🚧", "category": "furniture",
+      "stackMax": 50, "sellPrice": 40, "buyPrice": 160, "walkable": false, "desc": "能沿著草地圍出可愛小花園的木柵欄。"
+    },
+    "picnic_rug": {
+      "id": "picnic_rug", "name": "野餐格子墊", "icon": "🧺", "category": "furniture",
+      "stackMax": 10, "sellPrice": 120, "buyPrice": 480, "walkable": true, "desc": "鋪在草地或沙灘上的柔和棉布野餐墊（可直接走過）。"
+    },
+    "parasol": {
+      "id": "parasol", "name": "海灘遮陽傘", "icon": "⛱️", "category": "furniture",
+      "stackMax": 10, "sellPrice": 200, "buyPrice": 800, "walkable": false, "desc": "充滿度假氣息的條紋海灘陽傘。"
+    },
+    "signpost": {
+      "id": "signpost", "name": "手工木路標", "icon": "🪧", "category": "furniture",
+      "stackMax": 10, "sellPrice": 100, "buyPrice": 400, "walkable": false, "desc": "指引小島方向的手作木頭路牌。"
+    },
+    "mailbox_deco": {
+      "id": "mailbox_deco", "name": "島嶼郵筒", "icon": "📮", "category": "furniture",
+      "stackMax": 5, "sellPrice": 240, "buyPrice": 960, "walkable": false, "desc": "擺在帳篷門口的可愛復古郵筒。"
+    },
+    "mini_campfire": {
+      "id": "mini_campfire", "name": "露營小營火", "icon": "🔥", "category": "furniture",
+      "stackMax": 10, "sellPrice": 160, "buyPrice": 640, "walkable": false, "desc": "夜晚散發溫暖火光的露營小火堆。"
+    },
+    "cozy_bed": {
+      "id": "cozy_bed", "name": "暖心原木床", "icon": "🛏️", "category": "furniture",
+      "stackMax": 5, "sellPrice": 480, "buyPrice": 1680, "walkable": false, "desc": "鋪著薄荷綠棉被的溫暖單人木床，室內佈置必備。"
+    },
+    "bookshelf": {
+      "id": "bookshelf", "name": "繪本書架", "icon": "📚", "category": "furniture",
+      "stackMax": 5, "sellPrice": 420, "buyPrice": 1450, "walkable": false, "desc": "排滿粉彩繪本與小島百科的原木書架。"
+    },
+    "round_rug": {
+      "id": "round_rug", "name": "編織圓地毯", "icon": "🧶", "category": "furniture",
+      "stackMax": 10, "sellPrice": 190, "buyPrice": 680, "walkable": true, "desc": "手工編織的奶油草綠圓地毯，鋪在室內腳感超柔和。"
+    },
+    "tea_table": {
+      "id": "tea_table", "name": "下午茶矮桌", "icon": "🫖", "category": "furniture",
+      "stackMax": 10, "sellPrice": 320, "buyPrice": 1120, "walkable": false, "desc": "擺著手工陶茶壺與小茶杯的療癒原木矮桌。"
+    },
+    "golden_trophy": {
+      "id": "golden_trophy", "name": "黃金森友獎盃", "icon": "🏆", "category": "furniture",
+      "stackMax": 5, "sellPrice": 12500, "buyPrice": 28000, "walkable": false, "desc": "以稀有金礦石鍛造的柔霧緞金森友紀念獎盃！"
+    },
+    "sakura_table": {
+      "id": "sakura_table", "name": "櫻花野餐桌", "icon": "🌸", "category": "furniture",
+      "stackMax": 5, "sellPrice": 680, "buyPrice": 2200, "walkable": false, "desc": "蜜桃珍藏的稀有藍圖！桌面點綴落櫻花瓣的浪漫原木茶桌。"
+    },
+    "moon_lamp": {
+      "id": "moon_lamp", "name": "新月許願燈", "icon": "🌙", "category": "furniture",
+      "stackMax": 5, "sellPrice": 820, "buyPrice": 2600, "walkable": false, "desc": "阿福分享的稀有藍圖！入夜後會散發夢幻月光的彎月立燈。"
+    },
+    "plush_bear": {
+      "id": "plush_bear", "name": "泰迪熊玩偶", "icon": "🧸", "category": "furniture",
+      "stackMax": 5, "sellPrice": 640, "buyPrice": 2100, "walkable": false, "desc": "露比手作的稀有藍圖！軟綿綿絨布質感的超治癒小熊玩偶。"
+    },
+    "star_fountain": {
+      "id": "star_fountain", "name": "星光噴泉", "icon": "⭐", "category": "furniture",
+      "stackMax": 5, "sellPrice": 980, "buyPrice": 3200, "walkable": false, "desc": "巴魯贈送的稀有藍圖！頂端閃耀微光的雙層庭園石雕噴泉。"
+    },
+    "owl_statue": {
+      "id": "owl_statue", "name": "博物館貓頭鷹雕像", "icon": "🦉", "category": "furniture",
+      "stackMax": 5, "sellPrice": 780, "buyPrice": 2600, "walkable": false, "desc": "【里程兌換／館藏紀念】霧面砂岩雕刻的可愛守護貓頭鷹雕像。"
+    },
+    "wish_pond": {
+      "id": "wish_pond", "name": "庭園許願池", "icon": "⛲", "category": "furniture",
+      "stackMax": 5, "sellPrice": 960, "buyPrice": 3200, "walkable": false, "desc": "【里程兌換限定】點綴蓮葉與小石燈的療癒庭院水景許願池。"
+    },
+    "island_fruit": {
+      "id": "island_fruit", "name": "島嶼鮮果", "icon": "🍎", "category": "material",
+      "stackMax": 30, "sellPrice": 50, "walkable": false, "desc": "從果樹搖下來的香甜果實，可在商店或背包販售換鈴錢。"
+    },
+    "softwood": {
+      "id": "softwood", "name": "柔軟木材", "icon": "🪵", "category": "material",
+      "stackMax": 30, "sellPrice": 35, "walkable": false, "desc": "搖樹或輕砍樹木掉落的優質木材，可用於 DIY 製作。"
+    },
+    "hardwood": {
+      "id": "hardwood", "name": "硬木材", "icon": "🪵", "category": "material",
+      "stackMax": 30, "sellPrice": 60, "walkable": false, "desc": "以輕巧斧頭敲擊樹幹獲得的結實木材。"
+    },
+    "stone": {
+      "id": "stone", "name": "石頭", "icon": "🪨", "category": "material",
+      "stackMax": 30, "sellPrice": 75, "walkable": false, "desc": "用鏟子敲擊島上岩石獲得的天然石塊。"
+    },
+    "clay": {
+      "id": "clay", "name": "黏土", "icon": "🟤", "category": "material",
+      "stackMax": 30, "sellPrice": 100, "walkable": false, "desc": "敲擊岩石時偶爾掉落的細緻陶土。"
+    },
+    "gold_nugget": {
+      "id": "gold_nugget", "name": "金礦石", "icon": "✨", "category": "material",
+      "stackMax": 30, "sellPrice": 10000, "walkable": false, "desc": "極稀有的閃亮金礦石！可用來打造黃金獎盃或高價售出。"
+    }
+  }
+}

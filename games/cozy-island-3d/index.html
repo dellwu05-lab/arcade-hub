@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>🏝️ 森友小島 3D · Cozy Island (Week 6)</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div id="canvasHost" aria-label="森友小島 3D 畫面"></div>
+  <div class="scene-fade" id="sceneFade" aria-hidden="true"></div>
+
+  <!-- Top HUD -->
+  <header class="hud-top">
+    <div class="hud-card island-badge">
+      <div class="island-title-row">
+        <span id="hudLocationTitle">🏝️ 微風森友島</span>
+        <span class="proto-tag">Week 6 圖鑑＋博物館</span>
+      </div>
+      <div class="meta-row">
+        <span id="hudClock">12:00 · 白晝</span>
+        <span id="hudWeatherBadge">🍃 微風</span>
+        <span id="hudUser">👤 旅人訪客</span>
+      </div>
+      <div class="currency-row">
+        <span class="currency-bells" id="hudBells">🪙 500</span>
+        <span class="currency-miles" id="hudMiles">🎫 100</span>
+      </div>
+    </div>
+
+    <nav class="hud-controls" aria-label="小島控制列">
+      <button class="pill-btn accent" id="btnBuildMode" type="button" title="一鍵切換上帝視角 3D 網格佈置模式 (快捷鍵 B)">🏗️ 佈置模式</button>
+      <button class="pill-btn" id="btnHomeToggle" type="button" title="進出個人小屋室內場景 (快捷鍵 H)">⛺ 進小屋</button>
+      <button class="pill-btn" id="btnCritterpedia" type="button" title="開啟生物圖鑑、每日里程目標與點數兌換 (快捷鍵 M)">📖 圖鑑</button>
+      <button class="pill-btn" id="btnMuseum" type="button" title="開啟二層高地博物館捐贈與展廳">🦉 博物館</button>
+      <button class="pill-btn" id="btnVillagers" type="button" title="查看 4 位動物住民作息、好感度與今日委託 (快捷鍵 V)">🐾 住民</button>
+      <button class="pill-btn" id="btnShop" type="button" title="開啟森友雜貨店：每日輪替購買與高價收購">🏪 商店</button>
+      <button class="pill-btn" id="btnDiy" type="button" title="開啟批量 DIY 工作台與房屋 3 階段擴建 (快捷鍵 K)">🔨 DIY</button>
+      <button class="pill-btn" id="btnBag" type="button" title="開啟 20 格隨身背包 (快捷鍵 I)">🎒 背包</button>
+      <button class="pill-btn" id="btnCam" type="button" title="切換 3 段斜俯視角 (快捷鍵 C)">📷 標準</button>
+      <button class="pill-btn" id="btnClockMode" type="button" title="切換現實時間 / 加速日夜">🕒 現實時間</button>
+      <button class="pill-btn" id="btnPhaseJump" type="button" title="跳至下一個日夜光影時段">🌅 換時段</button>
+      <button class="pill-btn" id="btnWeather" type="button" title="切換晴朗 / 微風 / 細雨">🍃 微風</button>
+      <button class="pill-btn" id="btnSeason" type="button" title="預覽春夏秋冬色調">🌸 春季</button>
+      <button class="pill-btn" id="btnCurve" type="button" title="切換動森招牌圓筒弧面地表">🌍 弧面：開</button>
+      <button class="pill-btn" id="btnMute" type="button" title="開關動態 BGM 與音效">🎵 音效開</button>
+      <a class="pill-btn" href="../../index.html" target="_top" title="返回遊戲綜合區大廳">🏠 大廳</a>
+    </nav>
+  </header>
+
+  <!-- Week 3: Tool Hotbar (Keys 1-6) -->
+  <div class="tool-hotbar" id="toolHotbar" role="toolbar" aria-label="採集工具快捷列"></div>
+
+  <!-- Week 3: Catch Celebration Banner -->
+  <div class="catch-banner" id="catchBanner" role="status" aria-live="polite">
+    <div class="catch-ico" id="catchIco">🐟</div>
+    <div>
+      <div class="catch-title" id="catchTitle">釣到 鯛魚！</div>
+      <div class="catch-sub" id="catchSub">68 cm · 售價 3,000 鈴錢</div>
+    </div>
+  </div>
+
+  <!-- Context Interaction Prompt -->
+  <button class="interact-pill" id="interactPill" type="button"></button>
+
+  <!-- Desktop Control Hint -->
+  <div class="desktop-hint" id="desktopHint">
+    WASD 漫步 · 1~6 工具 · Space 互動 · M 圖鑑＆里程 · V 住民 · K 批量DIY · H 小屋 · I 背包 · B 佈置
+  </div>
+
+  <!-- Cozy Dialogue Box (Week 5: Friendship + Gift + Daily Quest bar) -->
+  <section class="dialogue-box" id="dialogueBox" role="dialog" aria-live="polite">
+    <div class="dlg-header">
+      <span class="dlg-speaker" id="dlgSpeaker">蜜桃</span>
+      <span class="dlg-tag" id="dlgTag">元氣系</span>
+      <span class="dlg-heart-pill" id="dlgHeart" style="display:none;">❤️ Lv.1</span>
+    </div>
+    <p class="dlg-text" id="dlgText"></p>
+    <div class="dlg-actions" id="dlgActions" style="display:none;">
+      <button class="w4-mini-btn" id="btnDlgGift" type="button">🎁 送禮物</button>
+      <button class="w4-mini-btn alt" id="btnDlgQuest" type="button">📜 今日小委託</button>
+      <button class="w4-mini-btn alt" id="btnDlgBye" type="button">👋 下次再聊</button>
+    </div>
+    <div class="dlg-gift-bar" id="dlgGiftBar"></div>
+    <div class="dlg-next" id="dlgNext">▼ 點擊對話或按空白鍵繼續</div>
+  </section>
+
+  <!-- Week 6: Critterpedia (32 Species) & Daily 4 Miles Goals + Redemption Modal -->
+  <div class="modal-backdrop" id="critterModal" role="dialog" aria-label="森友生物圖鑑與每日里程">
+    <div class="w4-panel">
+      <div class="bag-head">
+        <h2>📖 生物圖鑑（32 種）&amp; 每日里程手冊</h2>
+        <button class="bag-close" id="btnCloseCritter" type="button" aria-label="關閉圖鑑">✕</button>
+      </div>
+      <div class="w4-tabs">
+        <button class="btab active" id="tabCritFish" type="button">🐟 魚類 (0/12)</button>
+        <button class="btab" id="tabCritBug" type="button">🦋 昆蟲 (0/12)</button>
+        <button class="btab" id="tabCritFossil" type="button">🦴 化石 (0/8)</button>
+        <button class="btab" id="tabCritMiles" type="button">🎫 每日里程 &amp; 兌換</button>
+      </div>
+      <div class="w4-hot-banner">
+        <span id="critterSummary">📖 總圖鑑進度：0 / 32 · 🦉 博物館館藏：0 / 32</span>
+        <span id="critterMilesBadge">🎫 100 里程</span>
+      </div>
+      <div id="critterBody"></div>
+    </div>
+  </div>
+
+  <!-- Week 6: Highland Museum Donation & Wing Exhibition Modal -->
+  <div class="modal-backdrop" id="museumModal" role="dialog" aria-label="二層高地博物館捐贈與展廳">
+    <div class="w4-panel">
+      <div class="bag-head">
+        <h2>🦉 微風森友島博物館 · 捐贈與自然展廳</h2>
+        <button class="bag-close" id="btnCloseMuseum" type="button" aria-label="關閉博物館">✕</button>
+      </div>
+      <div class="house-card" id="museumStageCard"></div>
+      <div class="wing-row" id="museumWings"></div>
+      <div id="museumDonateBox" style="margin-bottom:10px;"></div>
+      <div class="miles-sec-title">🏛️ 已捐贈館藏標本展示</div>
+      <div class="critter-grid" id="museumGallery"></div>
+    </div>
+  </div>
+
+  <!-- Week 5: 4-Villager Handbook & Daily Quests Modal -->
+  <div class="modal-backdrop" id="villagersModal" role="dialog" aria-label="住民手冊與今日委託">
+    <div class="w4-panel">
+      <div class="bag-head">
+        <h2>🐾 島嶼住民手冊 · 作息與每日委託</h2>
+        <button class="bag-close" id="btnCloseVillagers" type="button" aria-label="關閉住民手冊">✕</button>
+      </div>
+      <div class="w4-hot-banner">
+        <span id="villagerScheduleSummary">🕒 目前時段作息載入中…</span>
+        <span id="villagerRareCount">✨ 已解鎖稀有藍圖：0 / 4</span>
+      </div>
+      <div class="w4-grid" id="villagersGrid"></div>
+    </div>
+  </div>
+
+  <!-- Week 2: 20-Slot Backpack Modal -->
+  <div class="modal-backdrop" id="bagModal" role="dialog" aria-label="20 格隨身背包">
+    <div class="bag-panel">
+      <div class="bag-head">
+        <h2>🎒 隨身背包（20 格）</h2>
+        <button class="bag-close" id="btnCloseBag" type="button" aria-label="關閉背包">✕</button>
+      </div>
+      <div class="bag-grid" id="bagGrid"></div>
+      <div class="bag-detail" id="bagDetail">
+        <div class="bag-detail-text">
+          <div class="bag-detail-title" id="bagSelTitle">點選格子查看物品</div>
+          <div class="bag-detail-desc" id="bagSelDesc">家具可「面朝角色直接擺放」或進入「上帝視角佈置模式」自由排列！</div>
+        </div>
+        <div class="bag-actions" id="bagActions"></div>
+      </div>
+      <div class="bag-footer">
+        <span id="bagStatsTxt">已擺放家具：0 · 鋪設小徑：0</span>
+        <div style="display:flex;gap:6px;">
+          <button class="pill-btn" id="btnExportJson" type="button">📤 匯出存檔</button>
+          <button class="pill-btn" id="btnImportJson" type="button">📥 匯入存檔</button>
+          <input id="importFileInput" type="file" accept="application/json" style="display:none;" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week 4: Cozy General Store Modal -->
+  <div class="modal-backdrop" id="shopModal" role="dialog" aria-label="森友雜貨店">
+    <div class="w4-panel">
+      <div class="bag-head">
+        <h2>🏪 森友雜貨店 · 每日精選與收購</h2>
+        <button class="bag-close" id="btnCloseShop" type="button" aria-label="關閉商店">✕</button>
+      </div>
+      <div class="w4-tabs">
+        <button class="btab active" id="tabShopBuy" type="button">🛒 每日輪替商品</button>
+        <button class="btab" id="tabShopSell" type="button">💰 高價收購櫃台</button>
+      </div>
+      <div class="w4-hot-banner">
+        <span id="shopHotLabel">🔥 今日高價收購載入中…</span>
+        <span id="shopBellsBadge">🪙 500 鈴錢</span>
+      </div>
+      <div id="shopBody"></div>
+    </div>
+  </div>
+
+  <!-- Week 4: Batch DIY Workbench & House Expansion Modal -->
+  <div class="modal-backdrop" id="diyModal" role="dialog" aria-label="批量 DIY 工作台與房屋擴建">
+    <div class="w4-panel">
+      <div class="bag-head">
+        <h2>🔨 批量 DIY 工作台 &amp; 小屋擴建</h2>
+        <button class="bag-close" id="btnCloseDiy" type="button" aria-label="關閉 DIY">✕</button>
+      </div>
+      <div class="house-card" id="houseUpgradeCard"></div>
+      <div class="w4-grid" id="diyGrid"></div>
+    </div>
+  </div>
+
+  <!-- Week 2: Top-Down 3D Grid Edit Mode Dock -->
+  <section class="build-dock" id="buildDock" aria-label="3D 網格佈置工具列">
+    <div class="build-top-row">
+      <div class="build-tabs">
+        <button class="btab active" id="tabFurniture" type="button">🪑 擺放家具</button>
+        <button class="btab" id="tabPath" type="button">🪨 鋪設小徑</button>
+        <button class="btab danger" id="tabRemove" type="button">🧹 收回 / 清除</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="pill-btn" id="btnRotateGhost" type="button">🔄 旋轉 90° (R)</button>
+        <button class="pill-btn accent" id="btnExitBuild" type="button">✓ 完成佈置 (B)</button>
+      </div>
+    </div>
+    <div class="build-palette" id="buildPalette"></div>
+  </section>
+
+  <!-- Toast Banner -->
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- Mobile Touch Controls -->
+  <div class="mobile-controls" id="mobileControls" aria-label="觸控操作">
+    <div class="joy-base" id="joyBase">
+      <div class="joy-knob" id="joyKnob"></div>
+    </div>
+    <button class="mobile-action-btn" id="mobileActionBtn" type="button">✨ 互動</button>
+  </div>
+
+  <!-- Shared Arcade Hub Unified SSO SDK -->
+  <script src="../../shared/arcade-sso.js"></script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

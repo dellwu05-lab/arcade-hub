@@ -1,0 +1,40 @@
+{
+  "fish": [
+    { "id": "fish_crucian", "name": "鯽魚", "icon": "🐟", "habitat": "river", "time": "all", "size": "small", "minCm": 12, "maxCm": 22, "price": 160, "rarity": "common" },
+    { "id": "fish_dace", "name": "溪哥", "icon": "🐟", "habitat": "river", "time": "all", "size": "small", "minCm": 14, "maxCm": 26, "price": 240, "rarity": "common" },
+    { "id": "fish_carp", "name": "鯉魚", "icon": "🎏", "habitat": "river", "time": "all", "size": "medium", "minCm": 40, "maxCm": 68, "price": 300, "rarity": "common" },
+    { "id": "fish_koi", "name": "錦鯉", "icon": "🐠", "habitat": "river", "time": "night", "size": "medium", "minCm": 45, "maxCm": 72, "price": 4000, "rarity": "rare" },
+    { "id": "fish_sweetfish", "name": "香魚", "icon": "🐟", "habitat": "river", "time": "day", "size": "medium", "minCm": 22, "maxCm": 34, "price": 900, "rarity": "uncommon" },
+    { "id": "fish_salmon", "name": "鮭魚", "icon": "🐟", "habitat": "river", "time": "all", "size": "large", "minCm": 60, "maxCm": 92, "price": 700, "rarity": "uncommon" },
+    { "id": "fish_horse_mackerel", "name": "竹筴魚", "icon": "🐟", "habitat": "sea", "time": "all", "size": "small", "minCm": 25, "maxCm": 42, "price": 150, "rarity": "common" },
+    { "id": "fish_clownfish", "name": "小丑魚", "icon": "🐠", "habitat": "sea", "time": "day", "size": "small", "minCm": 9, "maxCm": 16, "price": 650, "rarity": "uncommon" },
+    { "id": "fish_red_snapper", "name": "鯛魚", "icon": "🐟", "habitat": "sea", "time": "all", "size": "medium", "minCm": 55, "maxCm": 88, "price": 3000, "rarity": "rare" },
+    { "id": "fish_squid", "name": "花枝", "icon": "🦑", "habitat": "sea", "time": "all", "size": "medium", "minCm": 30, "maxCm": 52, "price": 500, "rarity": "common" },
+    { "id": "fish_tuna", "name": "鮪魚", "icon": "🐋", "habitat": "sea", "time": "all", "size": "large", "minCm": 160, "maxCm": 240, "price": 7000, "rarity": "rare" },
+    { "id": "fish_coelacanth", "name": "腔棘魚", "icon": "🦈", "habitat": "sea", "time": "rain", "size": "large", "minCm": 135, "maxCm": 190, "price": 15000, "rarity": "legend" }
+  ],
+  "bugs": [
+    { "id": "bug_common_bf", "name": "紋白蝶", "icon": "🦋", "behavior": "fly", "time": "day", "color": "#f7f7f2", "price": 160, "rarity": "common" },
+    { "id": "bug_yellow_bf", "name": "黃粉蝶", "icon": "🦋", "behavior": "fly", "time": "day", "color": "#f6d55c", "price": 160, "rarity": "common" },
+    { "id": "bug_tiger_bf", "name": "鳳蝶", "icon": "🦋", "behavior": "fly", "time": "day", "color": "#f4a261", "price": 240, "rarity": "common" },
+    { "id": "bug_morpho", "name": "大藍閃蝶", "icon": "🦋", "behavior": "fly", "time": "night", "color": "#3a86ff", "price": 4000, "rarity": "rare" },
+    { "id": "bug_ladybug", "name": "七星瓢蟲", "icon": "🐞", "behavior": "ground", "time": "day", "color": "#e63946", "price": 200, "rarity": "common" },
+    { "id": "bug_honeybee", "name": "蜜蜂", "icon": "🐝", "behavior": "fly", "time": "day", "color": "#fbbf24", "price": 200, "rarity": "common" },
+    { "id": "bug_dragonfly", "name": "紅蜻蜓", "icon": "🪰", "behavior": "fly", "time": "day", "color": "#ef4444", "price": 180, "rarity": "common" },
+    { "id": "bug_mantis", "name": "螳螂", "icon": "🦗", "behavior": "ground", "time": "day", "color": "#52b788", "price": 430, "rarity": "uncommon" },
+    { "id": "bug_firefly", "name": "螢火蟲", "icon": "✨", "behavior": "fly", "time": "night", "color": "#d9f99d", "price": 300, "rarity": "uncommon" },
+    { "id": "bug_stag", "name": "鋸鍬形蟲", "icon": "🪲", "behavior": "ground", "time": "all", "color": "#5c3a21", "price": 2000, "rarity": "rare" },
+    { "id": "bug_kabuto", "name": "獨角仙", "icon": "🪲", "behavior": "ground", "time": "night", "color": "#6b3e26", "price": 1350, "rarity": "uncommon" },
+    { "id": "bug_snail", "name": "蝸牛", "icon": "🐌", "behavior": "ground", "time": "rain", "color": "#c9a27e", "price": 250, "rarity": "uncommon" }
+  ],
+  "fossils": [
+    { "id": "fossil_trilobite", "name": "三葉蟲化石", "icon": "🦴", "price": 1300 },
+    { "id": "fossil_ammonite", "name": "菊石化石", "icon": "🐚", "price": 1100 },
+    { "id": "fossil_trex", "name": "暴龍頭骨", "icon": "🦖", "price": 6000 },
+    { "id": "fossil_tricera", "name": "三角龍頭骨", "icon": "🦕", "price": 5500 },
+    { "id": "fossil_amber", "name": "琥珀", "icon": "🟠", "price": 1200 },
+    { "id": "fossil_pteranodon", "name": "無齒翼龍化石", "icon": "🦴", "price": 4000 },
+    { "id": "fossil_mammoth", "name": "長毛象頭骨", "icon": "🦣", "price": 3000 },
+    { "id": "fossil_archeopteryx", "name": "始祖鳥化石", "icon": "🪶", "price": 1300 }
+  ]
+}
