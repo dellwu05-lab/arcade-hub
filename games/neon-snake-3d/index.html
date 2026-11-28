@@ -855,7 +855,7 @@
       if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 1.8);
       if (st.invuln > 0) st.invuln = Math.max(0, st.invuln - dt);
       if (st.magBuff > 0) st.magBuff = Math.max(0, st.magBuff - dt);
-      st.ultCharge = Math.min(100, st.ultCharge + dt * 3.4 * (1 + (u.ult || 0) * 0.14));
+      st.ultCharge = Math.min(100, st.ultCharge + dt * 0.34 * (1 + (u.ult || 0) * 0.14));
 
       // Player steering (WASD / Arrows / Pointer)
       let kx = 0, ky = 0;
@@ -978,7 +978,7 @@
           p.targetLen += o.val * 0.42;
           if (Math.floor(p.targetLen) > st.maxLen) st.maxLen = Math.floor(p.targetLen);
           st.score += Math.round((o.kind === 'coin' ? 30 : 12) * syn.scoreMult);
-          st.ultCharge = Math.min(100, st.ultCharge + (o.kind === 'coin' ? 5.5 : 1.4) * (1 + (u.ult || 0) * 0.14));
+          st.ultCharge = Math.min(100, st.ultCharge + (o.kind === 'coin' ? 0.55 : 0.14) * (1 + (u.ult || 0) * 0.14));
           if (o.kind === 'coin') {
             const c = Math.max(1, Math.round(o.val * getCoinMult()));
             st.runCoins += c; SFX.coin();
