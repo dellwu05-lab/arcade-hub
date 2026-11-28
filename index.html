@@ -1107,6 +1107,55 @@
       font-size: 10px; font-weight: 800; color: #7dd3fc; margin-left: 4px;
     }
 
+    /* P2 Daily Check-in & 3 Daily Missions */
+    .btn-daily-nav {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 999px;
+      border: 1px solid rgba(168, 85, 247, 0.58);
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(56, 189, 248, 0.22));
+      color: #e9d5ff; font-size: 12.5px; font-weight: 800; cursor: pointer;
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+    .btn-daily-nav:hover { filter: brightness(1.15); }
+    .btn-daily-nav:active { transform: scale(0.96); }
+    .daily-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #fb7185; box-shadow: 0 0 8px #fb7185; display: inline-block;
+    }
+    .daily-dot.used { display: none; }
+    .checkin-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 10px 0 12px;
+    }
+    .checkin-day {
+      padding: 8px 4px; border-radius: 12px; text-align: center;
+      background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    .checkin-day.today {
+      border-color: rgba(250, 204, 21, 0.85);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.24), rgba(15, 23, 42, 0.88));
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.28);
+    }
+    .checkin-day.claimed {
+      opacity: 0.65; border-color: rgba(52, 211, 153, 0.45);
+      background: rgba(16, 185, 129, 0.12);
+    }
+    .checkin-day.day7 {
+      border-color: rgba(244, 114, 182, 0.6);
+      background: linear-gradient(180deg, rgba(236, 72, 153, 0.22), rgba(88, 28, 135, 0.45));
+    }
+    .cd-lbl { font-size: 10px; font-weight: 800; color: #94a3b8; }
+    .cd-ico { font-size: 16px; }
+    .cd-val { font-size: 11px; font-weight: 900; color: #fde047; font-variant-numeric: tabular-nums; }
+    .daily-bonus-bar {
+      margin-top: 10px; padding: 10px 12px; border-radius: 13px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(168, 85, 247, 0.18));
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    @media (max-width: 560px) {
+      .checkin-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
     /* ================= FULLSCREEN GAME STAGE ================= */
     .game-stage {
       position: fixed;
@@ -1491,6 +1540,10 @@
         <button class="btn-quests-nav" id="btnNavQuests" type="button" title="查看全站成就並領取跨遊戲金幣獎勵">
           <span>🏆 全站成就</span>
           <span class="quest-dot used" id="navQuestDot"></span>
+        </button>
+        <button class="btn-daily-nav" id="btnNavDaily" type="button" title="每日 7 日連續簽到與今日 3 項隨機任務">
+          <span>📅 每日簽到</span>
+          <span class="daily-dot" id="navDailyDot"></span>
         </button>
         <button class="btn-spin-nav" id="btnNavSpin" type="button" title="每日免費幸運轉盤抽全站金幣">
           <span>🎡 幸運轉盤</span>
@@ -1984,6 +2037,56 @@
         <button class="btn-primary" id="btnShareCardNative" type="button" style="padding:10px 18px;font-size:13px;">📤 分享 / 複製圖卡</button>
         <button class="btn-secondary" id="btnDownloadShareCard" type="button" style="padding:10px 14px;font-size:13px;">⬇️ 下載 PNG</button>
         <button class="btn-secondary" id="btnCopyChallengeText" type="button" style="padding:10px 14px;font-size:13px;">🔗 複製挑戰文案</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- P2: Daily 7-Day Check-in & 3 Random Daily Missions Modal -->
+  <div class="modal-backdrop" id="dailyModal">
+    <div class="auth-panel" style="max-width:610px;">
+      <div class="modal-head">
+        <div>
+          <h2>📅 每日簽到與今日任務</h2>
+          <div class="modal-sub" id="dailySub">每天回來簽到領金幣，連續第 7 天直接抱走 +500 🪙 大禮包！</div>
+        </div>
+        <button class="close-btn" id="btnCloseDaily" type="button" aria-label="關閉">✕</button>
+      </div>
+
+      <div style="font-size:11.5px;color:#cbd5e1;font-weight:700;margin-bottom:4px;">獎勵發放目標：</div>
+      <div class="spin-targets" id="dailyTargets" style="justify-content:flex-start;margin:4px 0 10px;">
+        <button class="starget-btn active" data-gid="all" type="button">🌐 全站平分</button>
+        <button class="starget-btn" data-gid="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
+        <button class="starget-btn" data-gid="star_blaster_3d" type="button">🚀 彈幕</button>
+        <button class="starget-btn" data-gid="canyon_drift_3d" type="button">🏎️ 漂移</button>
+        <button class="starget-btn" data-gid="neon_blocks_3d" type="button">🧩 方塊</button>
+        <button class="starget-btn" data-gid="hero_arena_3d" type="button">⚔️ 無雙</button>
+        <button class="starget-btn" data-gid="brick_breaker_3d" type="button">🧱 破壁</button>
+        <button class="starget-btn" data-gid="hero_slash_3d" type="button">🗡️ 斬擊</button>
+        <button class="starget-btn" data-gid="neon_snake_3d" type="button">🐉 巨龍</button>
+        <button class="starget-btn" data-gid="cozy_island_3d" type="button">🏝️ 小島</button>
+      </div>
+
+      <div class="ach-top-bar" style="margin-bottom:6px;">
+        <div class="ach-stats-col">
+          <span id="checkinStreakLabel">🔥 連續簽到：第 0 / 7 天</span>
+          <span class="ach-ap-sub" id="checkinHintLabel">今日尚未簽到，立即領取今日金幣！</span>
+        </div>
+        <button class="btn-primary" id="btnClaimCheckin" type="button" style="padding:8px 14px;font-size:12.5px;">✅ 立即簽到</button>
+      </div>
+      <div class="checkin-grid" id="checkinGrid"></div>
+
+      <div style="font-size:13px;font-weight:900;color:#fff;margin:8px 0 4px;display:flex;align-items:center;justify-content:space-between;">
+        <span>🎯 今日 3 項隨機任務</span>
+        <span style="font-size:11px;color:#94a3b8;font-weight:700;" id="dailyDateTag">每日 00:00 刷新</span>
+      </div>
+      <div class="quests-list" id="dailyMissionsList" style="margin-top:6px;"></div>
+
+      <div class="daily-bonus-bar">
+        <div>
+          <div style="font-size:12.5px;font-weight:900;color:#fde047;">🎁 今日全勤寶箱（完成 3/3 任務）</div>
+          <div style="font-size:11px;color:#cbd5e1;" id="dailyBonusStatus">目前進度 0 / 3 項</div>
+        </div>
+        <button class="quest-claim-btn" id="btnClaimDailyBonus" type="button" disabled>領取 +150 🪙</button>
       </div>
     </div>
   </div>
@@ -3615,6 +3718,7 @@
     }
 
     function openLeaderboardModal(gameId = activeLbGameId) {
+      if (typeof trackDailyProgress === 'function') trackDailyProgress('lb', 1);
       document.getElementById('leaderboardModal').classList.add('open');
       loadLeaderboardForGame(gameId || 'canyon_parkour_3d');
     }
@@ -3719,6 +3823,7 @@
       const game = GAMES_REGISTRY.find(g => g.id === gameId && g.status === 'live');
       if (!game) return;
       recordGamePlay(gameId);
+      if (typeof trackDailyProgress === 'function') trackDailyProgress('play', gameId);
       savedHubScrollY = window.scrollY || 0;
       activeGame = game;
       document.getElementById('stageGameTitle').textContent = `${game.icon} ${game.title}`;
@@ -3823,6 +3928,7 @@
         liveStatsCache[`${d.gameId}::${uid}`] = d.stats;
         if (d.stats.bestScore > 0) {
           checkRecordAndRivalSurpassed(d.gameId, d.stats.bestScore);
+          if (typeof trackDailyProgress === 'function') trackDailyProgress('score', d.stats.bestScore);
           cloudPostScore(d.gameId, d.stats.bestScore);
         }
         scheduleCloudSaveUpload();
@@ -4122,6 +4228,8 @@
       const meta = getDailySpinState();
       meta.lastDate = todayKey();
       meta.totalSpins = (meta.totalSpins || 0) + 1;
+      if (typeof trackDailyProgress === 'function') trackDailyProgress('spin', 1);
+      if (typeof scheduleCloudSaveUpload === 'function') scheduleCloudSaveUpload();
       saveDailySpinState(meta);
       pushSsoToActiveGame();
       renderHubUI();
@@ -4727,7 +4835,8 @@
           spin: {
             totalSpins: Number(spinState.totalSpins) || 0,
             lastDate: String(spinState.lastDate || '')
-          }
+          },
+          daily: typeof getDailyState === 'function' ? getDailyState() : null
         }
       };
     }
@@ -4759,6 +4868,10 @@
           });
           localStorage.setItem(getSpinKey(), JSON.stringify(mergedSpin));
         } catch (e) {}
+      }
+      if (cloudSave.hub && cloudSave.hub.daily && typeof saveDailyState === 'function') {
+        saveDailyState(cloudSave.hub.daily);
+        if (typeof updateDailyDotUI === 'function') updateDailyDotUI();
       }
     }
 
@@ -5051,6 +5164,7 @@
     }
 
     function openShareCardModal(gameId, rivalNote = '') {
+      if (typeof trackDailyProgress === 'function') trackDailyProgress('share', 1);
       const targetId = gameId || (activeGame && activeGame.id) || 'hero_slash_3d';
       activeShareGameId = targetId;
       activeShareRivalNote = rivalNote || '';
@@ -5121,10 +5235,283 @@
       document.getElementById('recordBanner').classList.remove('show');
     });
 
+    // =========================================================================
+    // P2: DAILY 7-DAY CHECK-IN & 3 RANDOM DAILY MISSIONS
+    // =========================================================================
+    const CHECKIN_REWARDS = [50, 80, 120, 150, 200, 260, 500];
+    const DAILY_MISSION_POOL = [
+      { id: 'dm_play_1',  title: '🎮 熱身開玩', desc: '今日啟動任意一款遊戲 1 次', target: 1, reward: 60, getVal: s => s.plays || 0, fmt: v => `${v} 次` },
+      { id: 'dm_play_3',  title: '🕹️ 連戰三局', desc: '今日累計遊玩綜合區遊戲達 3 次', target: 3, reward: 120, getVal: s => s.plays || 0, fmt: v => `${v} 次` },
+      { id: 'dm_diff_2',  title: '🧭 雙重體驗', desc: '今日體驗 2 款不同的 3D 遊戲', target: 2, reward: 100, getVal: s => (s.games ? s.games.length : 0), fmt: v => `${v} 款` },
+      { id: 'dm_spin_1',  title: '🎡 每日好手氣', desc: '今日轉動 1 次幸運轉盤', target: 1, reward: 80, getVal: s => s.spins || 0, fmt: v => `${v} 次` },
+      { id: 'dm_score_1k', title: '⭐ 小試身手', desc: '今日任一遊戲單局達到 1,500 分', target: 1500, reward: 100, getVal: s => s.topScore || 0, fmt: v => v.toLocaleString() },
+      { id: 'dm_score_4k', title: '🔥 高手本色', desc: '今日任一遊戲單局達到 4,000 分', target: 4000, reward: 150, getVal: s => s.topScore || 0, fmt: v => v.toLocaleString() },
+      { id: 'dm_share_1', title: '📸 炫耀戰績', desc: '今日開啟或分享 1 次戰績圖卡', target: 1, reward: 80, getVal: s => s.shares || 0, fmt: v => `${v} 次` },
+      { id: 'dm_lb_1',    title: '📊 觀戰排行', desc: '今日查看 1 次全球分數排行榜', target: 1, reward: 60, getVal: s => s.lbViews || 0, fmt: v => `${v} 次` }
+    ];
+    let dailyRewardTarget = 'all';
+
+    function getLocalDateKey(offsetDays = 0) {
+      const d = new Date(Date.now() + offsetDays * 86400000);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function getDailyKey() {
+      const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
+      return `arcade_hub_daily_v1_${uid}`;
+    }
+
+    function getDailyState() {
+      const today = getLocalDateKey(0);
+      const def = {
+        streak: 0,
+        lastCheckinDate: '',
+        missionDate: today,
+        stats: { plays: 0, games: [], spins: 0, topScore: 0, shares: 0, lbViews: 0 },
+        claimedMissions: [],
+        bonusClaimed: false
+      };
+      try {
+        const raw = localStorage.getItem(getDailyKey());
+        if (raw) {
+          const p = JSON.parse(raw);
+          const merged = Object.assign({}, def, p);
+          if (merged.missionDate !== today) {
+            merged.missionDate = today;
+            merged.stats = { plays: 0, games: [], spins: 0, topScore: 0, shares: 0, lbViews: 0 };
+            merged.claimedMissions = [];
+            merged.bonusClaimed = false;
+          } else {
+            merged.stats = Object.assign({ plays: 0, games: [], spins: 0, topScore: 0, shares: 0, lbViews: 0 }, merged.stats || {});
+            if (!Array.isArray(merged.stats.games)) merged.stats.games = [];
+            if (!Array.isArray(merged.claimedMissions)) merged.claimedMissions = [];
+          }
+          return merged;
+        }
+      } catch (e) {}
+      return def;
+    }
+
+    function saveDailyState(st) {
+      try { localStorage.setItem(getDailyKey(), JSON.stringify(st)); } catch (e) {}
+    }
+
+    function getTodaysThreeMissions() {
+      const today = getLocalDateKey(0);
+      let seed = 2166136261;
+      for (let i = 0; i < today.length; i++) {
+        seed ^= today.charCodeAt(i);
+        seed = Math.imul(seed, 16777619);
+      }
+      const pool = DAILY_MISSION_POOL.slice();
+      const picked = [];
+      for (let k = 0; k < 3 && pool.length > 0; k++) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        picked.push(pool.splice(seed % pool.length, 1)[0]);
+      }
+      return picked;
+    }
+
+    function getEffectiveCheckinDay(st) {
+      const today = getLocalDateKey(0);
+      const yesterday = getLocalDateKey(-1);
+      if (st.lastCheckinDate === today) return { alreadyClaimed: true, currentStreak: Math.max(1, st.streak || 1), nextDay: Math.max(1, st.streak || 1) };
+      if (st.lastCheckinDate === yesterday) {
+        const nextDay = (st.streak >= 7) ? 1 : ((st.streak || 0) + 1);
+        return { alreadyClaimed: false, currentStreak: st.streak || 0, nextDay };
+      }
+      return { alreadyClaimed: false, currentStreak: 0, nextDay: 1 };
+    }
+
+    function awardDailyCoins(amount) {
+      const liveIds = GAMES_REGISTRY.filter(g => g.status === 'live').map(g => g.id);
+      const targets = dailyRewardTarget === 'all' ? liveIds : [dailyRewardTarget];
+      const perGame = Math.max(1, Math.round(amount / targets.length));
+      targets.forEach((gid) => {
+        const cur = SSO.readGameSave(gid, auth.currentUser) || {};
+        const prev = typeof cur.coins === 'number' ? cur.coins : 40;
+        SSO.writeGameSave(gid, auth.currentUser, Object.assign({}, cur, { coins: prev + perGame }));
+      });
+      return dailyRewardTarget === 'all'
+        ? `全站 ${liveIds.length} 款遊戲（每款 +${perGame} 🪙）`
+        : (GAMES_REGISTRY.find(g => g.id === dailyRewardTarget)?.title || dailyRewardTarget);
+    }
+
+    function trackDailyProgress(kind, val = 1) {
+      const st = getDailyState();
+      if (kind === 'play') {
+        st.stats.plays = (st.stats.plays || 0) + 1;
+        if (val && !st.stats.games.includes(val)) st.stats.games.push(val);
+      } else if (kind === 'spin') {
+        st.stats.spins = (st.stats.spins || 0) + 1;
+      } else if (kind === 'score') {
+        st.stats.topScore = Math.max(st.stats.topScore || 0, Math.floor(Number(val) || 0));
+      } else if (kind === 'share') {
+        st.stats.shares = (st.stats.shares || 0) + 1;
+      } else if (kind === 'lb') {
+        st.stats.lbViews = (st.stats.lbViews || 0) + 1;
+      }
+      saveDailyState(st);
+      updateDailyDotUI();
+      if (document.getElementById('dailyModal').classList.contains('open')) renderDailyModal();
+    }
+
+    function updateDailyDotUI() {
+      const dot = document.getElementById('navDailyDot');
+      if (!dot) return;
+      const st = getDailyState();
+      const ck = getEffectiveCheckinDay(st);
+      const missions = getTodaysThreeMissions();
+      const anyMissionReady = missions.some(m => !st.claimedMissions.includes(m.id) && m.getVal(st.stats) >= m.target);
+      const bonusReady = !st.bonusClaimed && missions.every(m => m.getVal(st.stats) >= m.target);
+      const hasAction = !ck.alreadyClaimed || anyMissionReady || bonusReady;
+      dot.classList.toggle('used', !hasAction);
+    }
+
+    function claimDailyCheckin() {
+      const st = getDailyState();
+      const ck = getEffectiveCheckinDay(st);
+      if (ck.alreadyClaimed) return;
+      const reward = CHECKIN_REWARDS[ck.nextDay - 1] || 50;
+      st.streak = ck.nextDay;
+      st.lastCheckinDate = getLocalDateKey(0);
+      saveDailyState(st);
+      const dest = awardDailyCoins(reward);
+      if (ck.nextDay === 7) launchConfettiBurst();
+      [523, 659, 784, 1047].forEach((f, idx) => setTimeout(() => playSpinTone(f, 0.16, 'sine', 0.08), idx * 65));
+      pushSsoToActiveGame();
+      renderHubUI();
+      renderDailyModal();
+      updateDailyDotUI();
+      scheduleCloudSaveUpload();
+      showToast(`📅 第 ${ck.nextDay} 天簽到成功！獲得 +${reward} 🪙 → ${dest}`);
+    }
+
+    function claimDailyMission(mid) {
+      const st = getDailyState();
+      const m = getTodaysThreeMissions().find(x => x.id === mid);
+      if (!m || st.claimedMissions.includes(mid) || m.getVal(st.stats) < m.target) return;
+      st.claimedMissions.push(mid);
+      saveDailyState(st);
+      const dest = awardDailyCoins(m.reward);
+      [587, 784, 988].forEach((f, idx) => setTimeout(() => playSpinTone(f, 0.15, 'triangle', 0.08), idx * 65));
+      pushSsoToActiveGame();
+      renderHubUI();
+      renderDailyModal();
+      updateDailyDotUI();
+      scheduleCloudSaveUpload();
+      showToast(`🎯 完成今日任務【${m.title}】+${m.reward} 🪙 → ${dest}`);
+    }
+
+    function claimDailyAllBonus() {
+      const st = getDailyState();
+      const missions = getTodaysThreeMissions();
+      if (st.bonusClaimed || !missions.every(m => m.getVal(st.stats) >= m.target)) return;
+      st.bonusClaimed = true;
+      saveDailyState(st);
+      const dest = awardDailyCoins(150);
+      launchConfettiBurst();
+      [523, 659, 784, 1047, 1318].forEach((f, idx) => setTimeout(() => playSpinTone(f, 0.18, 'triangle', 0.08), idx * 55));
+      pushSsoToActiveGame();
+      renderHubUI();
+      renderDailyModal();
+      updateDailyDotUI();
+      scheduleCloudSaveUpload();
+      showToast(`🎁 領取今日全勤寶箱 +150 🪙 → ${dest}`);
+    }
+
+    function renderDailyModal() {
+      const st = getDailyState();
+      const ck = getEffectiveCheckinDay(st);
+      document.getElementById('dailyDateTag').textContent = `今日：${getLocalDateKey(0)} · 00:00 刷新`;
+      document.getElementById('checkinStreakLabel').textContent = `🔥 連續簽到：第 ${ck.alreadyClaimed ? ck.currentStreak : ck.currentStreak} / 7 天`;
+      document.getElementById('checkinHintLabel').textContent = ck.alreadyClaimed
+        ? '✅ 今日已完成簽到，明天記得回來領更多金幣！'
+        : `今日可領 Day ${ck.nextDay} 獎勵：+${CHECKIN_REWARDS[ck.nextDay - 1]} 🪙！`;
+
+      const ckBtn = document.getElementById('btnClaimCheckin');
+      ckBtn.disabled = ck.alreadyClaimed;
+      ckBtn.textContent = ck.alreadyClaimed ? '✓ 今日已簽到' : `✅ 簽到 +${CHECKIN_REWARDS[ck.nextDay - 1]} 🪙`;
+      ckBtn.style.opacity = ck.alreadyClaimed ? '0.6' : '1';
+
+      const grid = document.getElementById('checkinGrid');
+      grid.innerHTML = '';
+      CHECKIN_REWARDS.forEach((amt, idx) => {
+        const day = idx + 1;
+        const isClaimed = ck.alreadyClaimed ? day <= ck.currentStreak : day < ck.nextDay;
+        const isToday = !ck.alreadyClaimed && day === ck.nextDay;
+        const cell = document.createElement('div');
+        cell.className = 'checkin-day' + (day === 7 ? ' day7' : '') + (isClaimed ? ' claimed' : '') + (isToday ? ' today' : '');
+        cell.innerHTML = `
+          <div class="cd-lbl">Day ${day}</div>
+          <div class="cd-ico">${isClaimed ? '✅' : (day === 7 ? '🎁' : '🪙')}</div>
+          <div class="cd-val">+${amt}</div>
+        `;
+        grid.appendChild(cell);
+      });
+
+      const missions = getTodaysThreeMissions();
+      const list = document.getElementById('dailyMissionsList');
+      list.innerHTML = '';
+      let doneCnt = 0;
+      missions.forEach((m) => {
+        const val = m.getVal(st.stats);
+        const reached = val >= m.target;
+        const claimed = st.claimedMissions.includes(m.id);
+        if (reached) doneCnt++;
+        const pct = Math.min(100, Math.round((val / m.target) * 100));
+        const card = document.createElement('div');
+        card.className = 'quest-card' + (claimed ? ' claimed' : (reached ? ' ready' : ''));
+        card.innerHTML = `
+          <div class="quest-info">
+            <div class="quest-title">${escapeHtml(m.title)}</div>
+            <div class="quest-desc">${escapeHtml(m.desc)}</div>
+            <div class="quest-prog-row">
+              <div class="quest-bar"><div class="quest-bar-fill" style="width:${pct}%;"></div></div>
+              <span class="quest-prog-txt">${m.fmt(Math.min(val, m.target))} / ${m.fmt(m.target)}</span>
+            </div>
+          </div>
+          ${claimed
+            ? '<span class="quest-claimed-tag">✓ 已領取</span>'
+            : `<button class="quest-claim-btn" type="button" ${reached ? '' : 'disabled'}>領取 +${m.reward} 🪙</button>`}
+        `;
+        const b = card.querySelector('.quest-claim-btn');
+        if (b && reached) b.addEventListener('click', () => claimDailyMission(m.id));
+        list.appendChild(card);
+      });
+
+      const bonusBtn = document.getElementById('btnClaimDailyBonus');
+      document.getElementById('dailyBonusStatus').textContent = st.bonusClaimed
+        ? '✅ 今日全勤寶箱已領取！'
+        : `目前進度 ${doneCnt} / 3 項${doneCnt === 3 ? '（可領取！）' : ''}`;
+      bonusBtn.disabled = st.bonusClaimed || doneCnt < 3;
+      bonusBtn.textContent = st.bonusClaimed ? '✓ 已領取' : '領取 +150 🪙';
+    }
+
+    function openDailyModal() {
+      renderDailyModal();
+      document.getElementById('dailyModal').classList.add('open');
+    }
+
+    document.getElementById('btnNavDaily').addEventListener('click', openDailyModal);
+    document.getElementById('btnCloseDaily').addEventListener('click', () => document.getElementById('dailyModal').classList.remove('open'));
+    document.getElementById('dailyModal').addEventListener('click', (e) => {
+      if (e.target.id === 'dailyModal') document.getElementById('dailyModal').classList.remove('open');
+    });
+    document.getElementById('dailyTargets').addEventListener('click', (e) => {
+      const btn = e.target.closest('.starget-btn');
+      if (!btn) return;
+      dailyRewardTarget = btn.dataset.gid || 'all';
+      document.querySelectorAll('#dailyTargets .starget-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+    document.getElementById('btnClaimCheckin').addEventListener('click', claimDailyCheckin);
+    document.getElementById('btnClaimDailyBonus').addEventListener('click', claimDailyAllBonus);
+
     // Boot Hub
     renderHubUI();
     initBestScoreBaseline();
     syncEquippedTitleUI();
+    updateDailyDotUI();
     checkNewAchievementUnlocks(true);
     achBootDone = true;
     syncAllMyScoresToCloud();

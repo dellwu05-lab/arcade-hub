@@ -123,6 +123,29 @@ function mergeCloudSaveDoc(existing, incoming) {
   const exSpin = exHub.spin || {};
   const inSpin = inHub.spin || {};
 
+  const exDaily = exHub.daily || {};
+  const inDaily = inHub.daily || {};
+  const newerDaily = String(inDaily.lastCheckinDate || '') >= String(exDaily.lastCheckinDate || '') ? inDaily : exDaily;
+  const sameMissionDay = String(inDaily.missionDate || '') === String(exDaily.missionDate || '') && !!inDaily.missionDate;
+  const missionBase = String(inDaily.missionDate || '') >= String(exDaily.missionDate || '') ? inDaily : exDaily;
+  const mergedDaily = {
+    streak: Math.max(Number(newerDaily.streak) || 0, String(inDaily.lastCheckinDate || '') === String(exDaily.lastCheckinDate || '') ? (Number(exDaily.streak) || 0) : 0),
+    lastCheckinDate: newerDaily.lastCheckinDate || '',
+    missionDate: missionBase.missionDate || '',
+    stats: sameMissionDay ? {
+      plays: Math.max(Number(exDaily.stats?.plays) || 0, Number(inDaily.stats?.plays) || 0),
+      games: Array.from(new Set([...(Array.isArray(exDaily.stats?.games) ? exDaily.stats.games : []), ...(Array.isArray(inDaily.stats?.games) ? inDaily.stats.games : [])])).slice(0, 20),
+      spins: Math.max(Number(exDaily.stats?.spins) || 0, Number(inDaily.stats?.spins) || 0),
+      topScore: Math.max(Number(exDaily.stats?.topScore) || 0, Number(inDaily.stats?.topScore) || 0),
+      shares: Math.max(Number(exDaily.stats?.shares) || 0, Number(inDaily.stats?.shares) || 0),
+      lbViews: Math.max(Number(exDaily.stats?.lbViews) || 0, Number(inDaily.stats?.lbViews) || 0)
+    } : (missionBase.stats || {}),
+    claimedMissions: sameMissionDay
+      ? Array.from(new Set([...(Array.isArray(exDaily.claimedMissions) ? exDaily.claimedMissions : []), ...(Array.isArray(inDaily.claimedMissions) ? inDaily.claimedMissions : [])])).slice(0, 12)
+      : (Array.isArray(missionBase.claimedMissions) ? missionBase.claimedMissions : []),
+    bonusClaimed: sameMissionDay ? !!(exDaily.bonusClaimed || inDaily.bonusClaimed) : !!missionBase.bonusClaimed
+  };
+
   const hub = {
     quests: {
       claimed: Array.from(new Set([...(Array.isArray(exQ.claimed) ? exQ.claimed : []), ...(Array.isArray(inQ.claimed) ? inQ.claimed : [])])).slice(0, 120),
@@ -132,7 +155,8 @@ function mergeCloudSaveDoc(existing, incoming) {
     spin: {
       totalSpins: Math.max(Number(exSpin.totalSpins) || 0, Number(inSpin.totalSpins) || 0),
       lastDate: String(inSpin.lastDate || '') >= String(exSpin.lastDate || '') ? (inSpin.lastDate || exSpin.lastDate || '') : (exSpin.lastDate || '')
-    }
+    },
+    daily: mergedDaily
   };
 
   return { updatedAt: Math.max(exTs, inTs, now), games, hub };
