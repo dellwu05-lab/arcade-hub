@@ -275,6 +275,52 @@
       border-color: #fde047 !important; background: rgba(245, 158, 11, 0.32) !important;
       color: #fef08a !important; box-shadow: 0 0 16px rgba(250, 204, 21, 0.5);
     }
+
+    /* Mobile Portrait HUD & Overlay Anti-Overlap Layout */
+    @media (max-width: 680px) {
+      .hud-top {
+        padding: 5px 6px !important; gap: 4px !important;
+        flex-direction: column; align-items: stretch;
+      }
+      .hud-cluster {
+        width: 100%; justify-content: space-between;
+        gap: 3px !important; flex-wrap: nowrap !important;
+        overflow-x: auto; scrollbar-width: none;
+      }
+      .hud-cluster::-webkit-scrollbar { display: none; }
+      .pill, .hud-btn {
+        padding: 3.5px 6px !important; font-size: 10.5px !important;
+        gap: 3px !important; white-space: nowrap; flex-shrink: 0;
+      }
+      .hud-acct { padding: 2.5px 6px 2.5px 3px !important; }
+      .hud-acct #hudPlayerName, .hud-acct #hudAccountName {
+        max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block;
+      }
+      .g-avatar { width: 18px !important; height: 18px !important; font-size: 10px !important; }
+      .speed-group { padding: 2px 3px 2px 4px !important; gap: 1px !important; flex-shrink: 0; }
+      .speed-group .spd-ico { font-size: 9.5px !important; margin-right: 1px !important; }
+      .spd-btn { font-size: 9.5px !important; padding: 2px 4px !important; }
+      .hud-btn.pause-btn { padding: 3.5px 6px !important; font-size: 10.5px !important; gap: 2px !important; }
+      .overlay { padding: 86px 10px 14px !important; align-items: flex-start !important; }
+      .panel { max-height: calc(100dvh - 98px) !important; padding: 14px 12px !important; border-radius: 18px !important; }
+      .panel h1 { font-size: 21px !important; margin: 6px 0 4px !important; }
+      .status-strip, .bars-wrap, .buff-strip, .dash-cluster, .progress-wrap { top: 72px !important; }
+      .toast {
+        top: 108px !important; max-width: calc(100vw - 24px);
+        white-space: normal !important; text-align: center;
+        font-size: 12px !important; padding: 6px 12px !important;
+      }
+      .ult-bar, .nova-bar {
+        bottom: max(12px, env(safe-area-inset-bottom, 0px) + 8px) !important;
+        max-width: calc(100vw - 20px);
+      }
+      .ult-btn, .nova-btn { min-width: 176px !important; padding: 8px 14px !important; font-size: 12.5px !important; border-radius: 14px !important; }
+      .sprint-btn { padding: 8px 12px !important; font-size: 12px !important; border-radius: 14px !important; white-space: nowrap; }
+    }
+    @media (max-width: 440px) {
+      .hud-cluster:last-child .pill:nth-child(2) > span:first-child { display: none; }
+      .hud-cluster:last-child .pill:nth-child(1) > span:first-child { font-size: 9.5px; }
+    }
   </style>
 </head>
 <body>

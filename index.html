@@ -1301,12 +1301,15 @@
             支援 Google Identity Services (GIS)。於 HTTP(S) 網域設定 OAuth Client ID 後，全站所有遊戲將自動共用該真實 Google 帳號。
           </div>
           <div class="gis-btn-slot" id="hubGisSlot" style="display:none;"></div>
+          <div id="hubGisRetryWrap" style="display:none;margin-top:8px;">
+            <button class="btn-secondary" id="btnHubRetryGis" type="button" style="width:100%;padding:8px 12px;font-size:12.5px;">🔄 重新載入 Google 官方登入</button>
+          </div>
           <details class="auth-details">
             <summary>⚙️ 設定真實 Google OAuth Client ID（3 步驟）</summary>
             <div class="auth-details-body">
               <div class="auth-note" style="margin-bottom:8px;">
                 1. 於 Google Cloud Console 建立「網頁應用程式 OAuth 用戶端 ID」。<br>
-                2. 將本網站網域加入「已授權的 JavaScript 來源」。<br>
+                2. 將本網站網域 <code id="hubOriginCode" style="color:#7dd3fc;user-select:all;"></code> 加入「已授權的 JavaScript 來源」。<br>
                 3. 貼上 Client ID 並儲存，即可顯示官方 Google 登入鈕：
               </div>
               <input class="auth-input" id="hubGisClientId" type="text" autocomplete="off" placeholder="例：1234567890-xxxx.apps.googleusercontent.com" />
@@ -1721,7 +1724,8 @@
       pushSsoToActiveGame();
       renderHubUI();
       renderAuthModal();
-      showToast(`✅ 已登入 ${userObj.name}！全站 8 款遊戲皆已自動同步帳號`);
+      const liveCnt = GAMES_REGISTRY.filter(g => g.status === 'live').length;
+      showToast(`✅ 已登入 ${userObj.name}！全站 ${liveCnt} 款遊戲皆已自動同步帳號`);
     }
 
     function signOutAccount() {
@@ -1758,11 +1762,29 @@
       }, chk ? chk.checked : true);
     }
 
+    let gisLoadTimer = null;
+    function isInAppWebView() {
+      const ua = navigator.userAgent || '';
+      return /Line\/|FBAN|FBAV|Instagram|MicroMessenger|Threads/i.test(ua);
+    }
+
+    function retryHubGisLoad() {
+      gisState = 'idle';
+      gisRenderedCid = '';
+      clearTimeout(gisLoadTimer);
+      document.querySelectorAll('script[data-hub-gis="1"]').forEach(el => el.remove());
+      renderHubGisButton();
+    }
+
     function renderHubGisButton() {
       const slot = document.getElementById('hubGisSlot');
       const pill = document.getElementById('hubGisPill');
       const note = document.getElementById('hubGisNote');
+      const retryWrap = document.getElementById('hubGisRetryWrap');
+      const originCode = document.getElementById('hubOriginCode');
       if (!slot || !pill || !note) return;
+      if (originCode) originCode.textContent = window.location.origin || '(離線檔案)';
+      if (retryWrap) retryWrap.style.display = 'none';
 
       const cid = SSO.getClientId(auth, DEFAULT_GOOGLE_CLIENT_ID);
       const httpOk = SSO.isHttpOriginForOAuth();
@@ -1782,18 +1804,42 @@
         note.textContent = `已儲存 Client ID，但 Google OAuth 不支援 ${window.location.protocol} 離線預覽；部署至 http://localhost 或 https:// 後即自動啟用。`;
         return;
       }
+      if (isInAppWebView()) {
+        slot.style.display = 'none';
+        pill.className = 'status-pill warn';
+        pill.textContent = '內建瀏覽器受限';
+        note.textContent = '偵測到 App 內建瀏覽器（LINE / FB / IG），Google 官方會封鎖內建瀏覽器 OAuth 登入。請點右上角「以 Safari / Chrome 開啟」，或直接使用下方「快速 Google 帳號登入」。';
+        return;
+      }
       if (gisState === 'ready' && window.google && window.google.accounts && window.google.accounts.id) {
-        pill.className = 'status-pill ok';
-        pill.textContent = 'GIS OAuth 已就緒';
-        note.textContent = '點擊下方官方 Google 登入鈕，一次登入即可通行全站遊戲：';
-        slot.style.display = 'flex';
-        if (gisRenderedCid !== cid || !slot.childElementCount) {
-          slot.innerHTML = '';
-          window.google.accounts.id.initialize({ client_id: cid, callback: handleGisCredential, auto_select: false });
-          window.google.accounts.id.renderButton(slot, {
-            theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signin_with', locale: 'zh_TW', width: 310
-          });
-          gisRenderedCid = cid;
+        try {
+          pill.className = 'status-pill ok';
+          pill.textContent = 'GIS OAuth 已就緒';
+          note.textContent = '點擊下方官方 Google 登入鈕，一次登入即可通行全站遊戲（若手機彈窗受阻，可直接用下方快速登入）：';
+          slot.style.display = 'flex';
+          const btnW = Math.min(310, Math.max(220, (slot.parentElement ? slot.parentElement.clientWidth - 28 : 280)));
+          if (gisRenderedCid !== cid || !slot.childElementCount) {
+            slot.innerHTML = '';
+            window.google.accounts.id.initialize({
+              client_id: cid,
+              callback: handleGisCredential,
+              auto_select: false,
+              itp_support: true,
+              ux_mode: 'popup',
+              use_fedcm_for_prompt: false
+            });
+            window.google.accounts.id.renderButton(slot, {
+              theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signin_with', locale: 'zh_TW', width: btnW
+            });
+            gisRenderedCid = cid;
+          }
+        } catch (err) {
+          console.error('GIS render error:', err);
+          slot.style.display = 'none';
+          pill.className = 'status-pill warn';
+          pill.textContent = 'Google 登入初始化失敗';
+          note.textContent = '官方 Google 登入元件初始化失敗，請點下方重試或改用「快速 Google 帳號登入」。';
+          if (retryWrap) retryWrap.style.display = 'block';
         }
         return;
       }
@@ -1801,19 +1847,36 @@
         slot.style.display = 'none';
         pill.className = 'status-pill warn';
         pill.textContent = '無法連線 Google SDK';
-        note.textContent = '目前環境無法載入 accounts.google.com/gsi/client，請改用下方快速 Google 帳號登入。';
+        note.textContent = '目前網路或瀏覽器擋下了 accounts.google.com/gsi/client，請點下方重試，或改用「快速 Google 帳號登入」。';
+        if (retryWrap) retryWrap.style.display = 'block';
         return;
       }
       pill.className = 'status-pill warn';
       pill.textContent = '載入 Google SDK 中…';
       if (gisState === 'idle') {
         gisState = 'loading';
+        clearTimeout(gisLoadTimer);
+        gisLoadTimer = setTimeout(() => {
+          if (gisState === 'loading') {
+            gisState = 'error';
+            renderHubGisButton();
+          }
+        }, 7000);
         const s = document.createElement('script');
         s.src = 'https://accounts.google.com/gsi/client';
         s.async = true;
         s.defer = true;
-        s.onload = () => { gisState = 'ready'; renderHubGisButton(); };
-        s.onerror = () => { gisState = 'error'; renderHubGisButton(); };
+        s.dataset.hubGis = '1';
+        s.onload = () => {
+          clearTimeout(gisLoadTimer);
+          gisState = (window.google && window.google.accounts && window.google.accounts.id) ? 'ready' : 'error';
+          renderHubGisButton();
+        };
+        s.onerror = () => {
+          clearTimeout(gisLoadTimer);
+          gisState = 'error';
+          renderHubGisButton();
+        };
         document.head.appendChild(s);
       }
     }
@@ -2256,6 +2319,9 @@
       pushSsoToActiveGame();
       showToast('🗑️ 已清除全站 Client ID');
     });
+
+    const btnHubRetryGis = document.getElementById('btnHubRetryGis');
+    if (btnHubRetryGis) btnHubRetryGis.addEventListener('click', retryHubGisLoad);
 
     document.getElementById('btnHubExportAll').addEventListener('click', () => {
       const saves = {};
