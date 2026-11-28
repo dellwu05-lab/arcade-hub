@@ -334,6 +334,131 @@
     }
     .spin-dot.used { display: none; }
 
+    .btn-quests-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(52, 211, 153, 0.55);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(56, 189, 248, 0.22));
+      color: #a7f3d0;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+    .btn-quests-nav:hover { filter: brightness(1.15); }
+    .btn-quests-nav:active { transform: scale(0.96); }
+    .quest-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fbbf24;
+      box-shadow: 0 0 8px #fbbf24;
+      display: inline-block;
+    }
+    .quest-dot.used { display: none; }
+
+    .quests-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 13px;
+      border-radius: 13px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(245, 158, 11, 0.14));
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #e2e8f0;
+      margin: 10px 0 10px;
+    }
+    .quests-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-top: 10px;
+    }
+    .quest-card {
+      padding: 11px 13px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-align: left;
+    }
+    .quest-card.ready {
+      border-color: rgba(251, 191, 36, 0.65);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(15, 23, 42, 0.85));
+    }
+    .quest-card.claimed {
+      opacity: 0.72;
+      border-color: rgba(52, 211, 153, 0.35);
+    }
+    .quest-info { flex: 1; min-width: 0; }
+    .quest-title { font-size: 13.5px; font-weight: 900; color: #fff; }
+    .quest-desc { font-size: 11.5px; color: #cbd5e1; margin-top: 2px; }
+    .quest-prog-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 7px;
+    }
+    .quest-bar {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+    .quest-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8, #34d399);
+      transition: width 0.25s ease;
+    }
+    .quest-card.ready .quest-bar-fill {
+      background: linear-gradient(90deg, #f59e0b, #fde047);
+    }
+    .quest-prog-txt { font-size: 10.5px; font-weight: 800; color: #94a3b8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .quest-claim-btn {
+      padding: 8px 12px;
+      border-radius: 11px;
+      border: none;
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 6px 14px rgba(234, 88, 12, 0.35);
+    }
+    .quest-claim-btn:hover { filter: brightness(1.08); }
+    .quest-claim-btn:disabled {
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      box-shadow: none;
+      cursor: default;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .quest-claimed-tag {
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      color: #6ee7b7;
+      font-size: 11.5px;
+      font-weight: 800;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
     .rank-strip {
       grid-column: span 2;
       padding: 12px 15px;
@@ -540,6 +665,12 @@
         radial-gradient(circle at 68% 32%, rgba(244, 63, 94, 0.50), transparent 50%),
         radial-gradient(circle at 22% 72%, rgba(251, 146, 60, 0.44), transparent 48%),
         linear-gradient(135deg, #11061c 0%, #2a0a24 52%, #450a0a 100%);
+    }
+    .cover-snake {
+      background:
+        radial-gradient(circle at 72% 28%, rgba(16, 185, 129, 0.52), transparent 50%),
+        radial-gradient(circle at 24% 76%, rgba(56, 189, 248, 0.44), transparent 48%),
+        linear-gradient(135deg, #04131c 0%, #062825 52%, #0c1938 100%);
     }
 
     .cover-art-svg {
@@ -999,6 +1130,10 @@
       </div>
 
       <div class="nav-right">
+        <button class="btn-quests-nav" id="btnNavQuests" type="button" title="查看全站成就並領取跨遊戲金幣獎勵">
+          <span>🏆 全站成就</span>
+          <span class="quest-dot used" id="navQuestDot"></span>
+        </button>
         <button class="btn-spin-nav" id="btnNavSpin" type="button" title="每日免費幸運轉盤抽全站金幣">
           <span>🎡 幸運轉盤</span>
           <span class="spin-dot" id="navSpinDot"></span>
@@ -1033,6 +1168,7 @@
         </p>
         <div class="hero-actions">
           <button class="btn-primary" id="btnHeroPlayFirst" type="button">▶ 立即遊玩第 1 款：無盡峽谷 3D</button>
+          <button class="btn-secondary" id="btnHeroQuests" type="button">🏆 全站成就獎勵</button>
           <button class="btn-secondary" id="btnHeroSpin" type="button">🎡 每日幸運轉盤</button>
           <button class="btn-secondary" id="btnHeroAccount" type="button">🔐 登入 / 管理全站帳號</button>
         </div>
@@ -1048,11 +1184,11 @@
         </div>
         <div class="gstat-box">
           <div class="gstat-label">已收錄可玩遊戲</div>
-          <div class="gstat-val cyan" id="statLiveGames">7 款</div>
+          <div class="gstat-val cyan" id="statLiveGames">8 款</div>
         </div>
         <div class="gstat-box">
           <div class="gstat-label">全站累積金幣</div>
-          <div class="gstat-val gold" id="statTotalCoins">160</div>
+          <div class="gstat-val gold" id="statTotalCoins">320</div>
         </div>
         <div class="gstat-box">
           <div class="gstat-label">跨遊戲最高紀錄</div>
@@ -1060,7 +1196,7 @@
         </div>
         <div class="gstat-box">
           <div class="gstat-label">全站英雄圖鑑 / 強化</div>
-          <div class="gstat-val green" id="statStarsChars">7/91 英雄 · ⚡Lv.0</div>
+          <div class="gstat-val green" id="statStarsChars">8/102 英雄 · ⚡Lv.0</div>
         </div>
       </div>
     </section>
@@ -1069,9 +1205,9 @@
     <div class="sec-head">
       <h2>🕹️ 精選遊戲館</h2>
       <div class="filter-pills" id="filterPills">
-        <button class="fpill active" data-filter="all" type="button">全部遊戲 (7)</button>
+        <button class="fpill active" data-filter="all" type="button">全部遊戲 (8)</button>
         <button class="fpill" data-filter="action" type="button">動作 / 射擊 (4)</button>
-        <button class="fpill" data-filter="arcade" type="button">益智 / 競速 (3)</button>
+        <button class="fpill" data-filter="arcade" type="button">益智 / 競速 (4)</button>
       </div>
     </div>
 
@@ -1225,7 +1361,7 @@
 
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">💰 中獎金幣匯入目標：</div>
       <div class="spin-targets" id="spinTargets">
-        <button class="starget-btn active" data-target="all" type="button">🌐 7 款遊戲均分</button>
+        <button class="starget-btn active" data-target="all" type="button">🌐 8 款遊戲均分</button>
         <button class="starget-btn" data-target="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
         <button class="starget-btn" data-target="star_blaster_3d" type="button">🚀 射擊</button>
         <button class="starget-btn" data-target="neon_blocks_3d" type="button">🧩 方塊</button>
@@ -1233,11 +1369,45 @@
         <button class="starget-btn" data-target="hero_arena_3d" type="button">⚔️ 無雙</button>
         <button class="starget-btn" data-target="brick_breaker_3d" type="button">🧱 破壁</button>
         <button class="starget-btn" data-target="hero_slash_3d" type="button">🗡️ 斬擊</button>
+        <button class="starget-btn" data-target="neon_snake_3d" type="button">🐉 巨龍</button>
       </div>
 
       <button class="btn-primary" id="btnDoSpin" type="button" style="width:100%;justify-content:center;padding:13px 18px;font-size:15px;">
         🎰 立即免費開轉！
       </button>
+    </div>
+  </div>
+
+  <!-- ================= HUB QUESTS & CROSS-GAME COIN VAULT MODAL ================= -->
+  <div class="modal-backdrop" id="questsModal">
+    <div class="auth-panel" style="max-width:560px;">
+      <div class="modal-head">
+        <div>
+          <h2>🏆 全站成就獎盃室</h2>
+          <div class="modal-sub">達成跨遊戲里程碑，領取海量金幣與 +150 綜合區 Rank XP！</div>
+        </div>
+        <button class="close-btn" id="btnCloseQuests" type="button" aria-label="關閉">✕</button>
+      </div>
+
+      <div class="quests-summary">
+        <span id="questsProgressSummary">🏅 已領取 0 / 8 座獎盃</span>
+        <span style="color:#fde047;" id="questsRewardSummary">可領取：0 項</span>
+      </div>
+
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">💰 成就獎金匯入目標：</div>
+      <div class="spin-targets" id="questTargets">
+        <button class="starget-btn active" data-target="all" type="button">🌐 8 款遊戲均分</button>
+        <button class="starget-btn" data-target="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
+        <button class="starget-btn" data-target="star_blaster_3d" type="button">🚀 射擊</button>
+        <button class="starget-btn" data-target="neon_blocks_3d" type="button">🧩 方塊</button>
+        <button class="starget-btn" data-target="canyon_drift_3d" type="button">🏎️ 漂移</button>
+        <button class="starget-btn" data-target="hero_arena_3d" type="button">⚔️ 無雙</button>
+        <button class="starget-btn" data-target="brick_breaker_3d" type="button">🧱 破壁</button>
+        <button class="starget-btn" data-target="hero_slash_3d" type="button">🗡️ 斬擊</button>
+        <button class="starget-btn" data-target="neon_snake_3d" type="button">🐉 巨龍</button>
+      </div>
+
+      <div class="quests-list" id="questsList"></div>
     </div>
   </div>
 
@@ -1362,9 +1532,25 @@
         url: './games/hero-slash-3d/index.html',
         coverClass: 'cover-slash',
         itemLabel: '極速劍豪',
-        badges: ['NEW 新上架', '一刀多斬', 'BOSS 連斬'],
+        badges: ['一刀多斬', 'BOSS 連斬'],
         desc: '化身 11 位全明星劍豪揮出專屬元素刀光！滑動螢幕一刀多斬觸發超爽連擊、切開 ❄️ 時停冰晶與 ⭐ 黃金寶果、避開 💣 暗黑爆彈，並於魔王降臨時狂斬決戰！',
         features: ['11 位全明星元素刀光', '❄️ 時停緩速＋多連斬', '👑 限時魔王連斬戰', '開局滿氣全場一閃']
+      },
+      {
+        id: 'neon_snake_3d',
+        order: 'GAME #08',
+        title: '全明星霓虹貪食蛇 3D',
+        icon: '🐉',
+        genre: '360° 霓虹蛇戰 · 魔王吞噬',
+        category: 'arcade',
+        status: 'live',
+        featured: false,
+        url: './games/neon-snake-3d/index.html',
+        coverClass: 'cover-snake',
+        itemLabel: '全明星巨龍',
+        badges: ['NEW 新上架', '360° 蛇戰', 'AI 魔王蛇'],
+        desc: '360° 自由閃避加速的霓虹巨龍大亂鬥！操控 11 位全明星專屬光龍，高速衝刺包圍 AI 敵蛇將其化為滿地光球，發動開局滿氣奧義吞噬 👑 巨型魔王蛇！',
+        features: ['11 條全明星光龍', '⚡ 噴射加速＋圍殺敵蛇', '👑 巨型魔王蛇降臨', '開局滿氣專屬奧義']
       }
     ];
 
@@ -1421,7 +1607,7 @@
       const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
       const cacheKey = `${gameId}::${uid}`;
       const raw = SSO.readGameSave(gameId, auth.currentUser);
-      const defaultTotal = gameId === 'canyon_parkour_3d' ? 16 : ((gameId === 'hero_arena_3d' || gameId === 'brick_breaker_3d' || gameId === 'hero_slash_3d') ? 11 : 14);
+      const defaultTotal = gameId === 'canyon_parkour_3d' ? 16 : ((gameId === 'hero_arena_3d' || gameId === 'brick_breaker_3d' || gameId === 'hero_slash_3d' || gameId === 'neon_snake_3d') ? 11 : 14);
       if (raw && typeof raw === 'object') {
         let stars = 0;
         if (gameId === 'canyon_parkour_3d') {
@@ -1429,8 +1615,8 @@
         } else if (gameId === 'star_blaster_3d' || gameId === 'hero_arena_3d' || gameId === 'brick_breaker_3d' || gameId === 'hero_slash_3d') {
           const prog = Number(raw.bestWave || raw.bestStage) || 1;
           stars = Math.min(15, Math.floor(prog * 1.5) + (Number(raw.bossesDefeated) || 0) * 3);
-        } else if (false) {
-          stars = Math.min(15, Math.floor((Number(raw.bestWave) || 1) * 1.5) + (Number(raw.bossesDefeated) || 0) * 3);
+        } else if (gameId === 'neon_snake_3d') {
+          stars = Math.min(15, Math.floor(Math.max(0, (Number(raw.bestLen) || 16) - 16) / 12) + (Number(raw.bossesDefeated) || 0) * 3);
         } else if (gameId === 'neon_blocks_3d') {
           stars = Math.min(15, Math.floor((Number(raw.bestLines) || 0) / 5));
         } else if (gameId === 'canyon_drift_3d') {
@@ -1505,7 +1691,7 @@
       pushSsoToActiveGame();
       renderHubUI();
       renderAuthModal();
-      showToast(`✅ 已登入 ${userObj.name}！全站 7 款遊戲皆已自動同步帳號`);
+      showToast(`✅ 已登入 ${userObj.name}！全站 8 款遊戲皆已自動同步帳號`);
     }
 
     function signOutAccount() {
@@ -1622,44 +1808,38 @@
       document.getElementById('stageAcctName').textContent = u ? u.name : '訪客模式';
       document.getElementById('stageSsoBadge').textContent = u ? `SSO：${u.name}` : '訪客遊玩中';
 
-      // Hero Greeting & Global Stats across ALL 4 Live Games
+      // Hero Greeting & Global Stats across ALL 8 Live Games
       const heroPill = document.getElementById('heroSsoPill');
       if (u) {
         heroPill.className = 'sso-pill';
         heroPill.textContent = `✅ Google 單一登入已啟用 · ${u.email}`;
         document.getElementById('heroTitle').textContent = `歡迎回來，${u.name}！`;
         document.getElementById('heroSub').textContent =
-          '您已完成全站帳號登入。現在點擊下方 7 款 3D 遊戲皆會自動帶入您的身份、頭像與獨立存檔，完全無須二次登入！';
+          '您已完成全站帳號登入。現在點擊下方 8 款 3D 遊戲皆會自動帶入您的身份、頭像與獨立存檔，完全無須二次登入！';
         document.getElementById('btnHeroAccount').textContent = '👤 管理全站帳號與備份';
       } else {
         heroPill.className = 'sso-pill guest';
-        heroPill.textContent = '🔑 訪客模式 · 登入一次即可暢玩全站 7 款遊戲';
+        heroPill.textContent = '🔑 訪客模式 · 登入一次即可暢玩全站 8 款遊戲';
         document.getElementById('heroTitle').textContent = '歡迎來到 Dell 設計的遊戲綜合區！';
         document.getElementById('heroSub').textContent =
-          '只需在此登入一次 Google 帳號，暢玩《無盡峽谷 3D》、《星際彈幕射擊 3D》、《霓虹立體方塊》、《峽谷極速漂移 3D》、《全明星無雙競技場 3D》、《全明星霓虹打磚塊 3D》與《全明星極速斬擊 3D》，皆會自動帶入您的身份與獨立存檔！';
+          '只需在此登入一次 Google 帳號，暢玩《無盡峽谷 3D》、《星際彈幕射擊 3D》、《霓虹立體方塊》、《峽谷極速漂移 3D》、《全明星無雙競技場 3D》、《全明星霓虹打磚塊 3D》、《全明星極速斬擊 3D》與《全明星霓虹貪食蛇 3D》，皆會自動帶入您的身份與獨立存檔！';
         document.getElementById('btnHeroAccount').textContent = '🔐 立即登入 Google 帳號';
       }
 
-      const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
-      let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0, sumTotalItems = 0, sumUpgrades = 0;
-      liveGames.forEach((g) => {
-        const st = readStatsForGame(g.id);
-        sumCoins += st.coins;
-        sumBestScores += st.bestScore;
-        if (st.bestScore > topScore) topScore = st.bestScore;
-        sumStars += st.stars;
-        sumItems += st.charsUnlocked;
-        sumTotalItems += st.charsTotal;
-        sumUpgrades += Number(st.upgradeLevel) || 0;
-      });
-      document.getElementById('statLiveGames').textContent = `${liveGames.length} 款`;
-      document.getElementById('statTotalCoins').textContent = sumCoins.toLocaleString();
-      document.getElementById('statBestScore').textContent = topScore.toLocaleString();
-      document.getElementById('statStarsChars').textContent = `${sumItems}/${sumTotalItems} 英雄 · ⚡Lv.${sumUpgrades}`;
+      const snap = computeGlobalSnapshot();
+      document.getElementById('statLiveGames').textContent = `${snap.liveCount} 款`;
+      document.getElementById('statTotalCoins').textContent = snap.sumCoins.toLocaleString();
+      document.getElementById('statBestScore').textContent = snap.topScore.toLocaleString();
+      document.getElementById('statStarsChars').textContent = `${snap.sumItems}/${snap.sumTotalItems} 英雄 · ⚡Lv.${snap.sumUpgrades}`;
 
       // Arcade Rank & XP Bar
-      const spinMeta = getDailySpinState();
-      const totalXp = sumStars * 120 + Math.max(0, sumItems - 7) * 160 + sumUpgrades * 75 + Math.floor(sumBestScores / 100) + (spinMeta.totalSpins || 0) * 80;
+      const qState = getQuestState();
+      const totalXp = snap.sumStars * 120
+        + Math.max(0, snap.sumItems - snap.liveCount) * 160
+        + snap.sumUpgrades * 75
+        + Math.floor(snap.sumBestScores / 100)
+        + snap.totalSpins * 80
+        + qState.claimed.length * 150;
       const level = Math.min(20, 1 + Math.floor(totalXp / 300));
       const curLevelXp = totalXp % 300;
       const pct = level >= 20 ? 100 : Math.max(8, Math.round((curLevelXp / 300) * 100));
@@ -1677,6 +1857,9 @@
 
       const dot = document.getElementById('navSpinDot');
       if (dot) dot.classList.toggle('used', !canSpinToday());
+
+      const qDot = document.getElementById('navQuestDot');
+      if (qDot) qDot.classList.toggle('used', countClaimableQuests(snap) === 0);
 
       renderGamesGrid();
     }
@@ -1761,6 +1944,19 @@
           <circle cx="152" cy="118" r="24" fill="#fb7185" stroke="#34d399" stroke-width="4" opacity="0.88"/>
           <circle cx="272" cy="86" r="22" fill="#fbbf24" stroke="#fef08a" stroke-width="4" opacity="0.92"/>
           <circle cx="242" cy="156" r="18" fill="#38bdf8" stroke="#e0f2fe" stroke-width="3" opacity="0.88"/>
+        </svg>`;
+      }
+      if (gameId === 'neon_snake_3d') {
+        return `<svg class="cover-art-svg" viewBox="0 0 420 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <path d="M 38 176 Q 112 192 146 132 T 242 96 T 336 74" fill="none" stroke="rgba(16,185,129,0.45)" stroke-width="28" stroke-linecap="round"/>
+          <path d="M 38 176 Q 112 192 146 132 T 242 96 T 336 74" fill="none" stroke="#34d399" stroke-width="16" stroke-linecap="round"/>
+          <path d="M 38 176 Q 112 192 146 132 T 242 96 T 336 74" fill="none" stroke="#a7f3d0" stroke-width="5" stroke-dasharray="10 10" stroke-linecap="round"/>
+          <circle cx="336" cy="74" r="16" fill="#10b981" stroke="#fde047" stroke-width="3"/>
+          <circle cx="342" cy="69" r="3.5" fill="#fff"/><circle cx="342" cy="79" r="3.5" fill="#fff"/>
+          <circle cx="88" cy="86" r="8" fill="#fde047" opacity="0.9"/>
+          <circle cx="212" cy="164" r="7" fill="#38bdf8" opacity="0.9"/>
+          <circle cx="318" cy="154" r="9" fill="#f43f5e" opacity="0.85"/>
+          <circle cx="176" cy="54" r="6" fill="#c084fc" opacity="0.88"/>
         </svg>`;
       }
       return `<svg class="cover-art-svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>`;
@@ -2225,7 +2421,7 @@
       pushSsoToActiveGame();
       renderHubUI();
       const targetName = spinTarget === 'all'
-        ? `全站 7 款遊戲（每款 +${perGame} 🪙）`
+        ? `全站 ${liveIds.length} 款遊戲（每款 +${perGame} 🪙）`
         : (GAMES_REGISTRY.find(g => g.id === spinTarget)?.title || spinTarget);
       document.getElementById('spinResult').textContent = `🎉 恭喜獲得 +${totalCoins} 🪙！已匯入 ${targetName}`;
       showToast(`🎡 幸運轉盤中獎！+${totalCoins} 🪙 已存入存檔！`);
@@ -2288,14 +2484,171 @@
       const btn = e.target.closest('.starget-btn');
       if (!btn || isSpinning) return;
       spinTarget = btn.dataset.target || 'all';
-      document.querySelectorAll('.starget-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('#spinTargets .starget-btn').forEach(b => b.classList.toggle('active', b === btn));
     });
     document.getElementById('btnDoSpin').addEventListener('click', startDailySpin);
+
+    // =========================================================================
+    // HUB QUESTS & CROSS-GAME COIN VAULT
+    // =========================================================================
+    const HUB_QUESTS = [
+      { id: 'q_heroes_10', title: '🌟 初試啼聲：全站英雄圖鑑', desc: '全站 8 款遊戲累積解鎖達 10 位英雄', target: 10, reward: 150, getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_heroes_20', title: '👑 全明星集結令', desc: '全站 8 款遊戲累積解鎖達 20 位英雄', target: 20, reward: 300, getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_upg_10',    title: '⚡ 工坊學徒', desc: '全站永久強化總等級累積達 Lv.10', target: 10, reward: 160, getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
+      { id: 'q_upg_30',    title: '🔥 極限鍛造大師', desc: '全站永久強化總等級累積達 Lv.30', target: 30, reward: 320, getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
+      { id: 'q_stars_15',  title: '⭐ 星海征服者', desc: '跨遊戲累積獲得 15 ★ 星等成就', target: 15, reward: 200, getVal: s => s.sumStars, fmt: v => `${v} ★` },
+      { id: 'q_score_10k', title: '🏆 萬分破關傳說', desc: '任一款遊戲最高紀錄突破 10,000 分', target: 10000, reward: 240, getVal: s => s.topScore, fmt: v => v.toLocaleString() },
+      { id: 'q_spin_1',    title: '🎡 每日好運打卡', desc: '完成至少 1 次全站每日幸運轉盤', target: 1, reward: 120, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
+      { id: 'q_coins_2k',  title: '💰 綜合區大富翁', desc: '全站累積持有金幣達 2,000 🪙', target: 2000, reward: 400, getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` }
+    ];
+    let questTarget = 'all';
+
+    function questStorageKey() {
+      const uid = auth.currentUser ? auth.currentUser.uid : 'guest';
+      return `arcade_hub_quests_v1_${uid}`;
+    }
+    function getQuestState() {
+      try {
+        const raw = localStorage.getItem(questStorageKey());
+        if (raw) {
+          const p = JSON.parse(raw);
+          if (p && Array.isArray(p.claimed)) return { claimed: p.claimed };
+        }
+      } catch (e) {}
+      return { claimed: [] };
+    }
+    function saveQuestState(obj) {
+      try { localStorage.setItem(questStorageKey(), JSON.stringify(obj)); } catch (e) {}
+    }
+
+    function computeGlobalSnapshot() {
+      const liveGames = GAMES_REGISTRY.filter(g => g.status === 'live');
+      let sumCoins = 0, topScore = 0, sumBestScores = 0, sumStars = 0, sumItems = 0, sumTotalItems = 0, sumUpgrades = 0;
+      liveGames.forEach((g) => {
+        const st = readStatsForGame(g.id);
+        sumCoins += st.coins;
+        sumBestScores += st.bestScore;
+        if (st.bestScore > topScore) topScore = st.bestScore;
+        sumStars += st.stars;
+        sumItems += st.charsUnlocked;
+        sumTotalItems += st.charsTotal;
+        sumUpgrades += Number(st.upgradeLevel) || 0;
+      });
+      const spinMeta = getDailySpinState();
+      return {
+        liveCount: liveGames.length,
+        sumCoins, topScore, sumBestScores, sumStars, sumItems, sumTotalItems, sumUpgrades,
+        totalSpins: spinMeta.totalSpins || 0
+      };
+    }
+
+    function countClaimableQuests(snap) {
+      const qState = getQuestState();
+      let cnt = 0;
+      HUB_QUESTS.forEach((q) => {
+        if (!qState.claimed.includes(q.id) && q.getVal(snap) >= q.target) cnt++;
+      });
+      return cnt;
+    }
+
+    function renderQuestsModal() {
+      const snap = computeGlobalSnapshot();
+      const qState = getQuestState();
+      const list = document.getElementById('questsList');
+      if (!list) return;
+      list.innerHTML = '';
+
+      let claimableCount = 0;
+      HUB_QUESTS.forEach((q) => {
+        const val = q.getVal(snap);
+        const claimed = qState.claimed.includes(q.id);
+        const ready = !claimed && val >= q.target;
+        if (ready) claimableCount++;
+        const pct = Math.min(100, Math.round((Math.min(val, q.target) / q.target) * 100));
+
+        const card = document.createElement('div');
+        card.className = 'quest-card' + (claimed ? ' claimed' : (ready ? ' ready' : ''));
+        card.innerHTML = `
+          <div class="quest-info">
+            <div class="quest-title">${escapeHtml(q.title)}</div>
+            <div class="quest-desc">${escapeHtml(q.desc)}</div>
+            <div class="quest-prog-row">
+              <div class="quest-bar"><div class="quest-bar-fill" style="width:${pct}%"></div></div>
+              <div class="quest-prog-txt">${escapeHtml(q.fmt(Math.min(val, q.target)))} / ${escapeHtml(q.fmt(q.target))}</div>
+            </div>
+          </div>
+          ${claimed
+            ? '<span class="quest-claimed-tag">✅ 已領取</span>'
+            : `<button class="quest-claim-btn" data-qid="${q.id}" type="button" ${ready ? '' : 'disabled'}>${ready ? `領取 +${q.reward} 🪙` : `獎金 +${q.reward} 🪙`}</button>`
+          }
+        `;
+        const btn = card.querySelector('.quest-claim-btn');
+        if (btn && ready) {
+          btn.addEventListener('click', () => claimQuest(q.id));
+        }
+        list.appendChild(card);
+      });
+
+      document.getElementById('questsProgressSummary').textContent = `🏅 已領取 ${qState.claimed.length} / ${HUB_QUESTS.length} 座獎盃`;
+      document.getElementById('questsRewardSummary').textContent = claimableCount > 0 ? `✨ 可領取：${claimableCount} 項！` : '可領取：0 項';
+    }
+
+    function claimQuest(qid) {
+      const q = HUB_QUESTS.find(x => x.id === qid);
+      if (!q) return;
+      const snap = computeGlobalSnapshot();
+      const qState = getQuestState();
+      if (qState.claimed.includes(qid) || q.getVal(snap) < q.target) return;
+
+      const liveIds = GAMES_REGISTRY.filter(g => g.status === 'live').map(g => g.id);
+      const targets = questTarget === 'all' ? liveIds : [questTarget];
+      const perGame = Math.max(1, Math.round(q.reward / targets.length));
+      targets.forEach((gid) => {
+        const cur = SSO.readGameSave(gid, auth.currentUser) || {};
+        const prevCoins = typeof cur.coins === 'number' ? cur.coins : 40;
+        SSO.writeGameSave(gid, auth.currentUser, Object.assign({}, cur, { coins: prevCoins + perGame }));
+      });
+
+      qState.claimed.push(qid);
+      saveQuestState(qState);
+      [587, 784, 988, 1175].forEach((f, idx) => {
+        setTimeout(() => playSpinTone(f, 0.18, 'sine', 0.08), idx * 65);
+      });
+      pushSsoToActiveGame();
+      renderHubUI();
+      renderQuestsModal();
+      const targetName = questTarget === 'all'
+        ? `全站 ${liveIds.length} 款遊戲（每款 +${perGame} 🪙）`
+        : (GAMES_REGISTRY.find(g => g.id === questTarget)?.title || questTarget);
+      showToast(`🏆 領取成就【${q.title}】+${q.reward} 🪙 與 +150 XP → ${targetName}`);
+    }
+
+    function openQuestsModal() {
+      renderQuestsModal();
+      document.getElementById('questsModal').classList.add('open');
+    }
+    function closeQuestsModal() {
+      document.getElementById('questsModal').classList.remove('open');
+    }
+
+    document.getElementById('btnNavQuests').addEventListener('click', openQuestsModal);
+    document.getElementById('btnHeroQuests').addEventListener('click', openQuestsModal);
+    document.getElementById('btnCloseQuests').addEventListener('click', closeQuestsModal);
+    document.getElementById('questsModal').addEventListener('click', (e) => {
+      if (e.target.id === 'questsModal') closeQuestsModal();
+    });
+    document.getElementById('questTargets').addEventListener('click', (e) => {
+      const btn = e.target.closest('.starget-btn');
+      if (!btn) return;
+      questTarget = btn.dataset.target || 'all';
+      document.querySelectorAll('#questTargets .starget-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Escape') {
         if (document.getElementById('hubAuthModal').classList.contains('open')) closeAuthModal();
         if (document.getElementById('spinModal').classList.contains('open')) closeSpinModal();
+        if (document.getElementById('questsModal').classList.contains('open')) closeQuestsModal();
       }
     });
 
