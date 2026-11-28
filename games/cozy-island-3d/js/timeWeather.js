@@ -168,6 +168,29 @@ export class TimeWeatherSystem {
       });
     }
     this.scene.add(this.rainMesh);
+
+    // 3. Week 7: Nighttime warm drifting fireflies
+    const ffCount = 36;
+    const ffGeo = new THREE.SphereGeometry(0.085, 8, 8);
+    this.fireflyMat = new THREE.MeshBasicMaterial({
+      color: 0xe9ff7a,
+      transparent: true,
+      opacity: 0.92
+    });
+    this.fireflyMesh = new THREE.InstancedMesh(ffGeo, this.fireflyMat, ffCount);
+    this.fireflyData = [];
+    for (let i = 0; i < ffCount; i++) {
+      this.fireflyData.push({
+        x: (Math.random() - 0.5) * 26,
+        y: 0.7 + Math.random() * 2.8,
+        z: (Math.random() - 0.5) * 26,
+        phase: Math.random() * Math.PI * 2,
+        sp: 0.6 + Math.random() * 0.9
+      });
+    }
+    this.fireflyMesh.visible = false;
+    this.scene.add(this.fireflyMesh);
+
     this._dummy = new THREE.Object3D();
   }
 
@@ -353,6 +376,26 @@ export class TimeWeatherSystem {
         this.rainMesh.setMatrixAt(i, this._dummy.matrix);
       }
       this.rainMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // Week 7: Update warm glowing night fireflies (visible at dusk/night when not raining)
+    const showFireflies = this.lampFactor > 0.35 && this.weather !== 'rain';
+    this.fireflyMesh.visible = showFireflies;
+    if (showFireflies) {
+      this.fireflyMat.opacity = Math.min(1, (this.lampFactor - 0.25) * 1.3);
+      for (let i = 0; i < this.fireflyData.length; i++) {
+        const f = this.fireflyData[i];
+        const fx = playerPos.x + f.x + Math.sin(elapsed * 0.75 * f.sp + f.phase) * 1.4;
+        const fy = f.y + Math.sin(elapsed * 1.45 * f.sp + f.phase * 1.7) * 0.45;
+        const fz = playerPos.z + f.z + Math.cos(elapsed * 0.65 * f.sp + f.phase) * 1.4;
+        const pulse = 0.55 + Math.max(0, Math.sin(elapsed * 2.8 * f.sp + f.phase)) * 0.9;
+        this._dummy.position.set(fx, fy, fz);
+        this._dummy.rotation.set(0, 0, 0);
+        this._dummy.scale.setScalar(pulse);
+        this._dummy.updateMatrix();
+        this.fireflyMesh.setMatrixAt(i, this._dummy.matrix);
+      }
+      this.fireflyMesh.instanceMatrix.needsUpdate = true;
     }
   }
 }

@@ -52,6 +52,12 @@ class CozyIslandApp {
     this.critterOpen = false;
     this.critterTab = 'fish';
     this.museumOpen = false;
+    this.photoMode = false;
+    this.photoYawOffset = 0;
+    this.photoZoom = 1.0;
+    this.photoFilter = 'none';
+    this.photoPose = 'idle';
+    this.photoFrame = true;
     this.sceneMode = 'island';
     this.transitioning = false;
     this._savedOutdoorPos = null;
@@ -111,7 +117,7 @@ class CozyIslandApp {
 
   _initRenderer() {
     const container = document.getElementById('canvasHost');
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
@@ -267,6 +273,8 @@ class CozyIslandApp {
         this._toggleVillagers();
       } else if (e.code === 'KeyM') {
         this._toggleCritterpedia();
+      } else if (e.code === 'KeyP') {
+        this._togglePhotoMode();
       } else if (e.code === 'KeyH') {
         this._toggleIndoorScene();
       } else if (e.code === 'KeyB') {
@@ -274,14 +282,15 @@ class CozyIslandApp {
       } else if (e.code === 'KeyR' && this._isEditMode()) {
         this._rotateGhost();
       } else if (e.code === 'Escape') {
-        if (this.bagOpen) this._toggleBag(false);
+        if (this.photoMode) this._togglePhotoMode(false);
+        else if (this.bagOpen) this._toggleBag(false);
         else if (this.shopOpen) this._toggleShop(false);
         else if (this.diyOpen) this._toggleDiy(false);
         else if (this.villagersOpen) this._toggleVillagers(false);
         else if (this.critterOpen) this._toggleCritterpedia(false);
         else if (this.museumOpen) this._toggleMuseum(false);
         else if (this._isEditMode()) this._toggleBuildMode(false);
-      } else if (!this._anyModalOpen() && !this._isEditMode() && this.sceneMode === 'island' && e.code.startsWith('Digit')) {
+      } else if (!this.photoMode && !this._anyModalOpen() && !this._isEditMode() && this.sceneMode === 'island' && e.code.startsWith('Digit')) {
         const idx = Number(e.code.slice(5)) - 1;
         if (idx >= 0 && idx < TOOLS.length) this._selectTool(TOOLS[idx].id);
       }
@@ -289,6 +298,11 @@ class CozyIslandApp {
 
     // Top-Down Grid Edit Mode pointer raycasting (works outdoors & indoors!)
     const dom = this.renderer.domElement;
+    dom.addEventListener('wheel', (ev) => {
+      if (!this.photoMode) return;
+      ev.preventDefault();
+      this.photoZoom = Math.max(0.55, Math.min(1.65, this.photoZoom + (ev.deltaY > 0 ? 0.1 : -0.1)));
+    }, { passive: false });
     const toNdc = (ev) => ({
       x: (ev.clientX / window.innerWidth) * 2 - 1,
       y: -(ev.clientY / window.innerHeight) * 2 + 1
@@ -374,6 +388,32 @@ class CozyIslandApp {
     byId('btnBuildMode')?.addEventListener('click', () => this._toggleBuildMode());
     byId('btnExitBuild')?.addEventListener('click', () => this._toggleBuildMode(false));
     byId('btnHomeToggle')?.addEventListener('click', () => this._toggleIndoorScene());
+    byId('btnPhotoMode')?.addEventListener('click', () => this._togglePhotoMode());
+    byId('btnExitPhoto')?.addEventListener('click', () => this._togglePhotoMode(false));
+    byId('btnPhotoOrbitL')?.addEventListener('click', () => { this.audio.playUiPop(); this.photoYawOffset -= 0.42; });
+    byId('btnPhotoOrbitR')?.addEventListener('click', () => { this.audio.playUiPop(); this.photoYawOffset += 0.42; });
+    byId('btnPhotoZoomIn')?.addEventListener('click', () => { this.audio.playUiPop(); this.photoZoom = Math.max(0.55, this.photoZoom - 0.16); });
+    byId('btnPhotoZoomOut')?.addEventListener('click', () => { this.audio.playUiPop(); this.photoZoom = Math.min(1.65, this.photoZoom + 0.16); });
+    byId('btnPhotoFrameToggle')?.addEventListener('click', () => {
+      this.audio.playUiPop();
+      this.photoFrame = !this.photoFrame;
+      this._syncPhotoUI();
+    });
+    byId('btnPhotoSnap')?.addEventListener('click', () => this._capturePhotoPng());
+    byId('photoFilterGroup')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-filter]');
+      if (!btn) return;
+      this.audio.playUiPop();
+      this.photoFilter = btn.dataset.filter;
+      this._syncPhotoUI();
+    });
+    byId('photoPoseGroup')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-pose]');
+      if (!btn) return;
+      this.audio.playUiPop();
+      this.photoPose = btn.dataset.pose;
+      this._syncPhotoUI();
+    });
     byId('btnShop')?.addEventListener('click', () => this._toggleShop());
     byId('btnCloseShop')?.addEventListener('click', () => this._toggleShop(false));
     byId('shopModal')?.addEventListener('click', (e) => { if (e.target.id === 'shopModal') this._toggleShop(false); });
@@ -1673,7 +1713,113 @@ class CozyIslandApp {
     byId('btnWeather').textContent = this.timeWeather.getWeatherLabel();
     byId('btnSeason').textContent = pal.label;
     byId('btnCurve').textContent = this.rollingEnabled ? '🌍 弧面：開' : '📐 弧面：平';
-    byId('btnMute').textContent = this.audio.muted ? '🔇 靜音' : '🎵 音效開';
+    byId('btnMute').textContent = this.audio.muted ? '🔇 靜音' : `🎵 ${this.audio.getMoodLabel()}`;
+  }
+
+  _getPhotoFilterCss() {
+    const map = {
+      none: 'none',
+      warm: 'sepia(0.18) saturate(1.22) brightness(1.04) contrast(1.03)',
+      pastel: 'saturate(0.92) brightness(1.09) contrast(0.94) hue-rotate(-6deg)',
+      vintage: 'sepia(0.42) contrast(1.08) brightness(0.96) saturate(0.88)',
+      mono: 'grayscale(1) contrast(1.12) brightness(1.02)'
+    };
+    return map[this.photoFilter] || 'none';
+  }
+
+  _syncPhotoUI() {
+    const css = this.photoMode ? this._getPhotoFilterCss() : 'none';
+    if (this.renderer?.domElement) this.renderer.domElement.style.filter = css;
+    const dock = document.getElementById('photoDock');
+    const frame = document.getElementById('photoFrame');
+    const frameBtn = document.getElementById('btnPhotoFrameToggle');
+    if (dock) dock.classList.toggle('open', this.photoMode);
+    if (frame) frame.classList.toggle('show', this.photoMode && this.photoFrame);
+    if (frameBtn) {
+      frameBtn.classList.toggle('active', this.photoFrame);
+      frameBtn.textContent = this.photoFrame ? '🖼️ 明信片框：開' : '🖼️ 明信片框：關';
+    }
+    document.querySelectorAll('#photoFilterGroup .photo-chip').forEach((b) => {
+      b.classList.toggle('active', b.dataset.filter === this.photoFilter);
+    });
+    document.querySelectorAll('#photoPoseGroup .photo-chip[data-pose]').forEach((b) => {
+      b.classList.toggle('active', b.dataset.pose === this.photoPose);
+    });
+    const stamp = document.getElementById('photoStamp');
+    if (stamp && this.timeWeather) {
+      const pal = SEASON_PALETTES[this.save.settings.season] || SEASON_PALETTES.spring;
+      stamp.textContent = `🏝️ 微風森友島 · ${pal.label} · ${this.timeWeather.getFormattedClock()}`;
+    }
+  }
+
+  _togglePhotoMode(force) {
+    this.audio.unlock();
+    this.audio.playUiPop();
+    const next = typeof force === 'boolean' ? force : !this.photoMode;
+    if (next) {
+      this._closeAllModals();
+      if (this._isEditMode()) this._toggleBuildMode(false);
+      if (this.dialogueState.open) this._closeDialogue();
+      this.photoYawOffset = 0;
+      this.photoZoom = 0.88;
+    }
+    this.photoMode = next;
+    document.body.classList.toggle('photo-mode', next);
+    this._syncPhotoUI();
+    if (next) this._showToast('📸 進入拍照模式！AD/QE 環繞鏡頭、WS 縮放、選擇姿勢濾鏡後按下快門');
+  }
+
+  _capturePhotoPng() {
+    if (!this.renderer?.domElement) return;
+    this.audio.unlock();
+    this.audio.playShutter();
+    const flash = document.getElementById('photoFlash');
+    if (flash) {
+      flash.classList.add('flash');
+      requestAnimationFrame(() => setTimeout(() => flash.classList.remove('flash'), 60));
+    }
+    this.renderer.render(this.sceneMode === 'indoor' ? this.indoor.scene : this.scene, this.camera);
+    try {
+      const src = this.renderer.domElement;
+      const out = document.createElement('canvas');
+      out.width = src.width;
+      out.height = src.height;
+      const ctx = out.getContext('2d');
+      ctx.filter = this._getPhotoFilterCss();
+      ctx.drawImage(src, 0, 0);
+      ctx.filter = 'none';
+      if (this.photoFrame) {
+        const bw = Math.max(16, Math.round(out.width * 0.016));
+        ctx.strokeStyle = 'rgba(255, 253, 245, 0.96)';
+        ctx.lineWidth = bw * 2;
+        ctx.strokeRect(0, 0, out.width, out.height);
+        ctx.strokeStyle = 'rgba(236, 208, 153, 0.92)';
+        ctx.lineWidth = Math.max(3, Math.round(bw * 0.25));
+        ctx.strokeRect(bw + 2, bw + 2, out.width - (bw + 2) * 2, out.height - (bw + 2) * 2);
+
+        const pal = SEASON_PALETTES[this.save.settings.season] || SEASON_PALETTES.spring;
+        const label = `🏝️ 微風森友島 · ${pal.label} · ${this.timeWeather.getFormattedClock()}`;
+        const fs = Math.max(16, Math.round(out.width * 0.018));
+        ctx.font = `900 ${fs}px system-ui, sans-serif`;
+        const tw = ctx.measureText(label).width;
+        const px = out.width - bw - tw - 38;
+        const py = out.height - bw - fs - 22;
+        ctx.fillStyle = 'rgba(255, 253, 245, 0.94)';
+        ctx.beginPath();
+        ctx.roundRect(px, py, tw + 26, fs + 16, 999);
+        ctx.fill();
+        ctx.fillStyle = '#5c4033';
+        ctx.fillText(label, px + 13, py + fs + 2);
+      }
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `cozy-island-photo-${ts}.png`;
+      a.href = out.toDataURL('image/png');
+      a.click();
+      this._showToast('📸 咔嚓！已儲存高畫質明信片 PNG！');
+    } catch {
+      this._showToast('📸 咔嚓！拍照完成！');
+    }
   }
 
   _showToast(msg) {
@@ -1686,6 +1832,47 @@ class CozyIslandApp {
   }
 
   _updatePlayer(dt, elapsed) {
+    if (this.photoMode) {
+      // In Photo Mode, WASD orbits & zooms the camera while player strikes the chosen pose facing camera
+      const mv = this.input.getMoveVector();
+      if (Math.abs(mv.x) > 0.05) this.photoYawOffset += mv.x * dt * 1.85;
+      if (Math.abs(mv.z) > 0.05) this.photoZoom = Math.max(0.55, Math.min(1.65, this.photoZoom + mv.z * dt * 0.85));
+
+      this.playerModel.bodyRig.position.y = 0;
+      this.playerModel.bodyRig.rotation.z = 0;
+      this.playerModel.bodyRig.scale.set(1, 1, 1);
+      this.playerModel.leftLeg.rotation.x = 0;
+      this.playerModel.rightLeg.rotation.x = 0;
+      this.playerModel.leftArm.rotation.x = 0;
+      this.playerModel.rightArm.rotation.x = 0;
+
+      if (this.photoPose === 'wave') {
+        this.playerModel.rightArm.rotation.x = -2.35 + Math.sin(elapsed * 9) * 0.35;
+        this.playerModel.bodyRig.rotation.z = Math.sin(elapsed * 4.5) * 0.06;
+      } else if (this.photoPose === 'cheer') {
+        const hop = Math.abs(Math.sin(elapsed * 7.5));
+        this.playerModel.bodyRig.position.y = hop * 0.38;
+        this.playerModel.leftArm.rotation.x = -2.45;
+        this.playerModel.rightArm.rotation.x = -2.45;
+        this.playerModel.bodyRig.scale.set(1 + hop * 0.06, 1 - hop * 0.04, 1);
+      } else if (this.photoPose === 'sit') {
+        this.playerModel.bodyRig.position.y = -0.28;
+        this.playerModel.leftLeg.rotation.x = -1.25;
+        this.playerModel.rightLeg.rotation.x = -1.25;
+        this.playerModel.leftArm.rotation.x = -0.35;
+        this.playerModel.rightArm.rotation.x = -0.35;
+      } else {
+        const breathe = Math.sin(elapsed * 2.6) * 0.025;
+        this.playerModel.bodyRig.scale.set(1 + breathe, 1 - breathe, 1);
+      }
+
+      const groundY = this.sceneMode === 'indoor' ? 0 : this.world.getGroundHeight(this.playerState.x, this.playerState.z);
+      this.playerState.y += (groundY - this.playerState.y) * Math.min(1, dt * 16);
+      this.playerModel.root.position.set(this.playerState.x, this.playerState.y, this.playerState.z);
+      this.playerModel.root.rotation.y = this.photoYawOffset;
+      return;
+    }
+
     const move = (this.dialogueState.open || this._anyModalOpen() || this.transitioning)
       ? { x: 0, z: 0, mag: 0, sprint: false }
       : this.input.getMoveVector();
@@ -1758,6 +1945,23 @@ class CozyIslandApp {
     let targetX = this.playerState.x;
     let targetY = this.playerState.y;
     let targetZ = this.playerState.z;
+    const k = Math.min(1, dt * 6.5);
+
+    if (this.photoMode) {
+      const dist = 7.4 * this.photoZoom;
+      const height = 3.2 * this.photoZoom + 1.1;
+      const desiredX = targetX + Math.sin(this.photoYawOffset) * dist;
+      const desiredZ = targetZ + Math.cos(this.photoYawOffset) * dist;
+      this.camera.position.x += (desiredX - this.camera.position.x) * k;
+      this.camera.position.y += (targetY + height - this.camera.position.y) * k;
+      this.camera.position.z += (desiredZ - this.camera.position.z) * k;
+      if (Math.abs(this.camera.fov - 38) > 0.05) {
+        this.camera.fov += (38 - this.camera.fov) * k;
+        this.camera.updateProjectionMatrix();
+      }
+      this.camera.lookAt(targetX, targetY + 1.05, targetZ);
+      return;
+    }
 
     if (this.sceneMode === 'indoor') {
       const span = this.indoor.gridSize;
@@ -1772,7 +1976,6 @@ class CozyIslandApp {
         : (CAMERA_PRESETS[this.cameraPresetIdx] || CAMERA_PRESETS[1]);
     }
 
-    const k = Math.min(1, dt * 6.5);
     this.camera.position.x += (targetX - this.camera.position.x) * k;
     this.camera.position.y += (targetY + preset.height - this.camera.position.y) * k;
     this.camera.position.z += (targetZ + preset.dist - this.camera.position.z) * k;
@@ -1804,7 +2007,7 @@ class CozyIslandApp {
   _updateInteractionPrompt() {
     const pill = document.getElementById('interactPill');
     const mobBtn = document.getElementById('mobileActionBtn');
-    if (this.dialogueState.open || this._anyModalOpen() || this._isEditMode()) {
+    if (this.photoMode || this.dialogueState.open || this._anyModalOpen() || this._isEditMode()) {
       pill.classList.remove('show');
       if (mobBtn && this.dialogueState.open) mobBtn.textContent = '▶ 繼續';
       return;
@@ -1903,7 +2106,7 @@ class CozyIslandApp {
     }
 
     const bar = document.getElementById('toolHotbar');
-    if (bar) bar.style.display = (this._isEditMode() || this.sceneMode === 'indoor') ? 'none' : 'flex';
+    if (bar) bar.style.display = (this.photoMode || this._isEditMode() || this.sceneMode === 'indoor') ? 'none' : 'flex';
 
     this._updateCamera(dt);
     this._updateDialogueTypewriter(dt);
@@ -1914,7 +2117,14 @@ class CozyIslandApp {
       this._hudClockAccum = 0;
       const clockEl = document.getElementById('hudClock');
       if (clockEl) clockEl.textContent = `${this.timeWeather.getFormattedClock()} · ${this.timeWeather.getPhaseLabel()}`;
-      this.audio.setMood(this.timeWeather.getPhaseKey(), this.timeWeather.weather === 'rain');
+      this.audio.setMood(this.timeWeather.getPhaseKey(), this.timeWeather.weather === 'rain', this.timeWeather.virtualHour);
+      const muteBtn = document.getElementById('btnMute');
+      if (muteBtn && !this.audio.muted) muteBtn.textContent = `🎵 ${this.audio.getMoodLabel()}`;
+      if (this.photoMode) {
+        const stamp = document.getElementById('photoStamp');
+        const pal = SEASON_PALETTES[this.save.settings.season] || SEASON_PALETTES.spring;
+        if (stamp) stamp.textContent = `🏝️ 微風森友島 · ${pal.label} · ${this.timeWeather.getFormattedClock()}`;
+      }
     }
 
     this.renderer.render(this.sceneMode === 'indoor' ? this.indoor.scene : this.scene, this.camera);

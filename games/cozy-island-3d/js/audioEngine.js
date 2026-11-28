@@ -1,40 +1,132 @@
-// Pure Web Audio API cozy soundscape:
-// - Dynamic day/night/rain procedural BGM (marimba / warm Rhodes / celesta)
-// - Animalese-style cute syllable voice synthesis
-// - Surface-aware footsteps & island interaction SFX
+// Pure Web Audio API cozy soundscape (Week 7: 24-Hour 6-Mood Variations + Nature Ambience + Shutter SFX):
+// - 6 hourly musical moods (dawn / morning / afternoon / sunset / night / midnight) + rain ballad
+// - Procedural ocean-breeze / rain pink-noise bed + daytime birdsong & nighttime cricket trills
+// - Animalese-style cute syllable voice synthesis & island interaction SFX
 
-const CHORD_PROGRESSIONS = {
-  morning: [
-    [261.63, 329.63, 392.0, 493.88], // Cmaj7
-    [293.66, 349.23, 440.0, 523.25], // Dm7
-    [329.63, 392.0, 493.88, 587.33], // Em7
-    [261.63, 329.63, 392.0, 440.0]   // C6
-  ],
-  day: [
-    [349.23, 440.0, 523.25, 659.25], // Fmaj7
-    [329.63, 392.0, 493.88, 587.33], // Em7
-    [293.66, 349.23, 440.0, 523.25], // Dm7
-    [261.63, 329.63, 392.0, 493.88]  // Cmaj7
-  ],
-  sunset: [
-    [220.0, 261.63, 329.63, 392.0],  // Am7
-    [174.61, 220.0, 261.63, 329.63], // Fmaj7
-    [261.63, 329.63, 392.0, 493.88], // Cmaj7
-    [196.0, 246.94, 293.66, 392.0]   // G6
-  ],
-  night: [
-    [196.0, 246.94, 293.66, 369.99], // Gmaj7
-    [164.81, 196.0, 246.94, 293.66], // Em7
-    [261.63, 329.63, 392.0, 493.88], // Cmaj7
-    [220.0, 261.63, 329.63, 392.0]   // Am7
-  ],
-  rain: [
-    [293.66, 349.23, 440.0, 523.25], // Dm7
-    [196.0, 246.94, 293.66, 349.23], // G7
-    [261.63, 329.63, 392.0, 493.88], // Cmaj7
-    [220.0, 261.63, 329.63, 392.0]   // Am7
-  ]
+const HOURLY_MOODS = {
+  dawn: {
+    label: '🌅 晨露木琴',
+    tempoMs: 440,
+    wave: 'triangle',
+    octave: 1.0,
+    dur: 0.36,
+    vol: 0.17,
+    pattern: [0, 2, 3, 1, 2, -1, 3, 0],
+    chords: [
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+      [220.00, 261.63, 329.63, 392.00], // Am7
+      [174.61, 220.00, 261.63, 329.63], // Fmaj7
+      [196.00, 246.94, 293.66, 392.00]  // G6
+    ]
+  },
+  morning: {
+    label: '☀️ 活力吉他',
+    tempoMs: 380,
+    wave: 'triangle',
+    octave: 1.0,
+    dur: 0.28,
+    vol: 0.19,
+    pattern: [0, 1, 2, 3, 1, 2, 3, -1],
+    chords: [
+      [293.66, 369.99, 440.00, 554.37], // Dmaj7
+      [246.94, 293.66, 369.99, 440.00], // Bm7
+      [196.00, 246.94, 293.66, 369.99], // Gmaj7
+      [220.00, 277.18, 329.63, 392.00]  // A7
+    ]
+  },
+  afternoon: {
+    label: '🏖️ 慵懶烏克',
+    tempoMs: 430,
+    wave: 'triangle',
+    octave: 1.0,
+    dur: 0.34,
+    vol: 0.18,
+    pattern: [0, 2, 1, 3, 2, -1, 3, 1],
+    chords: [
+      [349.23, 440.00, 523.25, 659.25], // Fmaj7
+      [329.63, 392.00, 493.88, 587.33], // Em7
+      [293.66, 349.23, 440.00, 523.25], // Dm7
+      [261.63, 329.63, 392.00, 493.88]  // Cmaj7
+    ]
+  },
+  sunset: {
+    label: '🌇 夕陽電鋼琴',
+    tempoMs: 480,
+    wave: 'sine',
+    octave: 1.0,
+    dur: 0.52,
+    vol: 0.17,
+    pattern: [0, 3, 2, 1, -1, 2, 3, 1],
+    chords: [
+      [220.00, 261.63, 329.63, 392.00], // Am7
+      [174.61, 220.00, 261.63, 329.63], // Fmaj7
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+      [196.00, 246.94, 293.66, 392.00]  // G6
+    ]
+  },
+  night: {
+    label: '🌌 星空音樂盒',
+    tempoMs: 560,
+    wave: 'sine',
+    octave: 2.0,
+    dur: 0.68,
+    vol: 0.13,
+    pattern: [0, 2, -1, 3, 1, -1, 2, 0],
+    chords: [
+      [196.00, 246.94, 293.66, 369.99], // Gmaj7
+      [164.81, 196.00, 246.94, 293.66], // Em7
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+      [220.00, 261.63, 329.63, 392.00]  // Am7
+    ]
+  },
+  midnight: {
+    label: '🌙 深夜搖籃曲',
+    tempoMs: 650,
+    wave: 'sine',
+    octave: 2.0,
+    dur: 0.85,
+    vol: 0.11,
+    pattern: [0, -1, 2, -1, 3, -1, 1, -1],
+    chords: [
+      [174.61, 220.00, 261.63, 329.63], // Fmaj7
+      [164.81, 196.00, 246.94, 293.66], // Em7
+      [146.83, 174.61, 220.00, 261.63], // Dm7
+      [130.81, 164.81, 196.00, 246.94]  // Cmaj7
+    ]
+  },
+  rain: {
+    label: '🌧️ 細雨爵士',
+    tempoMs: 550,
+    wave: 'sine',
+    octave: 1.0,
+    dur: 0.60,
+    vol: 0.15,
+    pattern: [0, 2, 1, -1, 3, 2, -1, 1],
+    chords: [
+      [293.66, 349.23, 440.00, 523.25], // Dm7
+      [196.00, 246.94, 293.66, 349.23], // G7
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+      [220.00, 261.63, 329.63, 392.00]  // Am7
+    ]
+  }
 };
+
+export function resolveHourlyMoodKey(hour, isRain = false, fallbackPhase = 'afternoon') {
+  if (isRain) return 'rain';
+  if (Number.isFinite(hour)) {
+    const h = ((hour % 24) + 24) % 24;
+    if (h >= 5 && h < 8) return 'dawn';
+    if (h >= 8 && h < 12) return 'morning';
+    if (h >= 12 && h < 16.5) return 'afternoon';
+    if (h >= 16.5 && h < 19.5) return 'sunset';
+    if (h >= 19.5 && h < 23) return 'night';
+    return 'midnight';
+  }
+  if (fallbackPhase === 'morning') return 'morning';
+  if (fallbackPhase === 'sunset') return 'sunset';
+  if (fallbackPhase === 'night') return 'night';
+  return 'afternoon';
+}
 
 export class CozyAudioEngine {
   constructor(initialMuted = false) {
@@ -42,10 +134,11 @@ export class CozyAudioEngine {
     this.masterGain = null;
     this.bgmGain = null;
     this.rainGain = null;
+    this.rainFilter = null;
     this.muted = initialMuted;
     this.unlocked = false;
 
-    this._phase = 'day';
+    this._moodKey = 'afternoon';
     this._isRain = false;
     this._step = 0;
     this._bgmTimer = null;
@@ -68,12 +161,12 @@ export class CozyAudioEngine {
     this.bgmGain.gain.value = 0.24;
     this.bgmGain.connect(this.masterGain);
 
-    this._initRainBed();
+    this._initAmbienceBed();
     this.unlocked = true;
     this._startBgmLoop();
   }
 
-  _initRainBed() {
+  _initAmbienceBed() {
     const bufferSize = this.ctx.sampleRate * 2;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -90,15 +183,15 @@ export class CozyAudioEngine {
     src.buffer = buffer;
     src.loop = true;
 
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 1150;
+    this.rainFilter = this.ctx.createBiquadFilter();
+    this.rainFilter.type = 'lowpass';
+    this.rainFilter.frequency.value = this._isRain ? 1250 : 420;
 
     this.rainGain = this.ctx.createGain();
-    this.rainGain.gain.value = this._isRain ? 0.16 : 0.0001;
+    this.rainGain.gain.value = this._isRain ? 0.16 : 0.022;
 
-    src.connect(filter);
-    filter.connect(this.rainGain);
+    src.connect(this.rainFilter);
+    this.rainFilter.connect(this.rainGain);
     this.rainGain.connect(this.masterGain);
     src.start();
   }
@@ -110,12 +203,17 @@ export class CozyAudioEngine {
     }
   }
 
-  setMood(phaseKey, isRain) {
-    this._phase = CHORD_PROGRESSIONS[phaseKey] ? phaseKey : 'day';
+  setMood(phaseKey, isRain, virtualHour = null) {
     this._isRain = !!isRain;
-    if (this.rainGain && this.ctx) {
-      this.rainGain.gain.setTargetAtTime(this._isRain ? 0.16 : 0.0001, this.ctx.currentTime, 0.35);
+    this._moodKey = resolveHourlyMoodKey(virtualHour, this._isRain, phaseKey);
+    if (this.rainGain && this.rainFilter && this.ctx) {
+      this.rainGain.gain.setTargetAtTime(this._isRain ? 0.16 : 0.022, this.ctx.currentTime, 0.35);
+      this.rainFilter.frequency.setTargetAtTime(this._isRain ? 1250 : 420, this.ctx.currentTime, 0.35);
     }
+  }
+
+  getMoodLabel() {
+    return (HOURLY_MOODS[this._moodKey] || HOURLY_MOODS.afternoon).label;
   }
 
   _startBgmLoop() {
@@ -123,38 +221,58 @@ export class CozyAudioEngine {
       if (this.ctx && this.ctx.state === 'running' && !this.muted) {
         this._playBgmStep();
       }
-      const intervalMs = this._phase === 'night' || this._phase === 'rain' ? 560 : 420;
-      this._bgmTimer = setTimeout(tick, intervalMs);
+      const mood = HOURLY_MOODS[this._moodKey] || HOURLY_MOODS.afternoon;
+      this._bgmTimer = setTimeout(tick, mood.tempoMs);
     };
     tick();
   }
 
   _playBgmStep() {
-    const prog = CHORD_PROGRESSIONS[this._phase] || CHORD_PROGRESSIONS.day;
-    const bar = Math.floor(this._step / 8) % prog.length;
+    const mood = HOURLY_MOODS[this._moodKey] || HOURLY_MOODS.afternoon;
+    const bar = Math.floor(this._step / 8) % mood.chords.length;
     const beat = this._step % 8;
-    const chord = prog[bar];
+    const chord = mood.chords[bar];
     const now = this.ctx.currentTime;
 
-    // Warm root bass on beat 0 and 4
+    // Warm root/fifth bass on beat 0 and 4
     if (beat === 0 || beat === 4) {
       const bassFreq = chord[0] * (beat === 0 ? 0.5 : 0.75);
-      this._pluck(bassFreq, now, 0.55, 0.22, 'sine', this.bgmGain);
+      this._pluck(bassFreq, now, mood.tempoMs * 0.0012, 0.21, 'sine', this.bgmGain);
     }
 
-    // Gentle arpeggio / marimba melody
-    const pattern = [0, 2, 1, 3, 2, -1, 3, 1];
-    const noteIdx = pattern[beat];
+    // Main hourly arpeggio / melody
+    const noteIdx = mood.pattern[beat];
     if (noteIdx >= 0) {
-      const octave = this._phase === 'night' ? 2.0 : 1.0;
-      const freq = chord[noteIdx % chord.length] * octave;
-      const wave = this._phase === 'night' || this._phase === 'rain' ? 'sine' : 'triangle';
-      const dur = this._phase === 'night' ? 0.65 : 0.32;
-      const vol = this._phase === 'night' ? 0.14 : 0.19;
-      this._pluck(freq, now, dur, vol, wave, this.bgmGain);
+      const freq = chord[noteIdx % chord.length] * mood.octave;
+      this._pluck(freq, now, mood.dur, mood.vol, mood.wave, this.bgmGain);
+      // Soft bell shimmer on beat 6 for dawn/sunset/night
+      if (beat === 6 && (this._moodKey === 'dawn' || this._moodKey === 'sunset' || this._moodKey === 'night')) {
+        this._pluck(chord[3] * 2.0, now + 0.04, 0.45, 0.06, 'sine', this.bgmGain);
+      }
+    }
+
+    // Subtle nature ambience accents: daytime birdsong / nighttime crickets
+    if (beat === 7 && !this._isRain && Math.random() < 0.16) {
+      if (this._moodKey === 'dawn' || this._moodKey === 'morning' || this._moodKey === 'afternoon') {
+        this._playBirdChirp(now + 0.05);
+      } else if (this._moodKey === 'night' || this._moodKey === 'midnight') {
+        this._playCricketTrill(now + 0.06);
+      }
     }
 
     this._step++;
+  }
+
+  _playBirdChirp(startTime) {
+    const base = 1850 + Math.random() * 550;
+    this._pluck(base, startTime, 0.06, 0.032, 'sine', this.masterGain);
+    this._pluck(base * 1.24, startTime + 0.07, 0.08, 0.028, 'sine', this.masterGain);
+  }
+
+  _playCricketTrill(startTime) {
+    for (let i = 0; i < 3; i++) {
+      this._pluck(3450, startTime + i * 0.055, 0.03, 0.018, 'sine', this.masterGain);
+    }
   }
 
   _pluck(freq, startTime, duration, volume, type, dest) {
@@ -224,6 +342,14 @@ export class CozyAudioEngine {
     if (!this.ctx || this.muted || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
     this._pluck(580, now, 0.09, 0.12, 'sine', this.masterGain);
+  }
+
+  playShutter() {
+    if (!this.ctx || this.muted || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    this._pluck(1240, now, 0.032, 0.22, 'triangle', this.masterGain);
+    this._pluck(460, now + 0.038, 0.045, 0.18, 'sine', this.masterGain);
+    this._pluck(980, now + 0.075, 0.08, 0.12, 'sine', this.masterGain);
   }
 
   playPlaceWood() {

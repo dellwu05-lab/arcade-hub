@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>🏝️ 森友小島 3D · Cozy Island (Week 6)</title>
+  <title>🏝️ 森友小島 3D · Cozy Island (Week 7)</title>
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
   <div id="canvasHost" aria-label="森友小島 3D 畫面"></div>
   <div class="scene-fade" id="sceneFade" aria-hidden="true"></div>
+  <div class="photo-flash" id="photoFlash" aria-hidden="true"></div>
+  <div class="photo-frame" id="photoFrame" aria-hidden="true">
+    <div class="photo-stamp" id="photoStamp">🏝️ 微風森友島 · 12:00</div>
+  </div>
 
   <!-- Top HUD -->
   <header class="hud-top">
     <div class="hud-card island-badge">
       <div class="island-title-row">
         <span id="hudLocationTitle">🏝️ 微風森友島</span>
-        <span class="proto-tag">Week 6 圖鑑＋博物館</span>
+        <span class="proto-tag">Week 7 音景＋拍照</span>
       </div>
       <div class="meta-row">
         <span id="hudClock">12:00 · 白晝</span>
@@ -31,6 +35,7 @@
     <nav class="hud-controls" aria-label="小島控制列">
       <button class="pill-btn accent" id="btnBuildMode" type="button" title="一鍵切換上帝視角 3D 網格佈置模式 (快捷鍵 B)">🏗️ 佈置模式</button>
       <button class="pill-btn" id="btnHomeToggle" type="button" title="進出個人小屋室內場景 (快捷鍵 H)">⛺ 進小屋</button>
+      <button class="pill-btn" id="btnPhotoMode" type="button" title="開啟島嶼明信片拍照模式：環繞鏡頭／濾鏡／姿勢／下載 PNG (快捷鍵 P)">📸 拍照</button>
       <button class="pill-btn" id="btnCritterpedia" type="button" title="開啟生物圖鑑、每日里程目標與點數兌換 (快捷鍵 M)">📖 圖鑑</button>
       <button class="pill-btn" id="btnMuseum" type="button" title="開啟二層高地博物館捐贈與展廳">🦉 博物館</button>
       <button class="pill-btn" id="btnVillagers" type="button" title="查看 4 位動物住民作息、好感度與今日委託 (快捷鍵 V)">🐾 住民</button>
@@ -65,7 +70,7 @@
 
   <!-- Desktop Control Hint -->
   <div class="desktop-hint" id="desktopHint">
-    WASD 漫步 · 1~6 工具 · Space 互動 · M 圖鑑＆里程 · V 住民 · K 批量DIY · H 小屋 · I 背包 · B 佈置
+    WASD 漫步 · 1~6 工具 · Space 互動 · P 拍照 · M 圖鑑＆里程 · V 住民 · K DIY · H 小屋 · I 背包 · B 佈置
   </div>
 
   <!-- Cozy Dialogue Box (Week 5: Friendship + Gift + Daily Quest bar) -->
@@ -207,6 +212,40 @@
       </div>
     </div>
     <div class="build-palette" id="buildPalette"></div>
+  </section>
+
+  <!-- Week 7: Photo Mode Studio Dock -->
+  <section class="photo-dock" id="photoDock" aria-label="拍照模式控制列">
+    <div class="photo-row">
+      <div class="photo-group" id="photoFilterGroup">
+        <span class="photo-label">🎨 濾鏡</span>
+        <button class="photo-chip active" data-filter="none" type="button">原色</button>
+        <button class="photo-chip" data-filter="warm" type="button">☀️ 暖陽</button>
+        <button class="photo-chip" data-filter="pastel" type="button">🌸 粉彩</button>
+        <button class="photo-chip" data-filter="vintage" type="button">🎞️ 復古</button>
+        <button class="photo-chip" data-filter="mono" type="button">🖤 黑白</button>
+      </div>
+      <div class="photo-group">
+        <button class="photo-chip" id="btnPhotoOrbitL" type="button" title="鏡頭左轉 (A/Q)">◀ 左轉</button>
+        <button class="photo-chip" id="btnPhotoOrbitR" type="button" title="鏡頭右轉 (D/E)">右轉 ▶</button>
+        <button class="photo-chip" id="btnPhotoZoomIn" type="button" title="拉近鏡頭 (W)">🔍＋</button>
+        <button class="photo-chip" id="btnPhotoZoomOut" type="button" title="拉遠鏡頭 (S)">🔍－</button>
+      </div>
+    </div>
+    <div class="photo-row">
+      <div class="photo-group" id="photoPoseGroup">
+        <span class="photo-label">🕺 姿勢</span>
+        <button class="photo-chip active" data-pose="idle" type="button">😊 微笑</button>
+        <button class="photo-chip" data-pose="wave" type="button">👋 揮手</button>
+        <button class="photo-chip" data-pose="cheer" type="button">✨ 開心跳</button>
+        <button class="photo-chip" data-pose="sit" type="button">🧘 坐下賞景</button>
+        <button class="photo-chip active" id="btnPhotoFrameToggle" type="button">🖼️ 明信片框：開</button>
+      </div>
+      <div class="photo-group">
+        <button class="pill-btn accent" id="btnPhotoSnap" type="button">📸 拍攝下載 PNG</button>
+        <button class="pill-btn" id="btnExitPhoto" type="button">✕ 退出 (P)</button>
+      </div>
+    </div>
   </section>
 
   <!-- Toast Banner -->
