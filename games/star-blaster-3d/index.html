@@ -657,8 +657,8 @@
       { id: 'hp',   icon: '🛡️', name: '鈦金裝甲', costs: [30, 60, 100, 150, 220], stat: (lv) => `裝甲 +${lv * 20}` },
       { id: 'nova', icon: '💥', name: '超新星核', costs: [35, 70, 115, 170, 240], stat: (lv) => `充能 +${lv * 20}%` }
     ];
-    // Economy rebalance: prices x2.5 so a single run can't unlock everything
-    const PRICE_SCALE = 2.5;
+    // Economy rebalance: prices x10 so a single run can't unlock everything
+    const PRICE_SCALE = 10;
     SHIPS.forEach(s => { if (s.price > 0) s.price = Math.round(s.price * PRICE_SCALE / 10) * 10; });
     UPG_DEFS.forEach(u => { u.costs = u.costs.map(c => Math.round(c * PRICE_SCALE / 5) * 5); });
     function cleanUpg(raw) {
