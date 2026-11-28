@@ -762,7 +762,7 @@
 
     const st = {
       mode: 'menu', time: 0, wave: 1, lives: 3, score: 0, runCoins: 0, slices: 0, maxCombo: 0,
-      ultCharge: 100, shake: 0, slowTimer: 0, bombShield: 0,
+      ultCharge: 25, ultLockTimer: 0, shake: 0, slowTimer: 0, bombShield: 0,
       spawnCd: 0.7, bossTimer: 26, boss: null,
       swipeCount: 0, swipeWindow: 0,
       pointerDown: false, lastX: 0, lastY: 0,
@@ -902,7 +902,7 @@
         st.runCoins += window.__ARCADE_ECO__.scale(jackpot, 'bonus', st.runCoins);
         st.score += pts;
         st.shake = 0.34;
-        if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + 20 * syn.ultMult);
+        if (!fromUlt && (st.ultLockTimer || 0) <= 0) st.ultCharge = Math.min(100, st.ultCharge + 6 * syn.ultMult);
         addParticles(t.x, t.y, '#fde047', 34, 360);
         addParticles(t.x, t.y, '#fb923c', 18, 280);
         addFloat(t.x, t.y - 20, `🎁 金幣寶箱大爆發! +${jackpot}🪙`, '#fde047', 22);
@@ -918,7 +918,7 @@
 
       const pts = Math.round(t.pts * syn.scoreMult * (st.slowTimer > 0 ? 1.5 : 1));
       st.score += pts;
-      if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + (t.kind === 'gold' ? 14 : 5.2) * (1 + (u.greed || 0) * 0.14) * syn.ultMult);
+      if (!fromUlt && (st.ultLockTimer || 0) <= 0) st.ultCharge = Math.min(100, st.ultCharge + (t.kind === 'gold' ? 3.8 : 1.35) * (1 + (u.greed || 0) * 0.14) * syn.ultMult);
 
       // Split into two spinning halves!
       if (st.halves.length < 36) {
@@ -1088,6 +1088,7 @@
         return;
       }
       st.ultCharge = 0;
+      st.ultLockTimer = 2.5;
       st.shake = 0.52;
       st.slowTimer = Math.max(st.slowTimer, hero.id === 'gojo' || hero.id === 'kanade' ? 4.8 : 3.6);
       st.bombShield = 3.8;
@@ -1135,7 +1136,7 @@
       SFX.ensure(); SFX.startBgm();
       const hero = getHero();
       st.mode = 'playing'; st.time = 0; st.wave = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.slices = 0; st.maxCombo = 0;
-      st.ultCharge = 100; st.shake = 0; st.slowTimer = 0; st.bombShield = hero.id === 'rimuru' ? 5.0 : 0;
+      st.ultCharge = 25; st.ultLockTimer = 0; st.shake = 0; st.slowTimer = 0; st.bombShield = hero.id === 'rimuru' ? 5.0 : 0;
       st.spawnCd = 0.35; st.bossTimer = 24; st.chestTimer = 7.5; st.boss = null;
       st.swipeCount = 0; st.swipeWindow = 0;
       st.trail = []; st.slashLines = []; st.ultFx = []; st.targets = []; st.halves = []; st.particles = []; st.floats = [];
@@ -1187,7 +1188,8 @@
 
       const syn = getHeroSynergy();
       const simDt = st.slowTimer > 0 ? dt * 0.44 : dt;
-      st.ultCharge = Math.min(100, st.ultCharge + dt * 3.0 * syn.ultMult);
+      if (st.ultLockTimer > 0) st.ultLockTimer = Math.max(0, st.ultLockTimer - dt);
+      if ((st.ultLockTimer || 0) <= 0) st.ultCharge = Math.min(100, st.ultCharge + dt * 0.75 * syn.ultMult);
 
       // Spawn waves, Golden Coin Treasure Chests & Boss
       st.spawnCd -= simDt;

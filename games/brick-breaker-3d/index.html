@@ -742,7 +742,7 @@
 
     const st = {
       mode: 'menu', time: 0, stage: 1, lives: 3, score: 0, runCoins: 0, combo: 0,
-      ultCharge: 100, shake: 0,
+      ultCharge: 25, ultLockTimer: 0, shake: 0,
       pad: { x: 640, w: 130, y: 600, h: 18 },
       buffs: { fire: 0, laser: 0, wide: 0, barrier: 0 },
       laserCd: 0,
@@ -882,7 +882,7 @@
       const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
 
       st.mode = 'playing'; st.time = 0; st.stage = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.combo = 0;
-      st.ultCharge = 100; st.shake = 0;
+      st.ultCharge = 25; st.ultLockTimer = 0; st.shake = 0;
       st.buffs = { fire: 0, laser: 0, wide: 0, barrier: 0 };
       st.drops = []; st.lasers = []; st.particles = []; st.waves = []; st.floats = []; st.balls = [];
       st.pad.w = Math.round((hero.padW + (u.wide || 0) * 14) * syn.wideMult);
@@ -921,7 +921,7 @@
           st.combo++;
           const pts = Math.round((b.kind === 'boss' ? 600 : (b.kind === 'gold' ? 90 : 40)) * (1 + Math.min(20, st.combo) * 0.08));
           st.score += pts;
-          if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + (b.kind === 'boss' ? 30 : 3.2) * (1 + (u.ult || 0) * 0.15) * syn.ultMult);
+          if (!fromUlt && (st.ultLockTimer || 0) <= 0) st.ultCharge = Math.min(100, st.ultCharge + (b.kind === 'boss' ? 12 : 1.0) * (1 + (u.ult || 0) * 0.15) * syn.ultMult);
           addParticles(cx, cy, b.col, b.kind === 'boss' ? 24 : 7, b.kind === 'boss' ? 300 : 180);
 
           if (b.kind === 'gold') {
@@ -998,6 +998,7 @@
         return;
       }
       st.ultCharge = 0;
+      st.ultLockTimer = 2.5;
       st.shake = 0.48;
       SFX.ult();
       showUltCutin(hero);
@@ -1106,7 +1107,8 @@
       st.pad.x = Math.max(ARENA.x + halfP, Math.min(ARENA.x + ARENA.w - halfP, st.pad.x));
 
       for (const k in st.buffs) if (st.buffs[k] > 0) st.buffs[k] = Math.max(0, st.buffs[k] - dt);
-      st.ultCharge = Math.min(100, st.ultCharge + dt * 2.4 * syn.ultMult);
+      if (st.ultLockTimer > 0) st.ultLockTimer = Math.max(0, st.ultLockTimer - dt);
+      if ((st.ultLockTimer || 0) <= 0) st.ultCharge = Math.min(100, st.ultCharge + dt * 0.65 * syn.ultMult);
 
       if (st.buffs.laser > 0) {
         st.laserCd -= dt;

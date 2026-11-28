@@ -4435,7 +4435,7 @@
       combo: 0,
       comboTimer: 0,
       runMaxCombo: 0,
-      skillCharge: 0, // 0..100
+      skillCharge: 25, skillLockTimer: 0, // 0..100
       buffs: {
         magnet: 0,
         dash: 0,
@@ -6297,7 +6297,7 @@
     }
 
     function addSkillCharge(amt) {
-      if (state.skillCharge >= 100) return;
+      if ((state.skillLockTimer || 0) > 0 || state.skillCharge >= 100) return;
       const energyLv = (save.upgrades && save.upgrades.energy) || 0;
       const syn = getHeroSynergy();
       const prev = state.skillCharge;
@@ -6334,6 +6334,7 @@
       const ch = getEquippedChar();
       const sk = CHAR_SKILLS[ch.id] || CHAR_SKILLS.rex;
       state.skillCharge = 0;
+      state.skillLockTimer = 3.0;
       save.stats.skillsUsed += 1;
       persistSave();
       refreshMissionDots();
@@ -6555,7 +6556,8 @@
       const synDist = getHeroSynergy();
       const scoreMult = (state.buffs.double > 0 ? 2 : 1) * (1 + (getComboMult() - 1) * 0.25) * synDist.scoreMult;
       state.score += stepDist * 8.5 * scoreMult;
-      addSkillCharge(dt * 9.5);
+      if (state.skillLockTimer > 0) state.skillLockTimer = Math.max(0, state.skillLockTimer - dt);
+      addSkillCharge(dt * 1.4);
 
       // Ghost Runner sample recording (Stage Mode)
       if (!state.endless && state.distance >= state.ghost.nextSampleDist) {
@@ -6707,7 +6709,7 @@
           AudioFX.playPowerup();
           haptic(15);
           spawnCoinBurst(pu.x - state.distance, pu.y, true);
-          addSkillCharge(18);
+          addSkillCharge(3.5);
           const magLv = (save.upgrades && save.upgrades.magnet) || 0;
           if (pu.kind === 'magnet') {
             const dur = 8.5 + magLv * 1.4;
@@ -6754,7 +6756,7 @@
           state.stageCoins += gained;
           save.stats.totalCoins += gained;
           state.score += pts;
-          addSkillCharge(c.isGem ? 22 : 8);
+          addSkillCharge(c.isGem ? 4.5 : 1.6);
 
           spawnCoinBurst(c.x - state.distance, c.y, c.isGem);
           AudioFX.playCoin(c.isGem);
@@ -6906,7 +6908,7 @@
             const nmPts = Math.round(80 * getComboMult() * (state.buffs.double > 0 ? 2 : 1));
             state.score += nmPts;
             save.stats.nearMisses += 1;
-            addSkillCharge(14);
+            addSkillCharge(2.8);
             state.hitStop = 0.025;
             AudioFX.playNearMiss();
             spawnFloatText(PLAYER_X + 0.2, player.y + 2.05, `⚡ 極限閃避 +${nmPts}`, '#38bdf8');
@@ -7256,7 +7258,7 @@
       state.combo = 0;
       state.comboTimer = 0;
       state.runMaxCombo = 0;
-      state.skillCharge = 100;
+      state.skillCharge = 25; state.skillLockTimer = 0;
       state.buffs.magnet = 0;
       state.buffs.dash = 0;
       state.buffs.double = 0;

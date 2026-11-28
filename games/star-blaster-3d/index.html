@@ -794,7 +794,7 @@
     const state = {
       mode: 'menu', // 'menu' | 'playing' | 'upgrade' | 'paused' | 'over'
       score: 0, runCoins: 0, wave: 1, waveKillGoal: 12, waveKills: 0,
-      time: 0, shake: 0, novaCharge: 0, spawnTimer: 0,
+      time: 0, shake: 0, novaCharge: 25, novaLockTimer: 0, spawnTimer: 0,
       combo: 0, comboTimer: 0, overdrive: 0, magnetBuff: 0,
       boss: null,
       keys: { l: false, r: false, u: false, d: false },
@@ -879,7 +879,7 @@
     };
 
     function addNovaCharge(amt) {
-      if (state.novaCharge >= 100) return;
+      if ((state.novaLockTimer || 0) > 0 || state.novaCharge >= 100) return;
       const prev = state.novaCharge;
       state.novaCharge = Math.min(100, state.novaCharge + amt * (state.player.novaRate || 1));
       if (prev < 100 && state.novaCharge >= 100) {
@@ -941,6 +941,7 @@
       const scaledBossDmg = Math.round(Math.max(ult.bossDmg, heroAtk * (ship.ultMult || 11) * 1.15) * dmgMult);
 
       state.novaCharge = 0;
+      state.novaLockTimer = 2.8;
       state.shake = 0.6;
       state.player.invuln = Math.max(state.player.invuln, 2.4);
       SFX.nova();
@@ -1039,7 +1040,7 @@
       const pts = Math.round(e.score * mult);
       state.score += pts;
       state.waveKills++;
-      addNovaCharge(11);
+      addNovaCharge(2.4);
       SFX.explode(e.kind === 'cruiser');
       addParticles(e.x, e.y, e.kind === 'cruiser' ? '#fb7185' : '#f59e0b', 16, 210);
       spawnFloat(e.x, e.y, state.combo >= 4 ? `+${pts} (x${mult.toFixed(1)})` : `+${pts}`, state.combo >= 8 ? '#fde047' : '#7dd3fc', state.combo >= 8 ? 16 : 13);
@@ -1152,7 +1153,7 @@
       state.waveKillGoal = 12;
       const upg = save.upgrades || { dmg: 0, hp: 0, nova: 0 };
       const bonusHp = (upg.hp || 0) * 20 + syn.hpAdd;
-      state.novaCharge = 100;
+      state.novaCharge = 25; state.novaLockTimer = 0;
       state.combo = 0; state.comboTimer = 0; state.overdrive = 0; state.magnetBuff = 0;
       state.freezeTimer = 0; state.ultFx = [];
       state.boss = null;
@@ -1220,7 +1221,8 @@
 
       const p = state.player;
       const ship = getShip();
-      addNovaCharge(dt * 3.5);
+      if (state.novaLockTimer > 0) state.novaLockTimer = Math.max(0, state.novaLockTimer - dt);
+      addNovaCharge(dt * 0.9);
       if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
       if (state.comboTimer > 0) { state.comboTimer -= dt; if (state.comboTimer <= 0) state.combo = 0; }
       if (state.overdrive > 0) state.overdrive = Math.max(0, state.overdrive - dt);
@@ -1413,7 +1415,7 @@
         if (!eb.grazed && d < eb.r + 44) {
           eb.grazed = true;
           state.score += 50;
-          state.novaCharge = Math.min(100, state.novaCharge + 6 * p.novaRate);
+          if ((state.novaLockTimer || 0) <= 0) state.novaCharge = Math.min(100, state.novaCharge + 1.4 * p.novaRate);
           SFX.tone('sine', 1240, 1860, 0.06, 0.05);
           addParticles((p.x + eb.x) / 2, (p.y + eb.y) / 2, '#38bdf8', 5, 130);
           spawnFloat(p.x, p.y - 26, '⚡ GRAZE +50', '#38bdf8', 12);
@@ -1437,7 +1439,7 @@
             const val = Math.max(1, Math.round(1 * ship.coinMult * getHeroSynergy().coinMult));
             state.runCoins += window.__ARCADE_ECO__.scale(val, 'normal', state.runCoins);
             state.score += 20;
-            state.novaCharge = Math.min(100, state.novaCharge + 2.4 * p.novaRate);
+            if ((state.novaLockTimer || 0) <= 0) state.novaCharge = Math.min(100, state.novaCharge + 0.6 * p.novaRate);
             SFX.coin();
           } else if (pk.kind === 'overdrive') {
             state.overdrive = 6.5;
