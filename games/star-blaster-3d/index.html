@@ -1111,14 +1111,12 @@
     }
 
 
-    // Per-run coin income: diminishing returns + wave-based hard cap
+    // Per-run coin income: diminishing returns (no hard cap)
     function awardRunCoins(base, kind) {
-      const runCap = 150 + state.wave * 60;
       const f = 1 / (1 + state.runCoins / 250);
       let v = Math.max(0, base) * f;
       let n = Math.floor(v); if (Math.random() < v - n) n += 1;
       let gain = n ? window.__ARCADE_ECO__.scale(n, kind, state.runCoins) : 0;
-      gain = Math.min(gain, Math.max(0, runCap - state.runCoins));
       state.runCoins += gain;
       return gain;
     }
