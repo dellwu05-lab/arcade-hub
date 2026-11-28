@@ -1081,10 +1081,11 @@
     }
 
     function startGame() {
+      settleRun();
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       SFX.ensure(); SFX.startBgm();
       const hero = getHero();
-      st.mode = 'playing'; st.time = 0; st.score = 0; st.runCoins = 0; st.kills = 0; st.maxLen = 16;
+      st.mode = 'playing'; st.time = 0; st.score = 0; st.runCoins = 0; st.bankedCoins = 0; st.kills = 0; st.maxLen = 16;
       st.ultCharge = 100; st.shake = 0; st.boost = 100; st.sprinting = false; st.invuln = 2.0; st.magBuff = 0; st.slowDebuff = 0;
       st.unlockedTypes = {};
       st.fireCd = 0.35;
@@ -1104,10 +1105,27 @@
       showToast(`${hero.icon} 【${hero.name}】游入戰場！看右下雷達追擊 💰 黃金藏寶蛇！`);
     }
 
+    // Mid-run settlement: bank coins + best stats immediately when leaving (menu / restart / tab close)
+    function settleRun() {
+      if (st.mode === 'menu' || st.mode === 'over') return;
+      const add = st.runCoins - (st.bankedCoins || 0);
+      if (add <= 0 && !(st.score > 0)) return;
+      st.bankedCoins = st.runCoins;
+      save.coins += add;
+      if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
+      if (st.maxLen > save.bestLen) save.bestLen = st.maxLen;
+      if (st.kills > save.bestKills) save.bestKills = st.kills;
+      persistSave();
+      if (typeof updateHudUI === 'function') updateHudUI(); else if (typeof updateHud === 'function') updateHud();
+    }
+    window.addEventListener('pagehide', settleRun);
+    window.addEventListener('beforeunload', settleRun);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) settleRun(); });
+
     function triggerGameOver() {
       st.mode = 'over';
       SFX.die();
-      save.coins += st.runCoins;
+      save.coins += st.runCoins - (st.bankedCoins || 0); st.bankedCoins = 0;
       if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
       if (st.maxLen > save.bestLen) save.bestLen = st.maxLen;
       if (st.kills > save.bestKills) save.bestKills = st.kills;
@@ -1896,7 +1914,7 @@
     }
 
     function updateHudUI() {
-      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? (st.runCoins - (st.bankedCoins || 0)) : 0);
       document.getElementById('startCoins').textContent = save.coins;
       document.getElementById('hudLen').textContent = `長度 ${st.player ? st.player.pts.length : 16}`;
       document.getElementById('hudKills').textContent = `${st.kills} 擊殺`;
@@ -1990,7 +2008,7 @@
     document.getElementById('hudAcctBtn').addEventListener('click', () => postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID }));
     ['btnMenu', 'btnOverMenu'].forEach((id) => {
       document.getElementById(id).addEventListener('click', () => {
-        st.mode = 'menu';
+        settleRun(); st.mode = 'menu';
         document.getElementById('pauseOverlay').classList.add('hidden');
         syncPauseBtn();
         document.getElementById('overOverlay').classList.add('hidden');

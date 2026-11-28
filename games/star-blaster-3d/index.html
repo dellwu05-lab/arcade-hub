@@ -1176,6 +1176,7 @@
     }
 
     function startGame() {
+      settleRun();
       if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
       SFX.ensure();
       SFX.startBgm();
@@ -1183,7 +1184,7 @@
       const syn = getHeroSynergy();
       state.mode = 'playing';
       state.score = 0;
-      state.runCoins = 0;
+      state.runCoins = 0; state.bankedCoins = 0;
       state.wave = 1;
       state.waveKills = 0;
       state.waveKillGoal = 12;
@@ -1211,11 +1212,27 @@
       showToast(`🚀 ${getPlayerName()} 駕駛【${ship.name}】出擊！武器：${ship.weaponName || '電漿砲'}！`);
     }
 
+    // Mid-run settlement: bank coins + best stats immediately when leaving (menu / restart / tab close)
+    function settleRun() {
+      if (state.mode === 'menu' || state.mode === 'over') return;
+      const add = state.runCoins - (state.bankedCoins || 0);
+      if (add <= 0 && !(state.score > 0)) return;
+      state.bankedCoins = state.runCoins;
+      save.coins += add;
+      if (state.score > save.bestScore) save.bestScore = Math.floor(state.score);
+      if (state.wave > save.bestWave) save.bestWave = state.wave;
+      persistSave();
+      if (typeof updateHudUI === 'function') updateHudUI(); else if (typeof updateHud === 'function') updateHud();
+    }
+    window.addEventListener('pagehide', settleRun);
+    window.addEventListener('beforeunload', settleRun);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) settleRun(); });
+
     function triggerGameOver() {
       state.mode = 'over';
       SFX.explode(true);
       addParticles(state.player.x, state.player.y, '#fb7185', 45, 300);
-      save.coins += state.runCoins;
+      save.coins += state.runCoins - (state.bankedCoins || 0); state.bankedCoins = 0;
       if (state.score > save.bestScore) save.bestScore = Math.floor(state.score);
       if (state.wave > save.bestWave) save.bestWave = state.wave;
       persistSave();
@@ -1879,7 +1896,7 @@
       document.getElementById('startCoins').textContent = save.coins;
 
       document.getElementById('hudWave').textContent = `WAVE ${state.wave}`;
-      document.getElementById('hudCoins').textContent = save.coins + (state.mode === 'playing' || state.mode === 'upgrade' ? state.runCoins : 0);
+      document.getElementById('hudCoins').textContent = save.coins + (state.mode === 'playing' || state.mode === 'upgrade' ? (state.runCoins - (state.bankedCoins || 0)) : 0);
       document.getElementById('hudScore').textContent = String(Math.floor(state.score)).padStart(5, '0');
 
       const hpPct = Math.max(0, Math.min(100, (state.player.hp / state.player.maxHp) * 100));
@@ -1985,7 +2002,7 @@
     document.getElementById('btnStart').addEventListener('click', startGame);
     document.getElementById('btnRetry').addEventListener('click', startGame);
     document.getElementById('btnOverHangar').addEventListener('click', () => {
-      state.mode = 'menu';
+      settleRun(); state.mode = 'menu';
       document.getElementById('overOverlay').classList.add('hidden');
       renderShipGrid(); updateHudUI();
       document.getElementById('startOverlay').classList.remove('hidden');
@@ -2050,7 +2067,7 @@
     document.getElementById('btnResume').addEventListener('click', togglePause);
     document.getElementById('btnPauseRestart').addEventListener('click', () => { startGame(); syncPauseBtn(); });
     document.getElementById('btnBackMenu').addEventListener('click', () => {
-      state.mode = 'menu';
+      settleRun(); state.mode = 'menu';
       document.getElementById('pauseOverlay').classList.add('hidden');
       syncPauseBtn();
       document.getElementById('barsWrap').classList.add('hidden');

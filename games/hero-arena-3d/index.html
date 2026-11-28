@@ -912,6 +912,7 @@
     // 4. GAMEPLAY LOOP, WEAPONS, BOSS & ULTIMATE
     // =========================================================================
     function startGame() {
+      settleRun();
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       SFX.ensure(); SFX.startBgm();
       const hero = getHero();
@@ -921,7 +922,7 @@
       const baseDmg = hero.dmg * (1 + (u.atk || 0) * 0.18) * syn.atkMult;
       const baseSpd = hero.spd * syn.spdMult;
 
-      st.mode = 'playing'; st.time = 0; st.wave = 1; st.kills = 0; st.score = 0; st.runCoins = 0;
+      st.mode = 'playing'; st.time = 0; st.wave = 1; st.kills = 0; st.score = 0; st.runCoins = 0; st.bankedCoins = 0;
       st.ultCharge = 25; st.ultLockTimer = 0; st.shake = 0; st.spawnCd = 0.25; st.bossTimer = 26;
       st.freezeTimer = 0; st.rainbowTimer = 0; st.feverTimer = 0; st.crateTimer = 18; st.crates = [];
       st.enemies = []; st.projectiles = []; st.eBullets = []; st.gems = []; st.particles = []; st.bolts = []; st.waves = []; st.floats = []; st.ultFx = []; st.boss = null;
@@ -1149,10 +1150,27 @@
       }
     }
 
+    // Mid-run settlement: bank coins + best stats immediately when leaving (menu / restart / tab close)
+    function settleRun() {
+      if (st.mode === 'menu' || st.mode === 'over') return;
+      const add = st.runCoins - (st.bankedCoins || 0);
+      if (add <= 0 && !(st.score > 0)) return;
+      st.bankedCoins = st.runCoins;
+      save.coins += add;
+      if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
+      if (st.wave > save.bestWave) save.bestWave = st.wave;
+      if (st.kills > save.bestKills) save.bestKills = st.kills;
+      persistSave();
+      if (typeof updateHudUI === 'function') updateHudUI(); else if (typeof updateHud === 'function') updateHud();
+    }
+    window.addEventListener('pagehide', settleRun);
+    window.addEventListener('beforeunload', settleRun);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) settleRun(); });
+
     function triggerGameOver() {
       st.mode = 'over';
       SFX.hurt();
-      save.coins += st.runCoins;
+      save.coins += st.runCoins - (st.bankedCoins || 0); st.bankedCoins = 0;
       if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
       if (st.wave > save.bestWave) save.bestWave = st.wave;
       if (st.kills > save.bestKills) save.bestKills = st.kills;
@@ -2159,7 +2177,7 @@
     }
 
     function updateHudUI() {
-      const totalCoins = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      const totalCoins = save.coins + (st.mode === 'playing' ? (st.runCoins - (st.bankedCoins || 0)) : 0);
       document.getElementById('hudCoins').textContent = totalCoins;
       document.getElementById('startCoins').textContent = save.coins;
       document.getElementById('hudWave').textContent = `WAVE ${st.wave}`;
@@ -2263,7 +2281,7 @@
     document.getElementById('hudAcctBtn').addEventListener('click', () => postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID }));
     ['btnMenu', 'btnOverMenu'].forEach((id) => {
       document.getElementById(id).addEventListener('click', () => {
-        st.mode = 'menu';
+        settleRun(); st.mode = 'menu';
         document.getElementById('pauseOverlay').classList.add('hidden');
         syncPauseBtn();
         document.getElementById('overOverlay').classList.add('hidden');

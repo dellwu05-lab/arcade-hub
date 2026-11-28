@@ -817,6 +817,7 @@
     }
 
     function startRace() {
+      settleRun();
       SFX.ensure();
       SFX.startBgm();
       const car = getCar();
@@ -825,7 +826,7 @@
       st.speed = 95; st.playerX = 0; st.steer = 0; st.driftAngle = 0;
       st.driftTime = 0; st.miniTurbo = 0;
       st.nitro = car.startNitro || 45; st.nitroTime = 0; st.timeLeft = 36;
-      st.score = 0; st.runCoins = 0; st.combo = 0; st.comboTimer = 0; st.shake = 0;
+      st.score = 0; st.runCoins = 0; st.bankedCoins = 0; st.combo = 0; st.comboTimer = 0; st.shake = 0;
       st.rivals = []; st.coins = []; st.boostPads = []; st.sparks = []; st.floats = [];
       spawnWorldEntities();
 
@@ -838,9 +839,25 @@
       showToast(`🏁 ${getCar().name} 出發！長按飄移放開觸發小噴射！`);
     }
 
+    // Mid-run settlement: bank coins + best stats immediately when leaving (menu / restart / tab close)
+    function settleRun() {
+      if (st.mode === 'menu' || st.mode === 'over') return;
+      const add = st.runCoins - (st.bankedCoins || 0);
+      if (add <= 0 && !(st.score > 0)) return;
+      st.bankedCoins = st.runCoins;
+      save.coins += add;
+      if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
+      if (st.dist > save.bestDist) save.bestDist = Math.floor(st.dist);
+      persistSave();
+      if (typeof updateHudUI === 'function') updateHudUI(); else if (typeof updateHud === 'function') updateHud();
+    }
+    window.addEventListener('pagehide', settleRun);
+    window.addEventListener('beforeunload', settleRun);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) settleRun(); });
+
     function endRace() {
       st.mode = 'over';
-      save.coins += st.runCoins;
+      save.coins += st.runCoins - (st.bankedCoins || 0); st.bankedCoins = 0;
       if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
       if (st.dist > save.bestDist) save.bestDist = Math.floor(st.dist);
       persistSave();
@@ -1342,7 +1359,7 @@
     const hudCache = { biome: -1, coins: -1, score: -1, speed: -1, nitro: -1, time: -1 };
 
     function updateRaceHud() {
-      const totalCoins = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      const totalCoins = save.coins + (st.mode === 'playing' ? (st.runCoins - (st.bankedCoins || 0)) : 0);
       const sc = Math.floor(st.score);
       const sp = Math.floor(st.speed);
       const np = Math.floor(st.nitro);
@@ -1443,7 +1460,7 @@
     document.getElementById('btnStart').addEventListener('click', startRace);
     document.getElementById('btnRetry').addEventListener('click', startRace);
     document.getElementById('btnGarage').addEventListener('click', () => {
-      st.mode = 'menu'; document.getElementById('overOverlay').classList.add('hidden');
+      settleRun(); st.mode = 'menu'; document.getElementById('overOverlay').classList.add('hidden');
       renderCarGrid(); updateHud(); document.getElementById('startOverlay').classList.remove('hidden');
     });
     const SPEED_STEPS = [1, 1.1, 1.2, 1.3];
@@ -1505,7 +1522,7 @@
     document.getElementById('btnResume').addEventListener('click', togglePause);
     document.getElementById('btnPauseRestart').addEventListener('click', () => { startRace(); syncPauseBtn(); });
     document.getElementById('btnMenu').addEventListener('click', () => {
-      st.mode = 'menu'; document.getElementById('pauseOverlay').classList.add('hidden'); syncPauseBtn();
+      settleRun(); st.mode = 'menu'; document.getElementById('pauseOverlay').classList.add('hidden'); syncPauseBtn();
       document.getElementById('dashCluster').classList.add('hidden'); document.getElementById('driveBar').classList.add('hidden');
       renderCarGrid(); updateHud(); document.getElementById('startOverlay').classList.remove('hidden');
     });

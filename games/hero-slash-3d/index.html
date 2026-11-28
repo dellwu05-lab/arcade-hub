@@ -1134,10 +1134,11 @@
     }
 
     function startGame() {
+      settleRun();
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       SFX.ensure(); SFX.startBgm();
       const hero = getHero();
-      st.mode = 'playing'; st.time = 0; st.wave = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.slices = 0; st.maxCombo = 0;
+      st.mode = 'playing'; st.time = 0; st.wave = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.bankedCoins = 0; st.slices = 0; st.maxCombo = 0;
       st.ultCharge = 25; st.ultLockTimer = 0; st.shake = 0; st.slowTimer = 0; st.bombShield = hero.id === 'rimuru' ? 5.0 : 0;
       st.spawnCd = 0.35; st.bossTimer = 24; st.chestTimer = 7.5; st.boss = null;
       st.swipeCount = 0; st.swipeWindow = 0;
@@ -1152,10 +1153,27 @@
       showToast(`${hero.icon} 【${hero.name}】拔刀！裝備「${hero.weaponName || '專屬刃'}」· 奧義已就緒！`);
     }
 
+    // Mid-run settlement: bank coins + best stats immediately when leaving (menu / restart / tab close)
+    function settleRun() {
+      if (st.mode === 'menu' || st.mode === 'over') return;
+      const add = st.runCoins - (st.bankedCoins || 0);
+      if (add <= 0 && !(st.score > 0)) return;
+      st.bankedCoins = st.runCoins;
+      save.coins += add;
+      if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
+      if (st.wave > save.bestWave) save.bestWave = st.wave;
+      if (st.slices > save.bestSlices) save.bestSlices = st.slices;
+      persistSave();
+      if (typeof updateHudUI === 'function') updateHudUI(); else if (typeof updateHud === 'function') updateHud();
+    }
+    window.addEventListener('pagehide', settleRun);
+    window.addEventListener('beforeunload', settleRun);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) settleRun(); });
+
     function triggerGameOver() {
       st.mode = 'over';
       SFX.bomb();
-      save.coins += st.runCoins;
+      save.coins += st.runCoins - (st.bankedCoins || 0); st.bankedCoins = 0;
       if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
       if (st.wave > save.bestWave) save.bestWave = st.wave;
       if (st.slices > save.bestSlices) save.bestSlices = st.slices;
@@ -1569,7 +1587,7 @@
 
     let lastBadgeId = '';
     function updateHudUI() {
-      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? (st.runCoins - (st.bankedCoins || 0)) : 0);
       document.getElementById('startCoins').textContent = save.coins;
       document.getElementById('hudWave').textContent = `WAVE ${st.wave}`;
       document.getElementById('hudLives').textContent = '❤️'.repeat(Math.max(0, st.lives)) || '💔';
@@ -1677,7 +1695,7 @@
     document.getElementById('hudAcctBtn').addEventListener('click', () => postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID }));
     ['btnMenu', 'btnOverMenu'].forEach((id) => {
       document.getElementById(id).addEventListener('click', () => {
-        st.mode = 'menu';
+        settleRun(); st.mode = 'menu';
         document.getElementById('pauseOverlay').classList.add('hidden');
         syncPauseBtn();
         document.getElementById('overOverlay').classList.add('hidden');

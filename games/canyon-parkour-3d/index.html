@@ -7119,7 +7119,7 @@
       if (typeof renderHeroSynergyBanner === 'function') renderHeroSynergyBanner(document.getElementById('startSynergy'));
       document.getElementById('hudStageNum').textContent = state.endless ? '♾️ 無盡模式' : `第 ${stage.id} 關`;
       document.getElementById('hudStageName').textContent = stage.name;
-      document.getElementById('hudCoins').textContent = save.coins + (state.mode === 'playing' ? state.stageCoins : 0);
+      document.getElementById('hudCoins').textContent = save.coins + (state.mode === 'playing' ? (state.stageCoins - (state.bankedCoins || 0)) : 0);
       document.getElementById('hudScore').textContent = String(Math.floor(state.score)).padStart(5, '0');
 
       const shieldPill = document.getElementById('hudShieldPill');
@@ -7249,9 +7249,10 @@
       const stage = getCurrentStage();
       const ch = getEquippedChar();
 
+      settleRun();
       state.mode = 'playing';
       state.score = 0;
-      state.stageCoins = 0;
+      state.stageCoins = 0; state.bankedCoins = 0;
       state.distance = 0;
       state.speed = isEndless ? 12.6 : stage.baseSpeed;
       state.cyclePos = stage.timeOffset;
@@ -7318,6 +7319,25 @@
       }
     }
 
+    // Mid-run settlement: bank coins + best stats immediately when leaving (menu / restart / tab close)
+    function settleRun() {
+      if (state.mode === 'menu' || state.mode === 'clear' || state.mode === 'gameover') return;
+      const add = state.stageCoins - (state.bankedCoins || 0);
+      const sc = Math.floor(state.score);
+      if (add <= 0 && !(sc > 0)) return;
+      state.bankedCoins = state.stageCoins;
+      save.coins += add;
+      if (sc > save.bestScore) save.bestScore = sc;
+      if (state.endless && state.distance) {
+        const d = Math.floor(state.distance);
+        if (d > save.stats.bestEndless) save.stats.bestEndless = d;
+      }
+      persistSave();
+    }
+    window.addEventListener('pagehide', settleRun);
+    window.addEventListener('beforeunload', settleRun);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) settleRun(); });
+
     function startEndless() {
       startStage(0, true);
     }
@@ -7338,7 +7358,7 @@
       const ratio = state.stageCoinsTotal > 0 ? state.stageCoins / state.stageCoinsTotal : 1;
       const stars = ratio >= 0.62 ? 3 : (ratio >= 0.30 ? 2 : 1);
 
-      save.coins += totalEarned;
+      save.coins += totalEarned - (state.bankedCoins || 0); state.bankedCoins = 0;
       if (finalScore > save.bestScore) save.bestScore = finalScore;
       if (stage.id >= save.unlockedStage && stage.id < STAGES.length) {
         save.unlockedStage = stage.id + 1;
@@ -7421,7 +7441,7 @@
       const finalScore = Math.floor(state.score);
 
       // Keep coins picked up during run!
-      save.coins += state.stageCoins;
+      save.coins += state.stageCoins - (state.bankedCoins || 0); state.bankedCoins = 0;
       if (finalScore > save.bestScore) save.bestScore = finalScore;
       if (state.endless && distInt > save.stats.bestEndless) save.stats.bestEndless = distInt;
       persistSave();
@@ -8538,6 +8558,7 @@
     document.getElementById('btnMute').addEventListener('click', toggleMute);
 
     document.getElementById('btnPauseHome').addEventListener('click', () => {
+      settleRun();
       state.mode = 'menu';
       state.endless = false;
       state.stageIdx = Math.max(0, Math.min(STAGES.length - 1, save.selectedStage - 1));

@@ -878,12 +878,13 @@
     }
 
     function startGame() {
+      settleRun();
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       SFX.ensure(); SFX.startBgm();
       const hero = getHero(), syn = getHeroSynergy();
       const u = save.upgrades || { pwr: 0, wide: 0, ult: 0 };
 
-      st.mode = 'playing'; st.time = 0; st.stage = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.combo = 0;
+      st.mode = 'playing'; st.time = 0; st.stage = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.bankedCoins = 0; st.combo = 0;
       st.ultCharge = 25; st.ultLockTimer = 0; st.shake = 0;
       st.buffs = { fire: 0, laser: 0, wide: 0, barrier: 0 };
       st.drops = []; st.lasers = []; st.particles = []; st.waves = []; st.floats = []; st.balls = [];
@@ -1075,10 +1076,26 @@
       showToast(`🎉 通關獎勵 +${clearCoins} 🪙 ＋ ❤️ 生命回復！進入第 ${st.stage} 關`);
     }
 
+    // Mid-run settlement: bank coins + best stats immediately when leaving (menu / restart / tab close)
+    function settleRun() {
+      if (st.mode === 'menu' || st.mode === 'over') return;
+      const add = st.runCoins - (st.bankedCoins || 0);
+      if (add <= 0 && !(st.score > 0)) return;
+      st.bankedCoins = st.runCoins;
+      save.coins += add;
+      if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
+      if (st.stage > save.bestStage) save.bestStage = st.stage;
+      persistSave();
+      if (typeof updateHudUI === 'function') updateHudUI(); else if (typeof updateHud === 'function') updateHud();
+    }
+    window.addEventListener('pagehide', settleRun);
+    window.addEventListener('beforeunload', settleRun);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) settleRun(); });
+
     function triggerGameOver() {
       st.mode = 'over';
       SFX.lose();
-      save.coins += st.runCoins;
+      save.coins += st.runCoins - (st.bankedCoins || 0); st.bankedCoins = 0;
       if (st.score > save.bestScore) save.bestScore = Math.floor(st.score);
       if (st.stage > save.bestStage) save.bestStage = st.stage;
       persistSave();
@@ -1573,7 +1590,7 @@
     }
 
     function updateHudUI() {
-      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? st.runCoins : 0);
+      document.getElementById('hudCoins').textContent = save.coins + (st.mode === 'playing' ? (st.runCoins - (st.bankedCoins || 0)) : 0);
       document.getElementById('startCoins').textContent = save.coins;
       document.getElementById('hudStage').textContent = `STAGE ${st.stage}`;
       document.getElementById('hudLives').textContent = '❤️'.repeat(Math.max(0, st.lives)) || '💔';
@@ -1675,7 +1692,7 @@
     document.getElementById('hudAcctBtn').addEventListener('click', () => postToHub({ type: 'ARCADE_OPEN_AUTH', gameId: GAME_ID }));
     ['btnMenu', 'btnOverMenu'].forEach((id) => {
       document.getElementById(id).addEventListener('click', () => {
-        st.mode = 'menu';
+        settleRun(); st.mode = 'menu';
         document.getElementById('pauseOverlay').classList.add('hidden');
         syncPauseBtn();
         document.getElementById('overOverlay').classList.add('hidden');
