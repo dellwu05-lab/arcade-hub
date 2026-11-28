@@ -624,11 +624,11 @@
 
     function sliceTarget(t, ang, fromUlt = false) {
       if (t.sliced) return;
-      t.sliced = true;
       const hero = getHero(), syn = getHeroSynergy();
       const u = save.upgrades || { wide: 0, freeze: 0, greed: 0 };
 
       if (t.kind === 'bomb') {
+        t.sliced = true;
         if (fromUlt || st.bombShield > 0) {
           addParticles(t.x, t.y, '#38bdf8', 14, 240);
           addFloat(t.x, t.y, '🛡️ 爆彈無效化！', '#7dd3fc', 16);
@@ -641,9 +641,47 @@
         return;
       }
 
+      // Golden Coin Treasure Chest (3 rapid slashes or instant break on Ultimate!)
+      if (t.kind === 'chest') {
+        if (!fromUlt && t.hitCd > 0) return;
+        t.hitCd = 0.09;
+        t.hp = fromUlt ? 0 : (t.hp - 1);
+        t.flash = 0.14;
+        st.slices++;
+        st.swipeCount++;
+        st.swipeWindow = 0.28;
+        if (st.swipeCount > st.maxCombo) st.maxCombo = st.swipeCount;
+        SFX.gold();
+
+        if (t.hp > 0) {
+          const hitCoin = Math.max(2, Math.round(3 * getCoinMult()));
+          st.runCoins += hitCoin;
+          st.score += Math.round(120 * syn.scoreMult);
+          t.vy = Math.min(t.vy, -260); // Juggle bounce upward!
+          addParticles(t.x, t.y, '#fde047', 14, 260);
+          addFloat(t.x, t.y - 24, `🎁 寶箱連斬 +${hitCoin}🪙 (剩${t.hp}刀)`, '#fde047', 17);
+          return;
+        }
+
+        // Chest broken open — Jackpot Coin Explosion!
+        t.sliced = true;
+        const jackpot = Math.max(12, Math.round(15 * getCoinMult()));
+        const pts = Math.round(450 * syn.scoreMult * (st.slowTimer > 0 ? 1.5 : 1));
+        st.runCoins += jackpot;
+        st.score += pts;
+        st.shake = 0.34;
+        if (!fromUlt) st.ultCharge = Math.min(100, st.ultCharge + 20 * syn.ultMult);
+        addParticles(t.x, t.y, '#fde047', 34, 360);
+        addParticles(t.x, t.y, '#fb923c', 18, 280);
+        addFloat(t.x, t.y - 20, `🎁 金幣寶箱大爆發! +${jackpot}🪙`, '#fde047', 22);
+        showToast(`🎁 斬開金幣寶箱！狂賺 +${jackpot} 🪙 ＋ ${pts} 分！`);
+        return;
+      }
+
+      t.sliced = true;
       st.slices++;
       st.swipeCount++;
-      st.swipeWindow = 0.22;
+      st.swipeWindow = 0.28;
       if (st.swipeCount > st.maxCombo) st.maxCombo = st.swipeCount;
 
       const pts = Math.round(t.pts * syn.scoreMult * (st.slowTimer > 0 ? 1.5 : 1));
@@ -672,17 +710,16 @@
         showToast('❄️ 斬破時停冰晶！全場緩速＋分數 1.5x！');
       } else {
         SFX.slice(st.swipeCount);
-        if (st.swipeCount >= 3) {
-          const bonusPts = st.swipeCount * 35;
-          st.score += bonusPts;
-          if (st.swipeCount === 3 || st.swipeCount === 5 || st.swipeCount === 7) {
-            const bonusCoin = Math.max(1, Math.round(1 * getCoinMult()));
-            st.runCoins += bonusCoin;
-            addFloat(t.x, t.y - 22, `⚡ ${st.swipeCount} 連斬! +${bonusPts} +${bonusCoin}🪙`, '#fde047', 19);
-          } else {
-            addFloat(t.x, t.y - 22, `⚡ ${st.swipeCount} 連斬! +${bonusPts}`, '#fb923c', 18);
-          }
-        }
+      }
+
+      // Simultaneous Multi-Slash Coin Bonus (scales with simultaneous slash count!)
+      if (st.swipeCount >= 2 && !fromUlt) {
+        const bonusPts = st.swipeCount * 40;
+        const baseComboCoin = st.swipeCount === 2 ? 1 : (st.swipeCount === 3 ? 2 : (st.swipeCount === 4 ? 3 : Math.min(10, st.swipeCount + 1)));
+        const bonusCoin = Math.max(1, Math.round(baseComboCoin * getCoinMult()));
+        st.score += bonusPts;
+        st.runCoins += bonusCoin;
+        addFloat(t.x, t.y - 24, `⚡ ${st.swipeCount} 連斬加成! +${bonusPts} +${bonusCoin}🪙`, '#fde047', st.swipeCount >= 4 ? 20 : 18);
       }
     }
 
@@ -708,18 +745,34 @@
       }
     }
 
+    function spawnTreasureChest() {
+      const x = W * (0.24 + Math.random() * 0.52);
+      const vx = ((W * 0.5 - x) * 0.45) + (Math.random() - 0.5) * 90;
+      const vy = -(Math.sqrt(2 * 580 * (H * 0.68)));
+      st.targets.push({
+        kind: 'chest', emoji: '🎁', col: '#d97706', rim: '#fef08a', r: 35, pts: 450,
+        hp: 3, maxHp: 3, hitCd: 0, flash: 0, gravScale: 0.60,
+        x, y: H + 46, vx, vy, rot: 0, vr: (Math.random() - 0.5) * 2.2, sliced: false
+      });
+      showToast('🎁 黃金金幣寶箱飛出！連續滑斬 3 刀爆出海量金幣！');
+    }
+
     function spawnWaveTargets() {
       const hero = getHero();
-      const cnt = Math.min(6, 2 + Math.floor(st.wave / 2) + (Math.random() < 0.4 ? 1 : 0));
+      const cnt = Math.min(7, 3 + Math.floor(st.wave / 2) + (Math.random() < 0.45 ? 1 : 0));
+      let waveBombs = 0;
       for (let k = 0; k < cnt; k++) {
         const roll = Math.random();
+        // Bomb spawn rate reduced to 10% of previous 12% (0.012), max 1 per wave, never on Wave 1
+        const bombRate = (st.wave >= 2 && waveBombs === 0) ? 0.012 : 0;
         const goldRate = hero.id === 'doraemon' ? 0.16 : 0.11;
         let obj;
-        if (roll < 0.12 && st.wave >= 1) {
+        if (roll < bombRate) {
+          waveBombs++;
           obj = { kind: 'bomb', emoji: '💣', col: '#1e293b', rim: '#ef4444', r: 28, pts: 0 };
-        } else if (roll < 0.12 + goldRate) {
+        } else if (roll < bombRate + goldRate) {
           obj = { kind: 'gold', emoji: '⭐', col: '#fbbf24', rim: '#fef08a', r: 26, pts: 80 };
-        } else if (roll < 0.12 + goldRate + 0.06) {
+        } else if (roll < bombRate + goldRate + 0.06) {
           obj = { kind: 'freeze', emoji: '❄️', col: '#38bdf8', rim: '#e0f2fe', r: 27, pts: 60 };
         } else {
           obj = TARGET_STYLES[Math.floor(Math.random() * TARGET_STYLES.length)];
@@ -846,7 +899,7 @@
       const hero = getHero();
       st.mode = 'playing'; st.time = 0; st.wave = 1; st.lives = 3; st.score = 0; st.runCoins = 0; st.slices = 0; st.maxCombo = 0;
       st.ultCharge = 100; st.shake = 0; st.slowTimer = 0; st.bombShield = hero.id === 'rimuru' ? 5.0 : 0;
-      st.spawnCd = 0.35; st.bossTimer = 24; st.boss = null;
+      st.spawnCd = 0.35; st.bossTimer = 24; st.chestTimer = 7.5; st.boss = null;
       st.swipeCount = 0; st.swipeWindow = 0;
       st.trail = []; st.slashLines = []; st.ultFx = []; st.targets = []; st.halves = []; st.particles = []; st.floats = [];
 
@@ -899,11 +952,16 @@
       const simDt = st.slowTimer > 0 ? dt * 0.44 : dt;
       st.ultCharge = Math.min(100, st.ultCharge + dt * 3.0 * syn.ultMult);
 
-      // Spawn waves & Boss
+      // Spawn waves, Golden Coin Treasure Chests & Boss
       st.spawnCd -= simDt;
       if (st.spawnCd <= 0 && !st.boss) {
         spawnWaveTargets();
         st.spawnCd = Math.max(0.85, 1.85 - st.wave * 0.08);
+      }
+      st.chestTimer -= dt;
+      if (st.chestTimer <= 0 && !st.boss) {
+        spawnTreasureChest();
+        st.chestTimer = 13 + Math.random() * 4;
       }
       st.bossTimer -= dt;
       if (st.bossTimer <= 0 && !st.boss) {
@@ -932,9 +990,11 @@
       for (let i = st.targets.length - 1; i >= 0; i--) {
         const t = st.targets[i];
         if (t.sliced) { st.targets.splice(i, 1); continue; }
+        if (t.hitCd > 0) t.hitCd -= dt;
+        if (t.flash > 0) t.flash -= dt;
         t.x += t.vx * simDt;
         t.y += t.vy * simDt;
-        t.vy += 960 * simDt;
+        t.vy += 960 * (t.gravScale || 1) * simDt;
         t.rot += t.vr * simDt;
         if (t.y > H + 90 && t.vy > 0) {
           st.targets.splice(i, 1);
@@ -1007,17 +1067,38 @@
         ctx.restore();
       }
 
-      // Active Targets
+      // Active Targets (Fruits, Gold, Freeze, Bombs & Radiant Golden Coin Treasure Chest!)
       for (const t of st.targets) {
         ctx.save();
-        ctx.translate(t.x, t.y); ctx.rotate(t.rot);
-        ctx.fillStyle = t.col;
-        ctx.shadowColor = t.rim; ctx.shadowBlur = t.kind === 'bomb' ? 18 : 14;
-        ctx.beginPath(); ctx.arc(0, 0, t.r, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = t.rim; ctx.lineWidth = 3; ctx.stroke();
-        ctx.font = `${Math.round(t.r * 1.1)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(t.emoji, 0, 2);
+        ctx.translate(t.x, t.y);
+        if (t.kind === 'chest') {
+          const pulse = 1 + Math.sin(st.time * 10) * 0.08;
+          ctx.strokeStyle = 'rgba(253, 224, 71, 0.72)'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(0, 0, (t.r + 9) * pulse, 0, Math.PI * 2); ctx.stroke();
+          ctx.rotate(t.rot);
+          ctx.fillStyle = t.flash > 0 ? '#ffffff' : '#b45309';
+          ctx.shadowColor = '#fde047'; ctx.shadowBlur = 24;
+          ctx.beginPath(); ctx.roundRect(-t.r, -t.r * 0.82, t.r * 2, t.r * 1.64, 10); ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = '#fde047'; ctx.lineWidth = 4; ctx.stroke();
+          ctx.fillStyle = '#fde047'; ctx.fillRect(-t.r, -4, t.r * 2, 8);
+          ctx.rotate(-t.rot);
+          ctx.font = '32px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('🎁', 0, -2);
+          ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.roundRect(-24, t.r * 0.72, 48, 17, 7); ctx.fill();
+          ctx.strokeStyle = '#fde047'; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.fillStyle = '#fde047'; ctx.font = '900 11px sans-serif';
+          ctx.fillText(`🪙 ${t.hp}/${t.maxHp}`, 0, t.r * 0.72 + 9);
+        } else {
+          ctx.rotate(t.rot);
+          ctx.fillStyle = t.col;
+          ctx.shadowColor = t.rim; ctx.shadowBlur = t.kind === 'bomb' ? 18 : 14;
+          ctx.beginPath(); ctx.arc(0, 0, t.r, 0, Math.PI * 2); ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = t.rim; ctx.lineWidth = 3; ctx.stroke();
+          ctx.font = `${Math.round(t.r * 1.1)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(t.emoji, 0, 2);
+        }
         ctx.restore();
       }
 
