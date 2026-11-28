@@ -215,6 +215,32 @@
       .perm-upg-grid { grid-template-columns: 1fr; }
       .panel { padding: 16px 14px; }
     }
+    .hero-stats-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .hstat {
+      font-size: 10px; font-weight: 800; padding: 1.5px 6px; border-radius: 6px;
+      background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0;
+    }
+    .hstat.atk { color: #fda4af; border-color: rgba(244, 63, 94, 0.35); }
+    .hstat.ult { color: #fde047; border-color: rgba(250, 204, 21, 0.35); }
+    .hstat.wep { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.35); }
+    .ult-cutin {
+      position: absolute; left: 0; right: 0; top: 34%; z-index: 38;
+      pointer-events: none; display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding: 12px 24px; opacity: 0; transform: translateX(-40px) skewX(-8deg);
+      transition: opacity 0.16s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.92) 18%, var(--cut-col, #10b981) 50%, rgba(15, 23, 42, 0.92) 82%, transparent);
+      border-top: 2px solid rgba(255, 255, 255, 0.75); border-bottom: 2px solid rgba(255, 255, 255, 0.75);
+      box-shadow: 0 0 40px var(--cut-col, #10b981);
+    }
+    .ult-cutin.show { opacity: 1; transform: translateX(0) skewX(-8deg); }
+    .ult-cutin-av {
+      width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+      border: 3px solid #fde047; box-shadow: 0 0 20px rgba(253, 224, 71, 0.8);
+      transform: skewX(8deg); background: #0f172a; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+    }
+    .ult-cutin-txt { transform: skewX(8deg); text-align: left; }
+    .ult-cutin-sub { font-size: 11px; font-weight: 900; color: #fef08a; letter-spacing: 1.5px; }
+    .ult-cutin-title { font-size: 22px; font-weight: 900; color: #fff; text-shadow: 0 3px 14px rgba(0, 0, 0, 0.85); }
   </style>
 </head>
 <body>
@@ -248,6 +274,13 @@
     </div>
 
     <div class="ult-flash" id="ultFlash"></div>
+    <div class="ult-cutin" id="ultCutin">
+      <div class="ult-cutin-av" id="ultCutinAv">🐉</div>
+      <div class="ult-cutin-txt">
+        <div class="ult-cutin-sub" id="ultCutinSub">DRAGON ULTIMATE</div>
+        <div class="ult-cutin-title" id="ultCutinTitle">翠龍衝擊吞噬波</div>
+      </div>
+    </div>
 
     <div class="ult-bar hidden" id="ultBar">
       <button class="sprint-btn" id="btnSprint" type="button">🔥 衝刺</button>
@@ -604,6 +637,37 @@
       }
     }
 
+    const HERO_COMBAT_SPECS = {
+      cyber_d:  { atk: 20, fireCd: 0.72, ultR: 440, role: '均衡光龍', weaponName: '翠龍星彈' },
+      tanjiro:  { atk: 24, fireCd: 0.66, ultR: 470, role: '水龍連斬', weaponName: '水龍月牙波' },
+      kanade:   { atk: 23, fireCd: 0.64, ultR: 490, role: '音律磁場', weaponName: '五線音符彈' },
+      mario:    { atk: 27, fireCd: 0.65, ultR: 500, role: '烈焰狂衝', weaponName: '旋轉烈焰火球' },
+      muichiro: { atk: 29, fireCd: 0.54, ultR: 510, role: '霞霧極速', weaponName: '霞霧飛刃' },
+      doraemon: { atk: 30, fireCd: 0.60, ultR: 540, role: '黑洞吸食', weaponName: '四次元空氣砲' },
+      pikachu:  { atk: 33, fireCd: 0.52, ultR: 560, role: '雷電極速', weaponName: '十萬伏特閃電' },
+      levi:     { atk: 37, fireCd: 0.45, ultR: 570, role: '嵐斬刺客', weaponName: '超硬鋼雙刃' },
+      rimuru:   { atk: 40, fireCd: 0.52, ultR: 600, role: '魔素吞噬', weaponName: '魔素金核水彈' },
+      luffy:    { atk: 44, fireCd: 0.54, ultR: 630, role: '霸王核爆', weaponName: '燃燒橡膠火拳' },
+      gojo:     { atk: 50, fireCd: 0.48, ultR: 680, role: '無量吞噬', weaponName: '蒼・赫雙色引力球' }
+    };
+    HEROES.forEach((h) => { if (HERO_COMBAT_SPECS[h.id]) Object.assign(h, HERO_COMBAT_SPECS[h.id]); });
+    let cutinTimer = null;
+    function showUltCutin(hero) {
+      const el = document.getElementById('ultCutin');
+      const av = document.getElementById('ultCutinAv');
+      const sub = document.getElementById('ultCutinSub');
+      const title = document.getElementById('ultCutinTitle');
+      if (!el) return;
+      el.style.setProperty('--cut-col', hero.color);
+      if (hero.avatar) av.innerHTML = `<img src="${hero.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="">`;
+      else av.textContent = hero.icon;
+      sub.textContent = `${hero.name} · ${hero.role || 'ALL-STAR'} · ATK ${hero.atk}`;
+      title.textContent = `${hero.icon} ${hero.ultName}！`;
+      el.classList.add('show');
+      clearTimeout(cutinTimer);
+      cutinTimer = setTimeout(() => el.classList.remove('show'), 680);
+    }
+
     function activateUltimate() {
       if (st.mode !== 'playing') return;
       const hero = getHero();
@@ -612,12 +676,14 @@
         return;
       }
       const p = st.player;
+      const blastR = hero.ultR || 460;
       st.ultCharge = 0;
-      st.shake = 0.44;
-      st.invuln = 4.2;
-      st.magBuff = 5.5;
+      st.shake = 0.55;
+      st.invuln = 4.4;
+      st.magBuff = 5.8;
       st.boost = 100;
       SFX.ult();
+      showUltCutin(hero);
 
       const fl = document.getElementById('ultFlash');
       if (fl) {
@@ -625,12 +691,50 @@
         fl.classList.add('boom');
         requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove('boom')));
       }
-      st.waves.push({ x: p.x, y: p.y, r: 24, maxR: 440, col: hero.color, alpha: 1 });
+      if (!st.ultFx) st.ultFx = [];
+      st.waves.push({ x: p.x, y: p.y, r: 24, maxR: blastR, col: hero.color, alpha: 1 });
+      st.waves.push({ x: p.x, y: p.y, r: 12, maxR: blastR * 0.72, col: hero.glow, alpha: 0.95 });
+
+      // Hero-Specific Arena Ultimate Spectacle
+      if (hero.id === 'gojo') {
+        st.ultFx.push({ kind: 'purple_orb', x: p.x, y: p.y, vx: Math.cos(p.ang) * 420, vy: Math.sin(p.ang) * 420, r: 96, life: 1.4 });
+      } else if (hero.id === 'luffy') {
+        for (let k = 0; k < 5; k++) {
+          const a = (k / 5) * Math.PI * 2;
+          st.ultFx.push({ kind: 'blast_ring', x: p.x + Math.cos(a) * 185, y: p.y + Math.sin(a) * 185, r: 18, maxR: 220, col: '#dc2626', accent: '#fde047', life: 1.0 });
+        }
+      } else if (hero.id === 'rimuru') {
+        for (let k = 0; k < 8; k++) {
+          const a = (k / 8) * Math.PI * 2;
+          st.ultFx.push({ kind: 'sky_beam', x: p.x + Math.cos(a) * 210, y: p.y + Math.sin(a) * 170, col: '#38bdf8', life: 1.0 });
+        }
+      } else if (hero.id === 'pikachu') {
+        for (let k = 0; k < 8; k++) {
+          const a = (k / 8) * Math.PI * 2;
+          st.ultFx.push({ kind: 'thunder', x: p.x + Math.cos(a) * 220, y: p.y + Math.sin(a) * 180, col: '#facc15', life: 0.95 });
+        }
+      } else if (hero.id === 'levi' || hero.id === 'muichiro') {
+        const sc = hero.id === 'levi' ? '#4ade80' : '#2dd4bf';
+        for (let k = 0; k < 7; k++) {
+          const a = (k / 7) * Math.PI + p.ang;
+          st.ultFx.push({ kind: 'slash_line', x1: p.x - Math.cos(a) * 340, y1: p.y - Math.sin(a) * 340, x2: p.x + Math.cos(a) * 340, y2: p.y + Math.sin(a) * 340, col: sc, life: 0.85 });
+        }
+      } else if (hero.id === 'doraemon') {
+        st.ultFx.push({ kind: 'blackhole', x: p.x, y: p.y, r: 120, life: 1.25 });
+      } else if (hero.id === 'tanjiro') {
+        st.ultFx.push({ kind: 'water_dragon', x: p.x, y: p.y, r: 220, angle: 0, life: 1.25 });
+      } else if (hero.id === 'mario') {
+        for (let k = 0; k < 8; k++) {
+          const a = (k / 8) * Math.PI * 2;
+          st.shots.push({ x: p.x, y: p.y, vx: Math.cos(a) * 580, vy: Math.sin(a) * 580, dmg: hero.atk * 1.5, heroId: 'mario', col: '#ef4444', accent: '#fde047', life: 1.1 });
+        }
+      }
+
       addFloat(p.x, p.y - 34, `${hero.icon} ${hero.ultName}！`, '#fde047', 22);
-      showToast(`${hero.icon} 奧義解放：【${hero.ultName}】！震爆周圍敵蛇＋無敵吸食！`);
+      showToast(`${hero.icon} 奧義解放：【${hero.ultName}】！半徑 ${blastR} 震爆全場敵蛇！`);
 
       for (const b of st.bots) {
-        if (!b.dead && Math.hypot(b.x - p.x, b.y - p.y) < 460) killBot(b);
+        if (!b.dead && Math.hypot(b.x - p.x, b.y - p.y) < blastR) killBot(b);
       }
       st.bots = st.bots.filter(b => !b.dead);
       updateHudUI();
@@ -642,7 +746,8 @@
       const hero = getHero();
       st.mode = 'playing'; st.time = 0; st.score = 0; st.runCoins = 0; st.kills = 0; st.maxLen = 16;
       st.ultCharge = 100; st.shake = 0; st.boost = 100; st.sprinting = false; st.invuln = 2.0; st.magBuff = 0;
-      st.bots = []; st.orbs = []; st.particles = []; st.waves = []; st.floats = [];
+      st.fireCd = 0.35;
+      st.bots = []; st.orbs = []; st.shots = []; st.ultFx = []; st.particles = []; st.waves = []; st.floats = [];
       st.player = createSnake(0, 0, -Math.PI / 2, 16, hero.color, hero.glow, false);
       st.player.r = 16;
       spawnOrbs(150);
@@ -654,7 +759,7 @@
       document.getElementById('barsWrap').classList.remove('hidden');
       document.getElementById('ultBar').classList.remove('hidden');
       updateHudUI();
-      showToast(`${hero.icon} 【${hero.name}】游入戰場！專屬龍魂奧義已 100% 就緒！`);
+      showToast(`${hero.icon} 【${hero.name}】游入戰場！龍息武器：${hero.weaponName || '能量彈'}！`);
     }
 
     function triggerGameOver() {
@@ -741,6 +846,58 @@
       stepSnake(p, boosting ? baseSpd * 1.58 : baseSpd, dt);
       if (boosting && Math.random() < dt * 18) addParticles(p.pts[p.pts.length - 1].x, p.pts[p.pts.length - 1].y, hero.glow, 1, 80);
 
+      // Periodic Hero Signature Weapon Breath Shots!
+      st.fireCd = (st.fireCd || 0) - dt;
+      if (st.fireCd <= 0 && st.shots && st.shots.length < 24) {
+        st.fireCd = hero.fireCd || 0.62;
+        st.shots.push({
+          x: p.x + Math.cos(p.ang) * 20, y: p.y + Math.sin(p.ang) * 20,
+          vx: Math.cos(p.ang) * 560, vy: Math.sin(p.ang) * 560,
+          dmg: (hero.atk || 22) * syn.scoreMult,
+          heroId: hero.id, col: hero.color, accent: hero.glow, life: 1.05
+        });
+      }
+
+      // Update Hero Weapon Shots vs AI Rival / Boss Serpents
+      if (st.shots) {
+        for (let i = st.shots.length - 1; i >= 0; i--) {
+          const sh = st.shots[i];
+          sh.x += sh.vx * dt; sh.y += sh.vy * dt; sh.life -= dt;
+          let hit = false;
+          for (const b of st.bots) {
+            if (b.dead) continue;
+            if (Math.hypot(sh.x - b.x, sh.y - b.y) < b.r + 16) {
+              const segCut = Math.max(2, Math.round(sh.dmg / 9));
+              b.targetLen = Math.max(0, b.targetLen - segCut);
+              while (b.pts.length > Math.max(4, Math.floor(b.targetLen))) {
+                const tail = b.pts.pop();
+                if (st.orbs.length < 240) st.orbs.push({ x: tail.x, y: tail.y, r: 7, val: 2, kind: 'xp', col: b.glow });
+              }
+              addParticles(sh.x, sh.y, sh.col, 8, 180);
+              addFloat(b.x, b.y - 18, `-${Math.round(sh.dmg)}`, '#fde047', 14);
+              st.score += Math.round(sh.dmg * 0.6);
+              hit = true;
+              if (b.targetLen <= 8) killBot(b);
+              break;
+            }
+          }
+          if (hit || sh.life <= 0) st.shots.splice(i, 1);
+        }
+      }
+
+      // Update Active Hero Ultimate FX
+      if (st.ultFx) {
+        for (let i = st.ultFx.length - 1; i >= 0; i--) {
+          const fx = st.ultFx[i]; fx.life -= dt;
+          if (fx.kind === 'purple_orb') {
+            fx.x += fx.vx * dt; fx.y += fx.vy * dt;
+            for (const b of st.bots) { if (!b.dead && Math.hypot(b.x - fx.x, b.y - fx.y) < fx.r + 50) killBot(b); }
+          } else if (fx.kind === 'blast_ring') { fx.r += (fx.maxR - fx.r) * Math.min(1, dt * 6); }
+          else if (fx.kind === 'water_dragon') { fx.x = p.x; fx.y = p.y; fx.angle += dt * 7; }
+          if (fx.life <= 0) st.ultFx.splice(i, 1);
+        }
+      }
+
       // Maintain orbs & AI rival snakes (including Boss Serpent every ~28s)
       if (st.orbs.length < 140) spawnOrbs(20);
       if (st.bots.length < 7) spawnBot(st.time > 20 && !st.bots.some(b => b.isBoss) && Math.random() < 0.25);
@@ -752,14 +909,12 @@
         b.aiTimer -= dt;
         if (b.aiTimer <= 0) {
           b.aiTimer = 0.6 + Math.random() * 1.0;
-          // Seek center if near wall, else weave toward random orb
           if (Math.hypot(b.x, b.y) > WORLD_R - 220) b.targetAng = Math.atan2(-b.y, -b.x);
           else b.targetAng = b.ang + (Math.random() - 0.5) * 1.6;
         }
         b.ang = steerAngle(b.ang, b.targetAng || b.ang, dt * 3.6);
         stepSnake(b, b.isBoss ? 195 : 175, dt);
 
-        // Did Bot head crash into Player body? -> Player scores a KILL!
         let botKilled = false;
         for (let k = 2; k < p.pts.length; k += 2) {
           if (Math.hypot(b.x - p.pts[k].x, b.y - p.pts[k].y) < b.r + 12) {
@@ -768,7 +923,6 @@
         }
         if (botKilled) continue;
 
-        // Did Player head crash into Bot body?
         if (st.invuln <= 0) {
           for (let k = 0; k < b.pts.length; k += 2) {
             if (Math.hypot(p.x - b.pts[k].x, p.y - b.pts[k].y) < p.r + b.r * 0.72) {
@@ -825,7 +979,6 @@
     // 5. RENDER NEON SERPENT ARENA
     // =========================================================================
     function drawSnake(sn, isPlayer, img) {
-      // Glowing body segments (tail -> neck)
       for (let i = sn.pts.length - 1; i >= 1; i--) {
         const pt = sn.pts[i];
         const taper = 0.55 + 0.45 * (1 - i / sn.pts.length);
@@ -833,7 +986,6 @@
         ctx.fillStyle = i % 2 === 0 ? sn.col : sn.glow;
         ctx.beginPath(); ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2); ctx.fill();
       }
-      // Head
       ctx.save();
       if (isPlayer && st.invuln > 0 && Math.floor(st.time * 14) % 2 === 0) ctx.globalAlpha = 0.65;
       ctx.strokeStyle = isPlayer ? '#fde047' : (sn.isBoss ? '#fde047' : '#ffffff');
@@ -854,7 +1006,6 @@
           ctx.font = '20px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText('👑', sn.x, sn.y + 1);
         } else {
-          // Glowing eyes
           const ex = Math.cos(sn.ang) * 5, ey = Math.sin(sn.ang) * 5;
           const px = -Math.sin(sn.ang) * 5, py = Math.cos(sn.ang) * 5;
           ctx.fillStyle = '#fff';
@@ -863,6 +1014,82 @@
         }
       }
       ctx.restore();
+    }
+
+    function drawSnakeWeaponShot(ctx, sh, t) {
+      const id = sh.heroId || 'cyber_d';
+      const ang = Math.atan2(sh.vy, sh.vx);
+      ctx.save(); ctx.translate(sh.x, sh.y); ctx.rotate(ang);
+      ctx.shadowColor = sh.col; ctx.shadowBlur = 12;
+      if (id === 'tanjiro') {
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(0, 0, 12, -1.1, 1.1); ctx.arc(-4, 0, 8, 1.0, -1.0, true); ctx.closePath(); ctx.fill();
+      } else if (id === 'kanade') {
+        ctx.rotate(-ang); ctx.fillStyle = '#e879f9'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('♪', 0, 0);
+      } else if (id === 'mario') {
+        ctx.rotate(t * 14); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill();
+      } else if (id === 'muichiro') {
+        ctx.fillStyle = '#99f6e4'; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-4, 6); ctx.lineTo(-10, 0); ctx.lineTo(-4, -6); ctx.closePath(); ctx.fill();
+      } else if (id === 'doraemon') {
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(2, 0, 5, 11, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (id === 'pikachu') {
+        ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(1, -6); ctx.lineTo(4, -1); ctx.lineTo(-11, -5); ctx.lineTo(-4, 1); ctx.lineTo(-10, 6); ctx.closePath(); ctx.fill();
+      } else if (id === 'levi') {
+        ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.moveTo(15, -2.5); ctx.lineTo(-9, -5); ctx.lineTo(-9, -1); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(15, 2.5); ctx.lineTo(-9, 5); ctx.lineTo(-9, 1); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.6; ctx.stroke();
+      } else if (id === 'rimuru') {
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.moveTo(13, 0); ctx.quadraticCurveTo(2, 9, -9, 0); ctx.quadraticCurveTo(2, -9, 13, 0); ctx.fill();
+        ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(2, 0, 3.5, 0, Math.PI * 2); ctx.fill();
+      } else if (id === 'luffy') {
+        ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.roundRect(-4, -7, 14, 14, 4); ctx.fill();
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2; ctx.stroke();
+      } else if (id === 'gojo') {
+        ctx.rotate(t * 12);
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(5, 0, 5.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(-5, 0, 5.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
+      } else {
+        ctx.fillStyle = sh.accent || '#6ee7b7'; ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(0, 6); ctx.lineTo(-10, 0); ctx.lineTo(0, -6); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function renderSnakeUltFx(ctx) {
+      st.ultFx.forEach((fx) => {
+        ctx.save(); ctx.globalAlpha = Math.min(1, fx.life * 1.4);
+        if (fx.kind === 'purple_orb') {
+          const g = ctx.createRadialGradient(fx.x, fx.y, 12, fx.x, fx.y, fx.r * 1.4);
+          g.addColorStop(0, '#fff'); g.addColorStop(0.4, '#e879f9'); g.addColorStop(0.8, 'rgba(147,51,234,0.85)'); g.addColorStop(1, 'rgba(56,189,248,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 1.4, 0, Math.PI * 2); ctx.fill();
+        } else if (fx.kind === 'blast_ring') {
+          ctx.strokeStyle = fx.col; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2); ctx.stroke();
+          if (fx.accent) { ctx.strokeStyle = fx.accent; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 0.7, 0, Math.PI * 2); ctx.stroke(); }
+        } else if (fx.kind === 'sky_beam') {
+          const g = ctx.createLinearGradient(fx.x - 18, fx.y, fx.x + 18, fx.y);
+          g.addColorStop(0, 'rgba(56,189,248,0)'); g.addColorStop(0.5, '#e0f2fe'); g.addColorStop(1, 'rgba(56,189,248,0)');
+          ctx.fillStyle = g; ctx.fillRect(fx.x - 18, fx.y - 420, 36, 440);
+        } else if (fx.kind === 'thunder') {
+          ctx.strokeStyle = '#facc15'; ctx.lineWidth = 7;
+          ctx.beginPath(); ctx.moveTo(fx.x, fx.y - 380);
+          for (let s = 1; s <= 5; s++) ctx.lineTo(fx.x + (Math.random() - 0.5) * 32, fx.y - 380 + s * 76);
+          ctx.stroke();
+        } else if (fx.kind === 'slash_line') {
+          ctx.strokeStyle = fx.col; ctx.lineWidth = 10; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+        } else if (fx.kind === 'blackhole') {
+          const g = ctx.createRadialGradient(fx.x, fx.y, 10, fx.x, fx.y, fx.r * 1.6);
+          g.addColorStop(0, '#020617'); g.addColorStop(0.55, 'rgba(14,165,233,0.75)'); g.addColorStop(1, 'rgba(14,165,233,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 1.6, 0, Math.PI * 2); ctx.fill();
+        } else if (fx.kind === 'water_dragon') {
+          ctx.strokeStyle = '#14b8a6'; ctx.lineWidth = 14; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, fx.angle, fx.angle + Math.PI * 1.4); ctx.stroke();
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 7;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 0.65, -fx.angle, -fx.angle + Math.PI * 1.4); ctx.stroke();
+        }
+        ctx.restore();
+      });
     }
 
     function render() {
@@ -877,7 +1104,6 @@
       ctx.save();
       ctx.translate(W / 2 - camX + sx, H / 2 - camY + sy);
 
-      // Circular Neon Arena Boundary & Hex-style Grid
       const cell = 84;
       const gx0 = Math.floor((camX - W / 2) / cell) * cell;
       const gy0 = Math.floor((camY - H / 2) / cell) * cell;
@@ -890,13 +1116,11 @@
       ctx.strokeStyle = 'rgba(244, 63, 94, 0.72)'; ctx.lineWidth = 8;
       ctx.beginPath(); ctx.arc(0, 0, WORLD_R, 0, Math.PI * 2); ctx.stroke();
 
-      // Waves
       st.waves.forEach((w) => {
         ctx.save(); ctx.globalAlpha = Math.max(0, w.alpha); ctx.strokeStyle = w.col; ctx.lineWidth = 6;
         ctx.beginPath(); ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
       });
 
-      // Orbs
       for (const o of st.orbs) {
         if (Math.abs(o.x - camX) > W * 0.6 || Math.abs(o.y - camY) > H * 0.6) continue;
         ctx.fillStyle = o.col;
@@ -909,11 +1133,12 @@
         }
       }
 
-      // Rival Bots & Player Dragon
+      // Rival Bots, Player Dragon, Hero Weapon Breath Shots & Ult VFX
       for (const b of st.bots) drawSnake(b, false, null);
       if (st.player) drawSnake(st.player, true, avatarCache[getHero().id]);
+      if (st.shots) { for (const sh of st.shots) drawSnakeWeaponShot(ctx, sh, st.time); }
+      if (st.ultFx && st.ultFx.length) renderSnakeUltFx(ctx);
 
-      // Particles & Floats
       for (const pt of st.particles) {
         ctx.globalAlpha = Math.max(0, pt.life * 2.2);
         ctx.fillStyle = pt.col; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
@@ -960,7 +1185,12 @@
         btn.type = 'button'; btn.className = 'hero-card' + (eq ? ' sel' : '');
         const tag = eq ? '<span style="color:#6ee7b7;font-size:10.5px;">出戰中</span>' : (own ? '<span style="color:#7dd3fc;font-size:10.5px;">已擁有</span>' : `<span style="color:#fde68a;font-size:10.5px;">🪙 ${h.price}</span>`);
         const avHtml = h.avatar ? `<img class="char-av" src="${h.avatar}" alt="">` : `${h.icon} `;
-        btn.innerHTML = `<div class="hero-top"><span style="display:inline-flex;align-items:center;">${avHtml}${h.name}</span>${tag}</div><div class="hero-desc">${h.desc}</div>`;
+        const statsHtml = `<div class="hero-stats-row">
+          <span class="hstat atk">⚔️ ATK ${h.atk || 20}</span>
+          <span class="hstat ult">💥 範圍 ${h.ultR || 440}</span>
+          <span class="hstat wep">🔧 ${h.weaponName || '能量彈'}</span>
+        </div>`;
+        btn.innerHTML = `<div class="hero-top"><span style="display:inline-flex;align-items:center;">${avHtml}${h.name}</span>${tag}</div>${statsHtml}<div class="hero-desc">${h.desc}</div>`;
         btn.addEventListener('click', () => {
           if (own) { save.equippedHero = h.id; persistSave(); SFX.coin(); showToast(`🐉 已切換巨龍：【${h.name}】`); }
           else if (save.coins >= h.price) {

@@ -215,6 +215,32 @@
     .syn-chip { font-size: 11px; color: #e2e8f0; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 7px; padding: 2px 7px; }
     .syn-chip b { color: #86efac; }
     .syn-hint { font-size: 10.5px; color: #cbd5e1; margin-top: 5px; line-height: 1.35; }
+    .ship-stats-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .sstat {
+      font-size: 10px; font-weight: 800; padding: 1.5px 6px; border-radius: 6px;
+      background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0;
+    }
+    .sstat.atk { color: #fda4af; border-color: rgba(244, 63, 94, 0.35); }
+    .sstat.ult { color: #fde047; border-color: rgba(250, 204, 21, 0.35); }
+    .sstat.wep { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.35); }
+    .ult-cutin {
+      position: absolute; left: 0; right: 0; top: 34%; z-index: 38;
+      pointer-events: none; display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding: 12px 24px; opacity: 0; transform: translateX(-40px) skewX(-8deg);
+      transition: opacity 0.16s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.92) 18%, var(--cut-col, #38bdf8) 50%, rgba(15, 23, 42, 0.92) 82%, transparent);
+      border-top: 2px solid rgba(255, 255, 255, 0.75); border-bottom: 2px solid rgba(255, 255, 255, 0.75);
+      box-shadow: 0 0 40px var(--cut-col, #38bdf8);
+    }
+    .ult-cutin.show { opacity: 1; transform: translateX(0) skewX(-8deg); }
+    .ult-cutin-av {
+      width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+      border: 3px solid #fde047; box-shadow: 0 0 20px rgba(253, 224, 71, 0.8);
+      transform: skewX(8deg); background: #0f172a; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+    }
+    .ult-cutin-txt { transform: skewX(8deg); text-align: left; }
+    .ult-cutin-sub { font-size: 11px; font-weight: 900; color: #fef08a; letter-spacing: 1.5px; }
+    .ult-cutin-title { font-size: 22px; font-weight: 900; color: #fff; text-shadow: 0 3px 14px rgba(0, 0, 0, 0.85); }
   </style>
 </head>
 <body>
@@ -252,6 +278,13 @@
     </div>
 
     <div class="nova-flash" id="novaFlash"></div>
+    <div class="ult-cutin" id="ultCutin">
+      <div class="ult-cutin-av" id="ultCutinAv">🚀</div>
+      <div class="ult-cutin-txt">
+        <div class="ult-cutin-sub" id="ultCutinSub">STAR ULTIMATE</div>
+        <div class="ult-cutin-title" id="ultCutinTitle">超新星大招</div>
+      </div>
+    </div>
 
     <div class="nova-bar hidden" id="novaBar">
       <button class="nova-btn" id="btnNova" type="button">
@@ -628,6 +661,44 @@
       }
     }
 
+    const SHIP_COMBAT_SPECS = {
+      vanguard: { atk: 14, crit: 0.10, ultMult: 10, role: '蒼穹攔截', weaponName: '雙子電漿雷射' },
+      crimson:  { atk: 17, crit: 0.14, ultMult: 11, role: '猩紅砲擊', weaponName: '赤焰雙連砲' },
+      aurora:   { atk: 19, crit: 0.18, ultMult: 11, role: '幽靈追蹤', weaponName: '極光追蹤光矢' },
+      solaris:  { atk: 22, crit: 0.16, ultMult: 12, role: '天帝重砲', weaponName: '黃金審判光束' },
+      tanjiro:  { atk: 18, crit: 0.16, ultMult: 11, role: '水龍連斬', weaponName: '日輪水龍月牙刃' },
+      kanade:   { atk: 17, crit: 0.14, ultMult: 11, role: '控場音律', weaponName: '五線音符魔彈' },
+      mario:    { atk: 20, crit: 0.16, ultMult: 12, role: '烈焰重裝', weaponName: '旋轉烈焰火球' },
+      muichiro: { atk: 21, crit: 0.28, ultMult: 12, role: '疾風暴擊', weaponName: '霞霧飛刃' },
+      doraemon: { atk: 21, crit: 0.16, ultMult: 13, role: '道具聚怪', weaponName: '四次元空氣砲環' },
+      pikachu:  { atk: 23, crit: 0.25, ultMult: 13, role: '雷霆極速', weaponName: '十萬伏特閃電箭' },
+      levi:     { atk: 25, crit: 0.36, ultMult: 14, role: '暴擊刺客', weaponName: '超硬鋼雙刃' },
+      rimuru:   { atk: 26, crit: 0.20, ultMult: 14, role: '魔素吞噬', weaponName: '魔素暴食水彈' },
+      luffy:    { atk: 29, crit: 0.24, ultMult: 15, role: '霸氣核爆', weaponName: '燃燒橡膠火拳' },
+      gojo:     { atk: 33, crit: 0.30, ultMult: 16, role: '領域核彈', weaponName: '蒼・赫雙色引力球' }
+    };
+    SHIPS.forEach((s) => { if (SHIP_COMBAT_SPECS[s.id]) Object.assign(s, SHIP_COMBAT_SPECS[s.id]); });
+
+    let cutinTimer = null;
+    function showUltCutin(ship, ult) {
+      const el = document.getElementById('ultCutin');
+      const av = document.getElementById('ultCutinAv');
+      const sub = document.getElementById('ultCutinSub');
+      const title = document.getElementById('ultCutinTitle');
+      if (!el) return;
+      el.style.setProperty('--cut-col', ship.color);
+      if (ship.avatar) {
+        av.innerHTML = `<img src="${ship.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="">`;
+      } else {
+        av.textContent = ship.icon;
+      }
+      sub.textContent = `${ship.name} · ${ship.role || 'ALL-STAR'} · ATK ${ship.atk}`;
+      title.textContent = `${ult.icon} ${ult.name}！`;
+      el.classList.add('show');
+      clearTimeout(cutinTimer);
+      cutinTimer = setTimeout(() => el.classList.remove('show'), 680);
+    }
+
     function activateNova() {
       if (state.mode !== 'playing') return;
       if (state.novaCharge < 100) {
@@ -636,10 +707,16 @@
       }
       const ship = getShip();
       const ult = SHIP_ULTS[ship.id] || SHIP_ULTS.vanguard;
+      const dmgMult = state.player.dmgMult || 1;
+      const heroAtk = ship.atk || 14;
+      const scaledUltDmg = Math.round(Math.max(ult.dmg, heroAtk * (ship.ultMult || 11)) * dmgMult);
+      const scaledBossDmg = Math.round(Math.max(ult.bossDmg, heroAtk * (ship.ultMult || 11) * 1.15) * dmgMult);
+
       state.novaCharge = 0;
-      state.shake = 0.52;
-      state.player.invuln = Math.max(state.player.invuln, 2.2);
+      state.shake = 0.6;
+      state.player.invuln = Math.max(state.player.invuln, 2.4);
       SFX.nova();
+      showUltCutin(ship, ult);
 
       // Full-screen elemental Nova Flash!
       const fl = document.getElementById('novaFlash');
@@ -650,9 +727,44 @@
       }
 
       // Dual expanding shockwaves + full bullet wipe!
-      state.shockwaves.push({ x: state.player.x, y: state.player.y, r: 22, maxR: Math.max(W, H) * 0.95, alpha: 1 });
-      state.shockwaves.push({ x: state.player.x, y: state.player.y, r: 6, maxR: Math.max(W, H) * 0.65, alpha: 0.9 });
+      state.shockwaves.push({ x: state.player.x, y: state.player.y, r: 22, maxR: Math.max(W, H) * 0.95, alpha: 1, col: ship.color });
+      state.shockwaves.push({ x: state.player.x, y: state.player.y, r: 6, maxR: Math.max(W, H) * 0.65, alpha: 0.9, col: ship.accent });
       state.eBullets = [];
+
+      // Hero-Specific Battlefield Ultimate Spectacle
+      if (ship.id === 'gojo') {
+        state.freezeTimer = Math.max(state.freezeTimer || 0, 2.5);
+        state.ultFx.push({ kind: 'purple_orb', x: state.player.x, y: state.player.y - 30, vy: -380, r: 88, life: 1.5, col: '#a855f7' });
+      } else if (ship.id === 'luffy') {
+        for (let k = 0; k < 5; k++) {
+          const rx = W * (0.16 + k * 0.17), ry = H * (0.24 + (k % 2) * 0.22);
+          state.ultFx.push({ kind: 'blast_ring', x: rx, y: ry, r: 16, maxR: 195, col: '#dc2626', accent: '#fde047', life: 0.85 + k * 0.1 });
+        }
+      } else if (ship.id === 'rimuru') {
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + Math.round(state.player.maxHp * 0.3));
+        for (let k = 0; k < 9; k++) {
+          state.ultFx.push({ kind: 'sky_beam', x: W * (0.1 + k * 0.1), col: '#38bdf8', life: 0.9 + (k % 3) * 0.12 });
+        }
+      } else if (ship.id === 'pikachu') {
+        for (let k = 0; k < 8; k++) {
+          state.ultFx.push({ kind: 'thunder', x: W * (0.12 + k * 0.11), col: '#facc15', life: 0.85 });
+        }
+      } else if (ship.id === 'levi') {
+        for (let k = 0; k < 6; k++) {
+          state.ultFx.push({ kind: 'slash_line', x1: Math.random() * W, y1: 0, x2: Math.random() * W, y2: H, col: '#4ade80', life: 0.75 });
+        }
+      } else if (ship.id === 'doraemon') {
+        state.ultFx.push({ kind: 'blackhole', x: W / 2, y: H * 0.38, r: 120, life: 1.25, col: '#0ea5e9' });
+      } else if (ship.id === 'kanade') {
+        state.freezeTimer = Math.max(state.freezeTimer || 0, 2.6);
+        state.ultFx.push({ kind: 'melody', x: W / 2, y: H * 0.48, r: 40, maxR: Math.max(W, H) * 0.6, life: 1.2, col: '#e879f9' });
+      } else if (ship.id === 'tanjiro') {
+        state.ultFx.push({ kind: 'water_dragon', x: state.player.x, y: state.player.y, r: 220, angle: 0, life: 1.25, col: '#14b8a6' });
+      } else if (ship.id === 'muichiro') {
+        for (let k = 0; k < 6; k++) {
+          state.ultFx.push({ kind: 'slash_line', x1: 0, y1: H * (0.15 + k * 0.14), x2: W, y2: H * (0.25 + k * 0.12), col: '#2dd4bf', life: 0.8 });
+        }
+      }
 
       // Ship-specific signature Ultimate effects
       if (ult.shield) state.player.shield = true;
@@ -666,8 +778,8 @@
             y: state.player.y + Math.sin(ang) * 24,
             vx: Math.cos(ang) * 320,
             vy: Math.sin(ang) * 320 - 160,
-            dmg: Math.round(32 * (state.player.dmgMult || 1)),
-            col: '#e879f9',
+            dmg: Math.round(heroAtk * 1.65 * dmgMult),
+            col: ship.color, accent: ship.accent, shipId: ship.id,
             homing: true
           });
         }
@@ -675,17 +787,18 @@
 
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const e = state.enemies[i];
-        e.hp -= ult.dmg;
+        e.hp -= scaledUltDmg;
         addParticles(e.x, e.y, ship.accent, 14, 240);
         if (e.hp <= 0) killEnemy(i);
       }
       if (state.boss) {
-        state.boss.hp -= ult.bossDmg;
+        state.boss.hp -= scaledBossDmg;
         addParticles(state.boss.x, state.boss.y, '#fde047', 34, 310);
+        spawnFloat(state.boss.x, state.boss.y - 34, `💥-${scaledBossDmg}`, '#fde047', 20);
         if (state.boss.hp <= 0) defeatBoss();
       }
       spawnFloat(state.player.x, state.player.y - 44, `${ult.icon} ${ult.name}！`, '#fde047', 21);
-      showToast(`${ult.icon} 奧義發動：${ult.name}！清空全場彈幕！`);
+      showToast(`${ult.icon} 奧義發動：${ult.name}！（威力 ${scaledUltDmg}）`);
       updateHudUI();
     }
 
@@ -813,6 +926,7 @@
       const bonusHp = (upg.hp || 0) * 20 + syn.hpAdd;
       state.novaCharge = 100;
       state.combo = 0; state.comboTimer = 0; state.overdrive = 0; state.magnetBuff = 0;
+      state.freezeTimer = 0; state.ultFx = [];
       state.boss = null;
       state.bullets = []; state.eBullets = []; state.enemies = []; state.pickups = []; state.particles = []; state.shockwaves = []; state.floats = [];
       state.player = {
@@ -829,7 +943,7 @@
       document.getElementById('barsWrap').classList.remove('hidden');
       document.getElementById('novaBar').classList.remove('hidden');
       updateHudUI();
-      showToast(`🚀 ${getPlayerName()} 駕駛【${ship.name}】出擊！大招已 100% 就緒！`);
+      showToast(`🚀 ${getPlayerName()} 駕駛【${ship.name}】出擊！武器：${ship.weaponName || '電漿砲'}！`);
     }
 
     function triggerGameOver() {
@@ -862,6 +976,17 @@
       }
 
       if (state.shake > 0) state.shake = Math.max(0, state.shake - dt);
+      if (state.freezeTimer > 0) state.freezeTimer = Math.max(0, state.freezeTimer - dt);
+      if (state.ultFx) {
+        for (let i = state.ultFx.length - 1; i >= 0; i--) {
+          const fx = state.ultFx[i];
+          fx.life -= dt;
+          if (fx.kind === 'purple_orb') { fx.y += fx.vy * dt; }
+          else if (fx.kind === 'blast_ring' || fx.kind === 'melody') { fx.r += (fx.maxR - fx.r) * Math.min(1, dt * 6); }
+          else if (fx.kind === 'water_dragon') { fx.angle += dt * 7; }
+          if (fx.life <= 0) state.ultFx.splice(i, 1);
+        }
+      }
 
       if (state.mode !== 'playing') return;
 
@@ -892,8 +1017,9 @@
       p.bank += (((p.x - prevX) / Math.max(0.01, dt)) * 0.0014 - p.bank) * Math.min(1, dt * 10);
       p.bank = Math.max(-0.55, Math.min(0.55, p.bank));
 
-      // Auto-Fire Primary Plasma (Overdrive doubles fire rate + adds +2 spread!)
+      // Auto-Fire Hero Signature Weapon Shots (scaled by ship.atk & crit!)
       const isOd = state.overdrive > 0;
+      const baseAtk = ship.atk || 14;
       p.fireCd -= dt;
       if (p.fireCd <= 0) {
         p.fireCd = ship.fireRate * p.fireMult * (isOd ? 0.55 : 1.0);
@@ -901,10 +1027,13 @@
         for (let i = 0; i < cnt; i++) {
           const offset = cnt === 1 ? 0 : (i - (cnt - 1) / 2);
           const angle = -Math.PI / 2 + offset * 0.13;
+          const isCrit = Math.random() < (ship.crit || 0.12);
           state.bullets.push({
-            x: p.x + offset * 9, y: p.y - 20,
+            x: p.x + offset * 10, y: p.y - 20,
             vx: Math.cos(angle) * 760, vy: Math.sin(angle) * 760,
-            dmg: Math.round((isOd ? 18 : 14) * (p.dmgMult || 1)), col: isOd ? '#fde047' : ship.accent, homing: false
+            dmg: Math.round(baseAtk * (isOd ? 1.28 : 1.0) * (isCrit ? 1.75 : 1.0) * (p.dmgMult || 1)),
+            crit: isCrit,
+            col: isOd ? '#fde047' : ship.color, accent: ship.accent, shipId: ship.id, homing: false
           });
         }
         SFX.laser();
@@ -917,7 +1046,11 @@
           p.missileCd = 1.05;
           for (let i = 0; i < p.homing; i++) {
             const side = i % 2 === 0 ? -18 : 18;
-            state.bullets.push({ x: p.x + side, y: p.y - 6, vx: side * 6, vy: -320, dmg: Math.round(24 * (p.dmgMult || 1)), col: '#c084fc', homing: true });
+            state.bullets.push({
+              x: p.x + side, y: p.y - 6, vx: side * 6, vy: -320,
+              dmg: Math.round(baseAtk * 1.65 * (p.dmgMult || 1)),
+              col: ship.color, accent: ship.accent, shipId: ship.id, homing: true
+            });
           }
         }
       }
@@ -962,6 +1095,7 @@
           state.boss.hp -= b.dmg;
           state.score += 6;
           addParticles(b.x, b.y, b.col, 3, 90);
+          if (b.crit) spawnFloat(b.x, b.y - 14, `💥-${b.dmg}`, '#fde047', 13);
           SFX.hit();
           hit = true;
           if (state.boss.hp <= 0) defeatBoss();
@@ -969,9 +1103,10 @@
         if (!hit) {
           for (let j = state.enemies.length - 1; j >= 0; j--) {
             const e = state.enemies[j];
-            if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + 7) {
+            if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + 8) {
               e.hp -= b.dmg;
               addParticles(b.x, b.y, b.col, 3, 90);
+              if (b.crit && e.hp > 0) spawnFloat(e.x, e.y - 12, `💥-${b.dmg}`, '#fde047', 12);
               SFX.hit();
               hit = true;
               if (e.hp <= 0) killEnemy(j);
@@ -982,10 +1117,11 @@
         if (hit) state.bullets.splice(i, 1);
       }
 
-      // Update Enemies
+      // Update Enemies (slowed during Gojo/Kanade Freeze)
+      const tScale = state.freezeTimer > 0 ? 0.15 : 1.0;
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const e = state.enemies[i];
-        e.x += e.vx * dt; e.y += e.vy * dt; e.rot += e.vr * dt;
+        e.x += e.vx * dt * tScale; e.y += e.vy * dt * tScale; e.rot += e.vr * dt * tScale;
         if (e.x < 24 || e.x > W - 24) e.vx *= -1;
         if (e.kind !== 'asteroid') {
           e.fireCd -= dt;
@@ -1309,11 +1445,7 @@
 
       ctx.globalCompositeOperation = 'lighter';
       for (const b of state.bullets) {
-        ctx.fillStyle = b.col;
-        ctx.beginPath();
-        if (b.homing) ctx.arc(b.x, b.y, 5.5, 0, Math.PI * 2);
-        else ctx.ellipse(b.x, b.y, 3.2, 11, 0, 0, Math.PI * 2);
-        ctx.fill();
+        drawHeroBullet(ctx, b, state.time);
       }
       for (const eb of state.eBullets) {
         ctx.fillStyle = eb.col;
@@ -1321,12 +1453,17 @@
         ctx.fillStyle = '#fff';
         ctx.beginPath(); ctx.arc(eb.x, eb.y, eb.r * 0.45, 0, Math.PI * 2); ctx.fill();
       }
+      if (state.ultFx && state.ultFx.length) renderStarUltFx(ctx);
       for (const pt of state.particles) {
         ctx.globalAlpha = Math.max(0, pt.life / pt.max);
         ctx.fillStyle = pt.col;
         ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
+      if (state.freezeTimer > 0) {
+        ctx.fillStyle = getShip().id === 'gojo' ? 'rgba(88, 28, 135, 0.2)' : 'rgba(139, 92, 246, 0.14)';
+        ctx.fillRect(0, 0, W, H);
+      }
 
       // Floating Neon Popups & Active Combo Indicator
       ctx.textAlign = 'center';
@@ -1345,6 +1482,104 @@
       }
       ctx.globalAlpha = 1;
       ctx.restore();
+    }
+
+    function drawHeroBullet(ctx, b, t) {
+      const id = b.shipId || 'vanguard';
+      const ang = Math.atan2(b.vy, b.vx);
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(ang);
+      if (id === 'tanjiro') {
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath(); ctx.arc(0, 0, 11, -1.1, 1.1); ctx.arc(-3, 0, 7.5, 1.0, -1.0, true); ctx.closePath(); ctx.fill();
+      } else if (id === 'kanade') {
+        ctx.rotate(-ang);
+        ctx.fillStyle = '#e879f9'; ctx.beginPath(); ctx.ellipse(-2, 4, 4.8, 3.4, -0.35, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#f5d0fe'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.moveTo(2, 3); ctx.lineTo(2, -9); ctx.quadraticCurveTo(8, -7, 7, -1); ctx.stroke();
+      } else if (id === 'mario') {
+        ctx.rotate(t * 15);
+        ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(0, 0, 7.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+      } else if (id === 'muichiro') {
+        ctx.fillStyle = '#99f6e4';
+        ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(-3, 5); ctx.lineTo(-9, 0); ctx.lineTo(-3, -5); ctx.closePath(); ctx.fill();
+      } else if (id === 'doraemon') {
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.6;
+        ctx.beginPath(); ctx.ellipse(2, 0, 4.5, 9.5, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.ellipse(-3, 0, 3, 6.5, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (id === 'pikachu') {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(13, 0); ctx.lineTo(1, -5); ctx.lineTo(4, -1); ctx.lineTo(-10, -4);
+        ctx.lineTo(-4, 1); ctx.lineTo(-9, 5); ctx.lineTo(2, 1.5); ctx.lineTo(0, 5); ctx.closePath(); ctx.fill();
+      } else if (id === 'levi') {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath(); ctx.moveTo(14, -2); ctx.lineTo(-8, -4.5); ctx.lineTo(-8, -1); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(14, 2); ctx.lineTo(-8, 4.5); ctx.lineTo(-8, 1); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.6; ctx.stroke();
+      } else if (id === 'rimuru') {
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath(); ctx.moveTo(12, 0); ctx.quadraticCurveTo(2, 8, -8, 0); ctx.quadraticCurveTo(2, -8, 12, 0); ctx.fill();
+        ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(2, 0, 3, 0, Math.PI * 2); ctx.fill();
+      } else if (id === 'luffy') {
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-3, -7); ctx.lineTo(2, 0); ctx.lineTo(-3, 7); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.roundRect(-2, -6, 11, 12, 4); ctx.fill();
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 1.6; ctx.stroke();
+      } else if (id === 'gojo') {
+        ctx.rotate(t * 11);
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(4, 0, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(-4, 0, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.stroke();
+      } else {
+        ctx.fillStyle = b.col;
+        ctx.beginPath();
+        if (b.homing) ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+        else ctx.ellipse(0, 0, 11, 3.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function renderStarUltFx(ctx) {
+      state.ultFx.forEach((fx) => {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, fx.life * 1.4);
+        if (fx.kind === 'purple_orb') {
+          const g = ctx.createRadialGradient(fx.x, fx.y, 10, fx.x, fx.y, fx.r * 1.4);
+          g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, '#e879f9'); g.addColorStop(0.75, 'rgba(147,51,234,0.8)'); g.addColorStop(1, 'rgba(56,189,248,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 1.4, 0, Math.PI * 2); ctx.fill();
+        } else if (fx.kind === 'blast_ring' || fx.kind === 'melody') {
+          ctx.strokeStyle = fx.col; ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2); ctx.stroke();
+          if (fx.accent) { ctx.strokeStyle = fx.accent; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 0.72, 0, Math.PI * 2); ctx.stroke(); }
+        } else if (fx.kind === 'sky_beam') {
+          const g = ctx.createLinearGradient(fx.x - 18, 0, fx.x + 18, 0);
+          g.addColorStop(0, 'rgba(56,189,248,0)'); g.addColorStop(0.5, '#e0f2fe'); g.addColorStop(1, 'rgba(56,189,248,0)');
+          ctx.fillStyle = g; ctx.fillRect(fx.x - 18, 0, 36, H);
+        } else if (fx.kind === 'thunder') {
+          ctx.strokeStyle = '#facc15'; ctx.lineWidth = 7;
+          ctx.beginPath(); ctx.moveTo(fx.x, 0);
+          for (let y = 70; y <= H; y += 70) ctx.lineTo(fx.x + (Math.random() - 0.5) * 36, y);
+          ctx.stroke();
+        } else if (fx.kind === 'slash_line') {
+          ctx.strokeStyle = fx.col; ctx.lineWidth = 10; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
+          ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+        } else if (fx.kind === 'blackhole') {
+          const g = ctx.createRadialGradient(fx.x, fx.y, 10, fx.x, fx.y, fx.r * 1.6);
+          g.addColorStop(0, '#020617'); g.addColorStop(0.55, 'rgba(14,165,233,0.75)'); g.addColorStop(1, 'rgba(14,165,233,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 1.6, 0, Math.PI * 2); ctx.fill();
+        } else if (fx.kind === 'water_dragon') {
+          ctx.strokeStyle = '#14b8a6'; ctx.lineWidth = 14; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, fx.angle, fx.angle + Math.PI * 1.4); ctx.stroke();
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 8;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 0.65, -fx.angle, -fx.angle + Math.PI * 1.4); ctx.stroke();
+        }
+        ctx.restore();
+      });
     }
 
     function updateHudUI() {
@@ -1403,7 +1638,12 @@
         btn.className = 'ship-card' + (eq ? ' selected' : '');
         const badge = eq ? '<span class="ship-status eq">出擊中</span>' : (owned ? '<span class="ship-status own">已擁有</span>' : `<span class="ship-status cost">🪙 ${s.price}</span>`);
         const avHtml = s.avatar ? `<img class="char-av" src="${s.avatar}" alt="">` : `${s.icon} `;
-        btn.innerHTML = `<div class="ship-top"><span style="display:inline-flex;align-items:center;">${avHtml}${s.name}</span>${badge}</div><div class="ship-desc">${s.desc}</div>`;
+        const statsHtml = `<div class="ship-stats-row">
+          <span class="sstat atk">⚔️ ATK ${s.atk || 14}</span>
+          <span class="sstat ult">💥 大招 ×${s.ultMult || 10}</span>
+          <span class="sstat wep">🔧 ${s.weaponName || '電漿砲'}</span>
+        </div>`;
+        btn.innerHTML = `<div class="ship-top"><span style="display:inline-flex;align-items:center;">${avHtml}${s.name}</span>${badge}</div>${statsHtml}<div class="ship-desc">${s.desc}</div>`;
         btn.addEventListener('click', () => {
           if (owned) {
             save.equippedShip = s.id;

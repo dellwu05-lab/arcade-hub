@@ -166,11 +166,39 @@
     .hero-card:hover { border-color: rgba(244, 63, 94, 0.55); background: rgba(244, 63, 94, 0.09); }
     .hero-card.sel { border-color: #fda4af; background: rgba(244, 63, 94, 0.18); box-shadow: 0 0 18px rgba(244, 63, 94, 0.28); }
     .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 800; font-size: 12.5px; }
+    .hero-stats-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .hstat {
+      font-size: 10px; font-weight: 800; padding: 1.5px 6px; border-radius: 6px;
+      background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0;
+    }
+    .hstat.atk { color: #fda4af; border-color: rgba(244, 63, 94, 0.35); }
+    .hstat.ult { color: #fde047; border-color: rgba(250, 204, 21, 0.35); }
+    .hstat.wep { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.35); }
     .hero-desc { font-size: 10.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
     .char-av {
       width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
       margin-right: 6px; border: 1.5px solid rgba(255, 255, 255, 0.45);
     }
+
+    /* Anime Hero Ultimate Cut-in Banner */
+    .ult-cutin {
+      position: absolute; left: 0; right: 0; top: 34%; z-index: 38;
+      pointer-events: none; display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding: 12px 24px; opacity: 0; transform: translateX(-40px) skewX(-8deg);
+      transition: opacity 0.16s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.92) 18%, var(--cut-col, #f43f5e) 50%, rgba(15, 23, 42, 0.92) 82%, transparent);
+      border-top: 2px solid rgba(255, 255, 255, 0.75); border-bottom: 2px solid rgba(255, 255, 255, 0.75);
+      box-shadow: 0 0 40px var(--cut-col, #f43f5e);
+    }
+    .ult-cutin.show { opacity: 1; transform: translateX(0) skewX(-8deg); }
+    .ult-cutin-av {
+      width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+      border: 3px solid #fde047; box-shadow: 0 0 20px rgba(253, 224, 71, 0.8);
+      transform: skewX(8deg); background: #0f172a; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+    }
+    .ult-cutin-txt { transform: skewX(8deg); text-align: left; }
+    .ult-cutin-sub { font-size: 11px; font-weight: 900; color: #fef08a; letter-spacing: 1.5px; text-transform: uppercase; }
+    .ult-cutin-title { font-size: 22px; font-weight: 900; color: #fff; text-shadow: 0 3px 14px rgba(0, 0, 0, 0.85); }
 
     /* Permanent Upgrade Workshop */
     .perm-upg-head {
@@ -280,6 +308,13 @@
     </div>
 
     <div class="ult-flash" id="ultFlash"></div>
+    <div class="ult-cutin" id="ultCutin">
+      <div class="ult-cutin-av" id="ultCutinAv">⚔️</div>
+      <div class="ult-cutin-txt">
+        <div class="ult-cutin-sub" id="ultCutinSub">HERO ULTIMATE</div>
+        <div class="ult-cutin-title" id="ultCutinTitle">暴風圓月斬</div>
+      </div>
+    </div>
 
     <div class="ult-bar hidden" id="ultBar">
       <button class="ult-btn" id="btnUlt" type="button">
@@ -403,8 +438,23 @@
       { id: 'gojo',     name: '五條悟',       icon: '♾️', avatar: 'data:image/jpeg;base64,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',     price: 800, color: '#a855f7', accent: '#38bdf8', hp: 185, spd: 310, dmg: 42, coinMult: 1.35, weapon: 'chain',  ultName: '虛式「茈」無量空處', ultFlash: '168,85,247',  desc: '最強蒼紅茈天雷＋全場領域主宰＋金幣 +35%' }
     ];
 
+    const HERO_COMBAT_SPECS = {
+      blade_v:  { dmg: 22, atkRate: 1.00, crit: 0.10, ultMult: 8.0,  role: '均衡劍士', weaponName: '雙光劍・星刃',     ultSummary: '四向暴風月牙全場大爆破' },
+      tanjiro:  { dmg: 26, atkRate: 1.06, crit: 0.15, ultMult: 9.0,  role: '水龍連斬', weaponName: '日輪水龍月牙刃',   ultSummary: '巨型水龍雙環 3 段連環爆破' },
+      kanade:   { dmg: 25, atkRate: 1.12, crit: 0.14, ultMult: 8.8,  role: '控場音律', weaponName: '五線音符魔彈',     ultSummary: '2.8s 全場時停＋紫銀音浪大爆破' },
+      mario:    { dmg: 30, atkRate: 1.02, crit: 0.16, ultMult: 9.6,  role: '烈焰重裝', weaponName: '旋轉烈焰火球',     ultSummary: '4s 無敵星狂熱＋8向火球星爆' },
+      muichiro: { dmg: 31, atkRate: 1.24, crit: 0.28, ultMult: 10.0, role: '疾風暴擊', weaponName: '霞霧三連飛刃',     ultSummary: '薄荷迷霧＋6 連幻影分身十字斬爆' },
+      doraemon: { dmg: 32, atkRate: 1.08, crit: 0.16, ultMult: 10.4, role: '道具聚怪', weaponName: '四次元空氣砲環',   ultSummary: '重力黑洞聚怪 1.2s 後空間崩塌爆破' },
+      pikachu:  { dmg: 34, atkRate: 1.22, crit: 0.24, ultMult: 10.8, role: '雷霆極速', weaponName: '十萬伏特閃電箭',   ultSummary: '10 道天降黃金落雷轟炸＋全場麻痺' },
+      levi:     { dmg: 38, atkRate: 1.38, crit: 0.38, ultMult: 11.4, role: '暴擊刺客', weaponName: '超硬鋼雙刃',       ultSummary: '7 連立體機動高速殘影十字嵐斬爆破' },
+      rimuru:   { dmg: 40, atkRate: 1.16, crit: 0.20, ultMult: 12.0, role: '魔素吞噬', weaponName: '魔素水刃・暴食彈', ultSummary: '12 道「神之怒」天降光柱＋暴食回血' },
+      luffy:    { dmg: 45, atkRate: 1.12, crit: 0.24, ultMult: 12.8, role: '霸氣核爆', weaponName: '燃燒橡膠火拳',     ultSummary: '5 連超巨型紅黑霸王色火拳連環爆破' },
+      gojo:     { dmg: 50, atkRate: 1.18, crit: 0.30, ultMult: 14.0, role: '領域核彈', weaponName: '蒼・赫雙色引力球', ultSummary: '無量空處時停＋巨型「虛式茈」橫掃核爆' }
+    };
+
     const avatarCache = {};
     HEROES.forEach((h) => {
+      if (HERO_COMBAT_SPECS[h.id]) Object.assign(h, HERO_COMBAT_SPECS[h.id]);
       if (h.avatar) { const im = new Image(); im.src = h.avatar; avatarCache[h.id] = im; }
     });
 
@@ -532,7 +582,8 @@
     const st = {
       mode: 'menu', time: 0, wave: 1, kills: 0, score: 0, runCoins: 0,
       ultCharge: 100, shake: 0, spawnCd: 0.4, bossTimer: 26,
-      player: null, enemies: [], projectiles: [], eBullets: [], gems: [], particles: [], bolts: [], waves: [], floats: [], boss: null
+      freezeTimer: 0, rainbowTimer: 0,
+      player: null, enemies: [], projectiles: [], eBullets: [], gems: [], particles: [], bolts: [], waves: [], floats: [], ultFx: [], boss: null
     };
 
     const keys = {};
@@ -566,14 +617,61 @@
       el.textContent = msg; el.classList.add('show');
       clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
     }
+    let cutinTimer = null;
+    function showUltCutin(hero) {
+      const el = document.getElementById('ultCutin');
+      const av = document.getElementById('ultCutinAv');
+      const sub = document.getElementById('ultCutinSub');
+      const title = document.getElementById('ultCutinTitle');
+      if (!el) return;
+      el.style.setProperty('--cut-col', hero.color);
+      if (hero.avatar) {
+        av.innerHTML = `<img src="${hero.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="">`;
+      } else {
+        av.textContent = hero.icon;
+      }
+      sub.textContent = `${hero.name} · ${hero.role || 'ALL-STAR'} · ULT ×${hero.ultMult || 8}`;
+      title.textContent = `${hero.icon} ${hero.ultName}！`;
+      el.classList.add('show');
+      clearTimeout(cutinTimer);
+      cutinTimer = setTimeout(() => el.classList.remove('show'), 680);
+    }
+    function rollDamage(baseDmg, p) {
+      const isCrit = Math.random() < (p.crit || 0.1);
+      return { dmg: Math.round(baseDmg * (isCrit ? 1.85 : 1)), crit: isCrit };
+    }
     function addParticles(x, y, col, n = 10, spd = 180) {
+      if (st.particles.length > 260) n = Math.min(n, 4);
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2, v = (0.3 + Math.random() * 0.8) * spd;
         st.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 2 + Math.random() * 3.5, col, life: 0.3 + Math.random() * 0.3 });
       }
     }
     function addFloat(x, y, txt, col = '#fde047', size = 14) {
+      if (st.floats.length > 55) st.floats.shift();
       st.floats.push({ x, y, txt, col, size, life: 0.78 });
+    }
+    function blastArea(cx, cy, rad, rawDmg, col, pushForce = 55) {
+      const p = st.player;
+      for (let i = st.enemies.length - 1; i >= 0; i--) {
+        const e = st.enemies[i];
+        const dx = e.x - cx, dy = e.y - cy, d = Math.hypot(dx, dy);
+        if (d < rad + e.r) {
+          if (pushForce !== 0 && d > 1) {
+            e.x += (dx / d) * pushForce;
+            e.y += (dy / d) * pushForce;
+          }
+          const r = rollDamage(rawDmg, p);
+          damageEnemy(e, i, r.dmg, r.crit ? '#fde047' : col);
+        }
+      }
+      if (st.boss && Math.hypot(st.boss.x - cx, st.boss.y - cy) < rad + st.boss.r) {
+        const r = rollDamage(rawDmg * 1.1, p);
+        st.boss.hp -= r.dmg;
+        st.boss.flash = 0.18;
+        addFloat(st.boss.x, st.boss.y - 34, `${r.crit ? '💥' : ''}-${r.dmg}`, r.crit ? '#fde047' : col, r.crit ? 20 : 17);
+        if (st.boss.hp <= 0) defeatBoss();
+      }
     }
 
     // =========================================================================
@@ -591,17 +689,19 @@
 
       st.mode = 'playing'; st.time = 0; st.wave = 1; st.kills = 0; st.score = 0; st.runCoins = 0;
       st.ultCharge = 100; st.shake = 0; st.spawnCd = 0.25; st.bossTimer = 26;
-      st.enemies = []; st.projectiles = []; st.eBullets = []; st.gems = []; st.particles = []; st.bolts = []; st.waves = []; st.floats = []; st.boss = null;
+      st.freezeTimer = 0; st.rainbowTimer = 0;
+      st.enemies = []; st.projectiles = []; st.eBullets = []; st.gems = []; st.particles = []; st.bolts = []; st.waves = []; st.floats = []; st.ultFx = []; st.boss = null;
 
       st.player = {
         x: 0, y: 0, vx: 0, vy: 0, r: 22,
         hp: maxHp, maxHp, spd: baseSpd, dmg: baseDmg, invuln: 0.8,
+        crit: hero.crit || 0.12, ultMult: hero.ultMult || 8.5,
         lvl: 1, xp: 0, xpNext: 65,
         magnet: 115 + (u.mag || 0) * 32 + (hero.id === 'kanade' || hero.id === 'doraemon' || hero.id === 'rimuru' ? 45 : 0),
         coinMult: hero.coinMult * (1 + (u.mag || 0) * 0.08) * syn.coinMult,
-        atkRate: 1.0, ultRate: 1.0,
+        atkRate: hero.atkRate || 1.0, ultRate: 1.0,
         blades: hero.weapon === 'orbit' ? 3 : 1,
-        bladeAng: 0, bladeSpd: 3.4,
+        bladeAng: 0, bladeSpd: 3.4 * (hero.atkRate || 1.0),
         chainLv: hero.weapon === 'chain' ? 2 : 0, chainCd: 0.5,
         homingLv: hero.weapon === 'homing' ? 2 : 1, homingCd: 0.3,
         novaLv: hero.weapon === 'nova' ? 2 : 0, novaCd: 1.2,
@@ -615,7 +715,7 @@
       document.getElementById('barsWrap').classList.remove('hidden');
       document.getElementById('ultBar').classList.remove('hidden');
       updateHudUI();
-      showToast(`${hero.icon} 【${hero.name}】出陣！專屬奧義已 100% 就緒！`);
+      showToast(`${hero.icon} 【${hero.name}】出陣！裝備「${hero.weaponName || '專屬武器'}」· 奧義已就緒！`);
     }
 
     function activateUltimate() {
@@ -627,10 +727,12 @@
       }
       const p = st.player;
       st.ultCharge = 0;
-      st.shake = 0.52;
-      p.invuln = Math.max(p.invuln, 1.8);
+      st.shake = 0.65;
+      p.invuln = Math.max(p.invuln, 2.2);
       p.magBuff = 5.5;
+      st.eBullets = [];
       SFX.ult();
+      showUltCutin(hero);
 
       const fl = document.getElementById('ultFlash');
       if (fl) {
@@ -639,28 +741,51 @@
         requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove('boom')));
       }
 
-      st.waves.push({ x: p.x, y: p.y, r: 24, maxR: 520, col: hero.color, alpha: 1 });
-      st.waves.push({ x: p.x, y: p.y, r: 10, maxR: 380, col: hero.accent, alpha: 1 });
-      addParticles(p.x, p.y, hero.color, 44, 380);
-      addFloat(p.x, p.y - 36, `${hero.icon} ${hero.ultName}！`, '#fde047', 22);
-      showToast(`${hero.icon} 奧義解放：【${hero.ultName}】！全場爆破＋磁力吸取！`);
+      const ultDmg = Math.round(p.dmg * (p.ultMult || hero.ultMult || 9));
+      addFloat(p.x, p.y - 42, `${hero.icon} ${hero.ultName}！`, '#fde047', 22);
+      showToast(`${hero.icon} 【${hero.ultName}】！${hero.ultSummary || '全場專屬大爆破！'}`);
 
-      const ultDmg = Math.round(p.dmg * 8.5);
-      st.eBullets = [];
-      for (let i = st.enemies.length - 1; i >= 0; i--) {
-        const e = st.enemies[i];
-        const d = Math.hypot(e.x - p.x, e.y - p.y);
-        if (d < 540) {
-          damageEnemy(e, i, ultDmg, hero.accent);
-        }
+      // Hero-Specific Multi-Stage Big AoE Explosions & Mechanics
+      if (hero.id === 'gojo') {
+        st.freezeTimer = Math.max(st.freezeTimer, 2.4);
+        const tgt = findNearestTarget(p.x, p.y);
+        const ang = tgt ? Math.atan2(tgt.y - p.y, tgt.x - p.x) : 0;
+        st.ultFx.push({ kind: 'purple_orb', x: p.x, y: p.y, vx: Math.cos(ang) * 340, vy: Math.sin(ang) * 340, r: 96, life: 1.65, maxLife: 1.65, tick: 0, dmg: ultDmg });
+        st.waves.push({ x: p.x, y: p.y, r: 24, maxR: 580, col: '#a855f7', alpha: 1 });
+        blastArea(p.x, p.y, 440, ultDmg * 0.45, '#c084fc', 30);
+      } else if (hero.id === 'luffy') {
+        st.ultFx.push({ kind: 'haki_fists', x: p.x, y: p.y, strikes: 5, timer: 0, life: 1.4, maxLife: 1.4, dmg: ultDmg });
+        st.waves.push({ x: p.x, y: p.y, r: 20, maxR: 540, col: '#dc2626', alpha: 1 });
+      } else if (hero.id === 'rimuru') {
+        const healAmt = Math.round(p.maxHp * 0.35);
+        p.hp = Math.min(p.maxHp, p.hp + healAmt);
+        addFloat(p.x, p.y - 62, `💧 暴食回復 +${healAmt} HP`, '#38bdf8', 16);
+        st.ultFx.push({ kind: 'megiddo', x: p.x, y: p.y, beams: 12, timer: 0, life: 1.5, maxLife: 1.5, activeBeams: [], dmg: ultDmg });
+      } else if (hero.id === 'levi') {
+        st.ultFx.push({ kind: 'levi_slashes', x: p.x, y: p.y, slashes: 7, timer: 0, life: 1.25, maxLife: 1.25, lines: [], dmg: ultDmg });
+      } else if (hero.id === 'pikachu') {
+        st.ultFx.push({ kind: 'thunder_storm', x: p.x, y: p.y, strikes: 10, timer: 0, life: 1.35, maxLife: 1.35, pillars: [], dmg: ultDmg });
+      } else if (hero.id === 'doraemon') {
+        st.ultFx.push({ kind: 'blackhole', x: p.x, y: p.y, r: 16, maxR: 480, life: 1.35, maxLife: 1.35, detonated: false, dmg: ultDmg });
+      } else if (hero.id === 'muichiro') {
+        st.ultFx.push({ kind: 'mist_clones', x: p.x, y: p.y, bursts: 6, timer: 0, life: 1.35, maxLife: 1.35, clones: [], dmg: ultDmg });
+      } else if (hero.id === 'mario') {
+        p.invuln = Math.max(p.invuln, 4.2);
+        st.rainbowTimer = 4.2;
+        st.ultFx.push({ kind: 'star_fever', x: p.x, y: p.y, wavesLeft: 3, timer: 0, life: 1.4, maxLife: 1.4, dmg: ultDmg });
+      } else if (hero.id === 'kanade') {
+        st.freezeTimer = Math.max(st.freezeTimer, 2.8);
+        st.ultFx.push({ kind: 'time_melody', x: p.x, y: p.y, r: 30, maxR: 560, life: 1.35, maxLife: 1.35, hitDone: false, dmg: ultDmg });
+        blastArea(p.x, p.y, 520, ultDmg * 0.65, '#e879f9', 20);
+      } else if (hero.id === 'tanjiro') {
+        st.ultFx.push({ kind: 'water_dragon', x: p.x, y: p.y, angle: 0, pulse: 3, timer: 0, life: 1.45, maxLife: 1.45, dmg: ultDmg });
+      } else {
+        st.ultFx.push({ kind: 'storm_slash', x: p.x, y: p.y, life: 0.9, maxLife: 0.9, dmg: ultDmg });
+        st.waves.push({ x: p.x, y: p.y, r: 24, maxR: 520, col: hero.color, alpha: 1 });
+        blastArea(p.x, p.y, 500, ultDmg, hero.accent, 65);
       }
-      if (st.boss) {
-        const bd = Math.round(ultDmg * 1.15);
-        st.boss.hp -= bd;
-        st.boss.flash = 0.22;
-        addFloat(st.boss.x, st.boss.y - 34, `-${bd}`, '#fde047', 20);
-        if (st.boss.hp <= 0) defeatBoss();
-      }
+
+      addParticles(p.x, p.y, hero.color, 36, 360);
       updateHudUI();
     }
 
@@ -776,6 +901,162 @@
       updateHudUI();
     }
 
+    function updateUltFx(dt) {
+      const p = st.player;
+      for (let i = st.ultFx.length - 1; i >= 0; i--) {
+        const fx = st.ultFx[i];
+        fx.life -= dt;
+        if (fx.kind === 'purple_orb') {
+          fx.x += fx.vx * dt; fx.y += fx.vy * dt;
+          fx.tick -= dt;
+          if (fx.tick <= 0) {
+            fx.tick = 0.14;
+            blastArea(fx.x, fx.y, fx.r + 65, fx.dmg * 0.34, '#c084fc', 24);
+            addParticles(fx.x, fx.y, '#a855f7', 12, 260);
+            addParticles(fx.x, fx.y, '#38bdf8', 8, 220);
+          }
+          if (fx.life <= 0) {
+            st.shake = 0.7;
+            st.waves.push({ x: fx.x, y: fx.y, r: 30, maxR: 520, col: '#c084fc', alpha: 1 });
+            st.waves.push({ x: fx.x, y: fx.y, r: 20, maxR: 380, col: '#f43f5e', alpha: 1 });
+            addParticles(fx.x, fx.y, '#a855f7', 38, 420);
+            blastArea(fx.x, fx.y, 460, fx.dmg * 0.85, '#e879f9', 90);
+          }
+        } else if (fx.kind === 'haki_fists') {
+          fx.timer -= dt;
+          if (fx.timer <= 0 && fx.strikes > 0) {
+            fx.timer = 0.22;
+            const ang = ((5 - fx.strikes) / 5) * Math.PI * 2 + st.time;
+            const dist = fx.strikes === 1 ? 0 : 175;
+            const tx = p.x + Math.cos(ang) * dist, ty = p.y + Math.sin(ang) * dist;
+            fx.strikes--;
+            st.shake = 0.45;
+            st.waves.push({ x: tx, y: ty, r: 16, maxR: 255, col: '#dc2626', alpha: 1 });
+            st.waves.push({ x: tx, y: ty, r: 10, maxR: 195, col: '#fde047', alpha: 0.95 });
+            addParticles(tx, ty, '#ef4444', 20, 320);
+            addParticles(tx, ty, '#fbbf24', 12, 260);
+            blastArea(tx, ty, 245, fx.dmg * 0.42, '#fde047', 110);
+          }
+        } else if (fx.kind === 'megiddo') {
+          fx.timer -= dt;
+          if (fx.timer <= 0 && fx.beams > 0) {
+            fx.timer = 0.095;
+            fx.beams--;
+            const pick = st.enemies.length ? st.enemies[Math.floor(Math.random() * st.enemies.length)] : (st.boss || { x: p.x + (Math.random() - 0.5) * 440, y: p.y + (Math.random() - 0.5) * 320 });
+            const bx = pick.x + (Math.random() - 0.5) * 30, by = pick.y + (Math.random() - 0.5) * 30;
+            fx.activeBeams.push({ x: bx, y: by, life: 0.34 });
+            st.waves.push({ x: bx, y: by, r: 8, maxR: 130, col: '#38bdf8', alpha: 0.95 });
+            addParticles(bx, by, '#7dd3fc', 12, 240);
+            blastArea(bx, by, 145, fx.dmg * 0.34, '#38bdf8', 18);
+          }
+          for (let k = fx.activeBeams.length - 1; k >= 0; k--) {
+            fx.activeBeams[k].life -= dt;
+            if (fx.activeBeams[k].life <= 0) fx.activeBeams.splice(k, 1);
+          }
+        } else if (fx.kind === 'levi_slashes') {
+          fx.timer -= dt;
+          if (fx.timer <= 0 && fx.slashes > 0) {
+            fx.timer = 0.13;
+            fx.slashes--;
+            const a = (fx.slashes * 1.12) + Math.random() * 0.4;
+            const len = 390;
+            const cx = p.x + (Math.random() - 0.5) * 140, cy = p.y + (Math.random() - 0.5) * 140;
+            fx.lines.push({ x1: cx - Math.cos(a) * len, y1: cy - Math.sin(a) * len, x2: cx + Math.cos(a) * len, y2: cy + Math.sin(a) * len, life: 0.38 });
+            st.shake = 0.3;
+            addParticles(cx, cy, '#4ade80', 14, 280);
+            blastArea(cx, cy, 270, fx.dmg * 0.34, '#86efac', 42);
+          }
+          for (let k = fx.lines.length - 1; k >= 0; k--) {
+            fx.lines[k].life -= dt;
+            if (fx.lines[k].life <= 0) fx.lines.splice(k, 1);
+          }
+        } else if (fx.kind === 'thunder_storm') {
+          fx.timer -= dt;
+          if (fx.timer <= 0 && fx.strikes > 0) {
+            fx.timer = 0.10;
+            fx.strikes--;
+            const pick = st.enemies.length ? st.enemies[Math.floor(Math.random() * st.enemies.length)] : (st.boss || { x: p.x + (Math.random() - 0.5) * 460, y: p.y + (Math.random() - 0.5) * 320 });
+            fx.pillars.push({ x: pick.x, y: pick.y, life: 0.32 });
+            st.waves.push({ x: pick.x, y: pick.y, r: 10, maxR: 155, col: '#facc15', alpha: 1 });
+            addParticles(pick.x, pick.y, '#fde047', 14, 280);
+            blastArea(pick.x, pick.y, 175, fx.dmg * 0.36, '#fde047', 26);
+          }
+          for (let k = fx.pillars.length - 1; k >= 0; k--) {
+            fx.pillars[k].life -= dt;
+            if (fx.pillars[k].life <= 0) fx.pillars.splice(k, 1);
+          }
+        } else if (fx.kind === 'blackhole') {
+          fx.x = p.x; fx.y = p.y;
+          fx.r = Math.min(115, fx.r + dt * 95);
+          if (fx.life > 0.25) {
+            for (let k = 0; k < st.enemies.length; k++) {
+              const e = st.enemies[k], dx = fx.x - e.x, dy = fx.y - e.y, d = Math.hypot(dx, dy) || 1;
+              if (d < 520) { e.x += (dx / d) * 320 * dt; e.y += (dy / d) * 320 * dt; }
+            }
+          } else if (!fx.detonated) {
+            fx.detonated = true;
+            st.shake = 0.65;
+            st.waves.push({ x: fx.x, y: fx.y, r: 24, maxR: 540, col: '#0ea5e9', alpha: 1 });
+            st.waves.push({ x: fx.x, y: fx.y, r: 14, maxR: 380, col: '#fbbf24', alpha: 1 });
+            addParticles(fx.x, fx.y, '#38bdf8', 36, 420);
+            blastArea(fx.x, fx.y, 480, fx.dmg * 1.15, '#38bdf8', 110);
+          }
+        } else if (fx.kind === 'mist_clones') {
+          fx.timer -= dt;
+          if (fx.timer <= 0 && fx.bursts > 0) {
+            fx.timer = 0.17;
+            const a = ((6 - fx.bursts) / 6) * Math.PI * 2;
+            const tx = p.x + Math.cos(a) * 190, ty = p.y + Math.sin(a) * 190;
+            fx.bursts--;
+            fx.clones.push({ x: tx, y: ty, life: 0.45 });
+            st.waves.push({ x: tx, y: ty, r: 14, maxR: 215, col: '#2dd4bf', alpha: 0.95 });
+            addParticles(tx, ty, '#99f6e4', 14, 240);
+            blastArea(tx, ty, 220, fx.dmg * 0.38, '#99f6e4', 35);
+          }
+          for (let k = fx.clones.length - 1; k >= 0; k--) {
+            fx.clones[k].life -= dt;
+            if (fx.clones[k].life <= 0) fx.clones.splice(k, 1);
+          }
+        } else if (fx.kind === 'star_fever') {
+          fx.x = p.x; fx.y = p.y;
+          fx.timer -= dt;
+          if (fx.timer <= 0 && fx.wavesLeft > 0) {
+            fx.timer = 0.36;
+            fx.wavesLeft--;
+            st.waves.push({ x: p.x, y: p.y, r: 16, maxR: 380, col: '#facc15', alpha: 1 });
+            st.waves.push({ x: p.x, y: p.y, r: 10, maxR: 280, col: '#ef4444', alpha: 1 });
+            for (let k = 0; k < 8; k++) {
+              const a = (k / 8) * Math.PI * 2 + fx.wavesLeft * 0.35;
+              st.projectiles.push({ x: p.x, y: p.y, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, dmg: fx.dmg * 0.28, col: '#ef4444', heroId: 'mario', life: 1.25 });
+            }
+            blastArea(p.x, p.y, 340, fx.dmg * 0.42, '#facc15', 75);
+          }
+        } else if (fx.kind === 'time_melody') {
+          fx.x = p.x; fx.y = p.y;
+          fx.r += (fx.maxR - fx.r) * Math.min(1, dt * 4.5);
+          if (!fx.hitDone && fx.life < 0.35) {
+            fx.hitDone = true;
+            st.waves.push({ x: fx.x, y: fx.y, r: 24, maxR: 560, col: '#e879f9', alpha: 1 });
+            blastArea(fx.x, fx.y, 540, fx.dmg * 0.65, '#e879f9', 40);
+          }
+        } else if (fx.kind === 'water_dragon') {
+          fx.x = p.x; fx.y = p.y;
+          fx.angle += dt * 7.5;
+          fx.timer -= dt;
+          if (fx.timer <= 0 && fx.pulse > 0) {
+            fx.timer = 0.38;
+            fx.pulse--;
+            const rad = 260 + (3 - fx.pulse) * 95;
+            st.waves.push({ x: p.x, y: p.y, r: 24, maxR: rad, col: '#14b8a6', alpha: 1 });
+            st.waves.push({ x: p.x, y: p.y, r: 14, maxR: rad * 0.78, col: '#38bdf8', alpha: 0.95 });
+            addParticles(p.x, p.y, '#38bdf8', 20, 320);
+            blastArea(p.x, p.y, rad, fx.dmg * 0.44, '#38bdf8', 65);
+          }
+        }
+        if (fx.life <= 0) st.ultFx.splice(i, 1);
+      }
+    }
+
     function update(dt) {
       if (st.mode !== 'playing') return;
       const p = st.player;
@@ -783,6 +1064,8 @@
       st.time += dt;
       st.wave = 1 + Math.floor(st.time / 18);
       if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 1.8);
+      if (st.freezeTimer > 0) st.freezeTimer = Math.max(0, st.freezeTimer - dt);
+      if (st.rainbowTimer > 0) st.rainbowTimer = Math.max(0, st.rainbowTimer - dt);
       if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
       if (p.magBuff > 0) p.magBuff = Math.max(0, p.magBuff - dt);
       st.ultCharge = Math.min(100, st.ultCharge + dt * 5.2 * p.ultRate);
@@ -800,14 +1083,18 @@
       }
       const len = Math.hypot(mx, my);
       if (len > 0) {
-        p.vx = (mx / len) * p.spd;
-        p.vy = (my / len) * p.spd;
+        const spdBoost = st.rainbowTimer > 0 ? 1.28 : 1.0;
+        p.vx = (mx / len) * p.spd * spdBoost;
+        p.vy = (my / len) * p.spd * spdBoost;
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         if (Math.random() < dt * 16) {
-          st.particles.push({ x: p.x + (Math.random() - 0.5) * 14, y: p.y + (Math.random() - 0.5) * 14, vx: -p.vx * 0.15, vy: -p.vy * 0.15, r: 3, col: hero.color, life: 0.25 });
+          st.particles.push({ x: p.x + (Math.random() - 0.5) * 14, y: p.y + (Math.random() - 0.5) * 14, vx: -p.vx * 0.15, vy: -p.vy * 0.15, r: 3, col: st.rainbowTimer > 0 ? '#fde047' : hero.color, life: 0.25 });
         }
       } else { p.vx *= 0.85; p.vy *= 0.85; }
+
+      // Active Hero Ultimates
+      if (st.ultFx.length > 0) updateUltFx(dt);
 
       // Spawn enemies & bosses
       st.spawnCd -= dt;
@@ -822,7 +1109,7 @@
         st.bossTimer = 34;
       }
 
-      // 1) Orbiting Blades Weapon
+      // 1) Orbiting Hero Weapons
       p.bladeAng += p.bladeSpd * p.atkRate * dt;
       const bladeDist = 66 + Math.min(28, p.blades * 3);
       for (let b = 0; b < p.blades; b++) {
@@ -830,37 +1117,42 @@
         const bx = p.x + Math.cos(a) * bladeDist, by = p.y + Math.sin(a) * bladeDist;
         for (let i = st.enemies.length - 1; i >= 0; i--) {
           const e = st.enemies[i];
-          if (e.hitCd <= 0 && Math.hypot(e.x - bx, e.y - by) < e.r + 16) {
-            e.hitCd = 0.28;
-            damageEnemy(e, i, p.dmg * 1.15, hero.accent);
+          if (e.hitCd <= 0 && Math.hypot(e.x - bx, e.y - by) < e.r + 18) {
+            e.hitCd = 0.26;
+            const r = rollDamage(p.dmg * 1.15, p);
+            damageEnemy(e, i, r.dmg, r.crit ? '#fde047' : hero.accent);
           }
         }
-        if (st.boss && Math.hypot(st.boss.x - bx, st.boss.y - by) < st.boss.r + 16) {
-          st.boss.hp -= p.dmg * 1.6 * dt * 5;
+        if (st.boss && Math.hypot(st.boss.x - bx, st.boss.y - by) < st.boss.r + 18) {
+          st.boss.hp -= p.dmg * 1.65 * dt * 5;
           st.boss.flash = 0.08;
           if (st.boss.hp <= 0) defeatBoss();
         }
       }
 
-      // 2) Homing Star Bolts Weapon
+      // 2) Hero Signature Ranged Projectiles
       if (p.homingLv > 0) {
         p.homingCd -= dt * p.atkRate;
         if (p.homingCd <= 0) {
-          p.homingCd = Math.max(0.26, 0.82 - p.homingLv * 0.09);
+          p.homingCd = Math.max(0.24, 0.80 - p.homingLv * 0.09);
           const count = Math.min(5, p.homingLv);
           for (let k = 0; k < count; k++) {
             const target = findNearestTarget(p.x, p.y);
             const ang = target ? Math.atan2(target.y - p.y, target.x - p.x) + (k - (count - 1) / 2) * 0.16 : (Math.random() * Math.PI * 2);
-            st.projectiles.push({ x: p.x, y: p.y, vx: Math.cos(ang) * 460, vy: Math.sin(ang) * 460, dmg: p.dmg * (0.95 + p.homingLv * 0.18), col: hero.accent, life: 1.5 });
+            st.projectiles.push({
+              x: p.x, y: p.y, vx: Math.cos(ang) * 470, vy: Math.sin(ang) * 470,
+              dmg: p.dmg * (0.95 + p.homingLv * 0.18),
+              col: hero.color, accent: hero.accent, heroId: hero.id, life: 1.5
+            });
           }
         }
       }
 
-      // 3) Chain Lightning Weapon
+      // 3) Hero-Themed Chain Lightning / Arc Weapon
       if (p.chainLv > 0) {
         p.chainCd -= dt * p.atkRate;
         if (p.chainCd <= 0) {
-          p.chainCd = Math.max(0.45, 1.35 - p.chainLv * 0.12);
+          p.chainCd = Math.max(0.42, 1.32 - p.chainLv * 0.12);
           const hits = Math.min(5, 1 + p.chainLv);
           let lx = p.x, ly = p.y;
           const used = new Set();
@@ -874,39 +1166,43 @@
             if (bestIdx >= 0) {
               used.add(bestIdx);
               const t = st.enemies[bestIdx];
-              st.bolts.push({ x1: lx, y1: ly, x2: t.x, y2: t.y, col: hero.color, life: 0.22 });
+              st.bolts.push({ x1: lx, y1: ly, x2: t.x, y2: t.y, col: hero.color, accent: hero.accent, life: 0.24 });
               lx = t.x; ly = t.y;
             }
           }
-          // Apply damage in reverse index order
           Array.from(used).sort((a, b) => b - a).forEach((idx) => {
-            if (st.enemies[idx]) damageEnemy(st.enemies[idx], idx, p.dmg * (1.25 + p.chainLv * 0.25), '#fde047');
+            if (st.enemies[idx]) {
+              const r = rollDamage(p.dmg * (1.25 + p.chainLv * 0.25), p);
+              damageEnemy(st.enemies[idx], idx, r.dmg, r.crit ? '#fde047' : hero.accent);
+            }
           });
           if (st.boss && Math.hypot(st.boss.x - p.x, st.boss.y - p.y) < 360) {
-            st.bolts.push({ x1: p.x, y1: p.y, x2: st.boss.x, y2: st.boss.y, col: '#fde047', life: 0.24 });
-            const bd = Math.round(p.dmg * (1.4 + p.chainLv * 0.25));
-            st.boss.hp -= bd; st.boss.flash = 0.12;
-            addFloat(st.boss.x, st.boss.y - 26, `⚡-${bd}`, '#fde047', 14);
+            st.bolts.push({ x1: p.x, y1: p.y, x2: st.boss.x, y2: st.boss.y, col: hero.color, accent: '#fde047', life: 0.24 });
+            const r = rollDamage(p.dmg * (1.4 + p.chainLv * 0.25), p);
+            st.boss.hp -= r.dmg; st.boss.flash = 0.12;
+            addFloat(st.boss.x, st.boss.y - 26, `⚡${r.crit ? '💥' : ''}-${r.dmg}`, '#fde047', r.crit ? 17 : 14);
             if (st.boss.hp <= 0) defeatBoss();
           }
         }
       }
 
-      // 4) Periodic Shockwave Nova Weapon
+      // 4) Hero-Themed Periodic Shockwave Nova Weapon
       if (p.novaLv > 0) {
         p.novaCd -= dt * p.atkRate;
         if (p.novaCd <= 0) {
-          p.novaCd = Math.max(1.1, 2.5 - p.novaLv * 0.22);
-          const rad = 145 + p.novaLv * 28;
-          st.waves.push({ x: p.x, y: p.y, r: 18, maxR: rad, col: hero.color, alpha: 0.9 });
+          p.novaCd = Math.max(1.05, 2.45 - p.novaLv * 0.22);
+          const rad = 148 + p.novaLv * 28;
+          st.waves.push({ x: p.x, y: p.y, r: 18, maxR: rad, col: hero.color, alpha: 0.92 });
+          st.waves.push({ x: p.x, y: p.y, r: 10, maxR: rad * 0.72, col: hero.accent, alpha: 0.85 });
           for (let i = st.enemies.length - 1; i >= 0; i--) {
             const e = st.enemies[i];
             const d = Math.hypot(e.x - p.x, e.y - p.y);
             if (d < rad) {
-              const push = 46;
+              const push = hero.id === 'luffy' ? 76 : 48;
               e.x += ((e.x - p.x) / Math.max(1, d)) * push;
               e.y += ((e.y - p.y) / Math.max(1, d)) * push;
-              damageEnemy(e, i, p.dmg * (1.1 + p.novaLv * 0.22), '#fda4af');
+              const r = rollDamage(p.dmg * (1.1 + p.novaLv * 0.22), p);
+              damageEnemy(e, i, r.dmg, r.crit ? '#fde047' : hero.accent);
             }
           }
         }
@@ -919,25 +1215,30 @@
         if (t) {
           const da = Math.atan2(t.y - pr.y, t.x - pr.x);
           pr.vx += Math.cos(da) * 900 * dt; pr.vy += Math.sin(da) * 900 * dt;
-          const sp = Math.hypot(pr.vx, pr.vy);
-          pr.vx = (pr.vx / sp) * 480; pr.vy = (pr.vy / sp) * 480;
+          const sp = Math.hypot(pr.vx, pr.vy) || 1;
+          pr.vx = (pr.vx / sp) * 485; pr.vy = (pr.vy / sp) * 485;
         }
         pr.x += pr.vx * dt; pr.y += pr.vy * dt; pr.life -= dt;
         let hit = false;
         for (let j = st.enemies.length - 1; j >= 0; j--) {
           const e = st.enemies[j];
-          if (Math.hypot(pr.x - e.x, pr.y - e.y) < e.r + 9) {
-            damageEnemy(e, j, pr.dmg, pr.col); hit = true; break;
+          if (Math.hypot(pr.x - e.x, pr.y - e.y) < e.r + 11) {
+            const r = rollDamage(pr.dmg, p);
+            damageEnemy(e, j, r.dmg, r.crit ? '#fde047' : pr.col);
+            hit = true; break;
           }
         }
-        if (!hit && st.boss && Math.hypot(pr.x - st.boss.x, pr.y - st.boss.y) < st.boss.r + 9) {
-          st.boss.hp -= pr.dmg; st.boss.flash = 0.1; hit = true;
+        if (!hit && st.boss && Math.hypot(pr.x - st.boss.x, pr.y - st.boss.y) < st.boss.r + 11) {
+          const r = rollDamage(pr.dmg, p);
+          st.boss.hp -= r.dmg; st.boss.flash = 0.1; hit = true;
+          if (r.crit) addFloat(st.boss.x, st.boss.y - 24, `💥-${r.dmg}`, '#fde047', 15);
           if (st.boss.hp <= 0) defeatBoss();
         }
         if (hit || pr.life <= 0) st.projectiles.splice(i, 1);
       }
 
-      // Update Enemies
+      // Update Enemies (slowed to 12% during Gojo / Kanade Domain Freeze!)
+      const enemyTimeScale = st.freezeTimer > 0 ? 0.12 : 1.0;
       for (let i = st.enemies.length - 1; i >= 0; i--) {
         const e = st.enemies[i];
         if (e.flash > 0) e.flash -= dt;
@@ -945,17 +1246,21 @@
         const dx = p.x - e.x, dy = p.y - e.y;
         const d = Math.hypot(dx, dy) || 1;
         if (e.kind === 'caster' && d < 220) {
-          e.fireCd -= dt;
+          e.fireCd -= dt * enemyTimeScale;
           if (e.fireCd <= 0) {
             e.fireCd = 2.0;
             st.eBullets.push({ x: e.x, y: e.y, vx: (dx / d) * 230, vy: (dy / d) * 230, r: 6, dmg: e.dmg, life: 3.0 });
           }
         } else {
-          e.x += (dx / d) * e.spd * dt;
-          e.y += (dy / d) * e.spd * dt;
+          e.x += (dx / d) * e.spd * dt * enemyTimeScale;
+          e.y += (dy / d) * e.spd * dt * enemyTimeScale;
         }
-        if (d < p.r + e.r - 4 && p.invuln <= 0) {
-          hurtPlayer(e.dmg);
+        if (d < p.r + e.r - 4) {
+          if (st.rainbowTimer > 0) {
+            damageEnemy(e, i, p.dmg * 2.2, '#fde047');
+          } else if (p.invuln <= 0) {
+            hurtPlayer(e.dmg);
+          }
         }
       }
 
@@ -964,8 +1269,8 @@
         const b = st.boss;
         if (b.flash > 0) b.flash -= dt;
         const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1;
-        b.x += (dx / d) * b.spd * dt; b.y += (dy / d) * b.spd * dt;
-        b.fireCd -= dt;
+        b.x += (dx / d) * b.spd * dt * enemyTimeScale; b.y += (dy / d) * b.spd * dt * enemyTimeScale;
+        b.fireCd -= dt * enemyTimeScale;
         if (b.fireCd <= 0) {
           b.fireCd = 2.2;
           for (let k = 0; k < 8; k++) {
@@ -979,7 +1284,7 @@
       // Enemy Bullets
       for (let i = st.eBullets.length - 1; i >= 0; i--) {
         const eb = st.eBullets[i];
-        eb.x += eb.vx * dt; eb.y += eb.vy * dt; eb.life -= dt;
+        eb.x += eb.vx * dt * enemyTimeScale; eb.y += eb.vy * dt * enemyTimeScale; eb.life -= dt;
         if (Math.hypot(eb.x - p.x, eb.y - p.y) < p.r + eb.r && p.invuln <= 0) {
           st.eBullets.splice(i, 1); hurtPlayer(eb.dmg); continue;
         }
@@ -1159,28 +1464,24 @@
         ctx.restore();
       }
 
-      // Player Hero + Orbiting Blades
+      // Player Hero + Bespoke Hero Orbiting Weapons
       if (st.player) {
         const p = st.player, hero = getHero();
         const bladeDist = 66 + Math.min(28, p.blades * 3);
         for (let b = 0; b < p.blades; b++) {
           const a = p.bladeAng + (b / p.blades) * Math.PI * 2;
           const bx = p.x + Math.cos(a) * bladeDist, by = p.y + Math.sin(a) * bladeDist;
-          ctx.save();
-          ctx.translate(bx, by); ctx.rotate(a + Math.PI / 2);
-          ctx.fillStyle = hero.accent;
-          ctx.shadowColor = hero.color; ctx.shadowBlur = 14;
-          ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(8, 0); ctx.lineTo(0, 14); ctx.lineTo(-8, 0); ctx.closePath(); ctx.fill();
-          ctx.restore();
+          drawHeroWeaponShape(ctx, hero.id, bx, by, a + Math.PI / 2, 1.12, hero.color, hero.accent, st.time);
         }
 
-        // Hero Shadow & Aura Ring
+        // Hero Shadow & Aura Ring (Rainbow during Mario Star Fever!)
         ctx.save();
         ctx.fillStyle = 'rgba(0,0,0,0.45)';
         ctx.beginPath(); ctx.ellipse(p.x, p.y + p.r * 0.9, p.r * 1.0, p.r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.invuln > 0 && Math.floor(st.time * 16) % 2 === 0) ctx.globalAlpha = 0.55;
-        ctx.strokeStyle = hero.color; ctx.lineWidth = 4;
-        ctx.shadowColor = hero.color; ctx.shadowBlur = 22;
+        if (p.invuln > 0 && st.rainbowTimer <= 0 && Math.floor(st.time * 16) % 2 === 0) ctx.globalAlpha = 0.55;
+        const ringCol = st.rainbowTimer > 0 ? `hsl(${(st.time * 420) % 360}, 95%, 62%)` : hero.color;
+        ctx.strokeStyle = ringCol; ctx.lineWidth = st.rainbowTimer > 0 ? 6 : 4;
+        ctx.shadowColor = ringCol; ctx.shadowBlur = 22;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 3, 0, Math.PI * 2); ctx.stroke();
         ctx.shadowBlur = 0;
 
@@ -1200,9 +1501,10 @@
         ctx.restore();
       }
 
-      // Projectiles, Enemy Bullets, Lightning Bolts, Particles, Floats
+      // Bespoke Hero Projectiles
       st.projectiles.forEach((pr) => {
-        ctx.fillStyle = pr.col; ctx.beginPath(); ctx.arc(pr.x, pr.y, 5.5, 0, Math.PI * 2); ctx.fill();
+        const ang = Math.atan2(pr.vy, pr.vx);
+        drawHeroWeaponShape(ctx, pr.heroId || 'blade_v', pr.x, pr.y, ang, 0.92, pr.col, pr.accent || '#fff', st.time);
       });
       st.eBullets.forEach((eb) => {
         ctx.fillStyle = '#fb7185'; ctx.beginPath(); ctx.arc(eb.x, eb.y, eb.r, 0, Math.PI * 2); ctx.fill();
@@ -1210,12 +1512,17 @@
       });
       st.bolts.forEach((b) => {
         ctx.save();
-        ctx.strokeStyle = b.col; ctx.lineWidth = 3.2; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 12;
+        ctx.strokeStyle = b.col; ctx.lineWidth = 3.5; ctx.shadowColor = b.accent || '#fde047'; ctx.shadowBlur = 14;
         ctx.beginPath(); ctx.moveTo(b.x1, b.y1);
-        ctx.lineTo((b.x1 + b.x2) / 2 + (Math.random() - 0.5) * 24, (b.y1 + b.y2) / 2 + (Math.random() - 0.5) * 24);
+        ctx.lineTo((b.x1 + b.x2) / 2 + (Math.random() - 0.5) * 26, (b.y1 + b.y2) / 2 + (Math.random() - 0.5) * 26);
         ctx.lineTo(b.x2, b.y2); ctx.stroke();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.stroke();
         ctx.restore();
       });
+
+      // Multi-Stage Hero Ultimate Spectacle VFX
+      renderUltFx(ctx);
+
       st.particles.forEach((pt) => {
         ctx.globalAlpha = Math.max(0, pt.life * 2.2);
         ctx.fillStyle = pt.col; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
@@ -1231,6 +1538,194 @@
       });
 
       ctx.restore();
+
+      // Domain / Time-Freeze Screen Tint
+      if (st.freezeTimer > 0) {
+        const hero = getHero();
+        ctx.save();
+        ctx.fillStyle = hero.id === 'gojo' ? 'rgba(88, 28, 135, 0.22)' : 'rgba(139, 92, 246, 0.16)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
+    }
+
+    function drawHeroWeaponShape(ctx, heroId, x, y, ang, sc, col, accent, t) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      ctx.scale(sc, sc);
+      ctx.shadowColor = col; ctx.shadowBlur = 12;
+
+      if (heroId === 'tanjiro') {
+        // 日輪水龍月牙刃
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, -1.15, 1.15);
+        ctx.arc(-4, 0, 10, 1.05, -1.05, true);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 2; ctx.stroke();
+      } else if (heroId === 'kanade') {
+        // 發光五線音符 ♪
+        ctx.rotate(-ang);
+        ctx.fillStyle = '#e879f9';
+        ctx.beginPath(); ctx.ellipse(-3, 5, 6, 4.2, -0.35, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#f5d0fe'; ctx.lineWidth = 2.6;
+        ctx.beginPath(); ctx.moveTo(2, 4); ctx.lineTo(2, -11); ctx.quadraticCurveTo(10, -9, 9, -2); ctx.stroke();
+      } else if (heroId === 'mario') {
+        // 旋轉烈焰火球
+        ctx.rotate(t * 14);
+        const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 11);
+        g.addColorStop(0, '#fef08a'); g.addColorStop(0.55, '#f97316'); g.addColorStop(1, '#dc2626');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 1.2); ctx.stroke();
+      } else if (heroId === 'muichiro') {
+        // 霞霧飛刃
+        ctx.fillStyle = '#99f6e4';
+        ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-4, 6); ctx.lineTo(-12, 0); ctx.lineTo(-4, -6); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+      } else if (heroId === 'doraemon') {
+        // 四次元空氣砲壓縮環
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3.2;
+        ctx.beginPath(); ctx.ellipse(2, 0, 6, 12, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(-4, 0, 4, 8, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (heroId === 'pikachu') {
+        // 鋸齒十萬伏特閃電箭
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(15, 0); ctx.lineTo(2, -6); ctx.lineTo(5, -1); ctx.lineTo(-13, -5);
+        ctx.lineTo(-5, 1); ctx.lineTo(-12, 6); ctx.lineTo(3, 2); ctx.lineTo(1, 6); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.stroke();
+      } else if (heroId === 'levi') {
+        // 調查兵團超硬鋼雙刃
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath(); ctx.moveTo(16, -2.5); ctx.lineTo(-10, -5); ctx.lineTo(-10, -1); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(16, 2.5); ctx.lineTo(-10, 5); ctx.lineTo(-10, 1); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(16, 0); ctx.lineTo(-10, 5); ctx.stroke();
+      } else if (heroId === 'rimuru') {
+        // 魔素水之刃・金核暴食彈
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath(); ctx.moveTo(14, 0); ctx.quadraticCurveTo(2, 10, -10, 0); ctx.quadraticCurveTo(2, -10, 14, 0); ctx.fill();
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.arc(2, 0, 3.8, 0, Math.PI * 2); ctx.fill();
+      } else if (heroId === 'luffy') {
+        // 燃燒橡膠火拳
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(-4, -9); ctx.lineTo(2, 0); ctx.lineTo(-4, 9); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath(); ctx.roundRect(-2, -7.5, 14, 15, 5); ctx.fill();
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2; ctx.stroke();
+      } else if (heroId === 'gojo') {
+        // 術式順轉「蒼」＋反轉「赫」雙色引力球
+        ctx.rotate(t * 10);
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(5, 0, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(-5, 0, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke();
+      } else {
+        // 疾風星刃光劍
+        ctx.fillStyle = accent;
+        ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(0, 7); ctx.lineTo(-13, 0); ctx.lineTo(0, -7); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.4; ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function renderUltFx(ctx) {
+      st.ultFx.forEach((fx) => {
+        ctx.save();
+        if (fx.kind === 'purple_orb') {
+          const g = ctx.createRadialGradient(fx.x, fx.y, 12, fx.x, fx.y, fx.r * 1.35);
+          g.addColorStop(0, '#ffffff');
+          g.addColorStop(0.35, '#e879f9');
+          g.addColorStop(0.7, 'rgba(147, 51, 234, 0.85)');
+          g.addColorStop(1, 'rgba(56, 189, 248, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 1.35, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 0.9, st.time * 6, st.time * 6 + Math.PI * 1.3); ctx.stroke();
+          ctx.strokeStyle = '#f43f5e'; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 0.72, -st.time * 8, -st.time * 8 + Math.PI * 1.2); ctx.stroke();
+        } else if (fx.kind === 'megiddo') {
+          fx.activeBeams.forEach((b) => {
+            const al = Math.min(1, b.life * 3.5);
+            ctx.globalAlpha = al;
+            const g = ctx.createLinearGradient(b.x - 22, b.y, b.x + 22, b.y);
+            g.addColorStop(0, 'rgba(56,189,248,0)'); g.addColorStop(0.5, '#e0f2fe'); g.addColorStop(1, 'rgba(56,189,248,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(b.x - 22, b.y - 520, 44, 520);
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath(); ctx.ellipse(b.x, b.y, 38 * al, 14 * al, 0, 0, Math.PI * 2); ctx.fill();
+          });
+        } else if (fx.kind === 'levi_slashes') {
+          fx.lines.forEach((ln) => {
+            ctx.globalAlpha = Math.min(1, ln.life * 3);
+            ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 14 * ln.life; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(ln.x1, ln.y1); ctx.lineTo(ln.x2, ln.y2); ctx.stroke();
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5 * ln.life;
+            ctx.beginPath(); ctx.moveTo(ln.x1, ln.y1); ctx.lineTo(ln.x2, ln.y2); ctx.stroke();
+          });
+        } else if (fx.kind === 'thunder_storm') {
+          fx.pillars.forEach((pl) => {
+            ctx.globalAlpha = Math.min(1, pl.life * 3.5);
+            ctx.strokeStyle = '#facc15'; ctx.lineWidth = 10; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 18;
+            ctx.beginPath(); ctx.moveTo(pl.x, pl.y - 460);
+            for (let s = 1; s <= 5; s++) ctx.lineTo(pl.x + (Math.random() - 0.5) * 34, pl.y - 460 + s * 92);
+            ctx.stroke();
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
+          });
+        } else if (fx.kind === 'blackhole') {
+          const g = ctx.createRadialGradient(fx.x, fx.y, 8, fx.x, fx.y, fx.r * 1.8);
+          g.addColorStop(0, '#020617'); g.addColorStop(0.55, 'rgba(14, 165, 233, 0.72)'); g.addColorStop(1, 'rgba(14, 165, 233, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 1.8, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, st.time * 9, st.time * 9 + Math.PI * 1.5); ctx.stroke();
+        } else if (fx.kind === 'mist_clones') {
+          fx.clones.forEach((c) => {
+            ctx.globalAlpha = Math.min(0.9, c.life * 2.2);
+            ctx.fillStyle = 'rgba(45, 212, 191, 0.25)';
+            ctx.beginPath(); ctx.arc(c.x, c.y, 76, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#99f6e4'; ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.moveTo(c.x - 52, c.y - 52); ctx.lineTo(c.x + 52, c.y + 52);
+            ctx.moveTo(c.x + 52, c.y - 52); ctx.lineTo(c.x - 52, c.y + 52); ctx.stroke();
+          });
+        } else if (fx.kind === 'time_melody') {
+          ctx.globalAlpha = Math.min(0.85, fx.life);
+          ctx.strokeStyle = '#e879f9'; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2; ctx.setLineDash([12, 10]);
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * 0.75, 0, Math.PI * 2); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font = 'bold 26px sans-serif'; ctx.fillStyle = '#f5d0fe'; ctx.textAlign = 'center';
+          for (let k = 0; k < 6; k++) {
+            const a = (k / 6) * Math.PI * 2 + st.time * 2;
+            ctx.fillText('♪', fx.x + Math.cos(a) * fx.r * 0.65, fx.y + Math.sin(a) * fx.r * 0.65);
+          }
+        } else if (fx.kind === 'water_dragon') {
+          ctx.globalAlpha = Math.min(1, fx.life * 1.4);
+          for (let ring = 0; ring < 2; ring++) {
+            const rr = 140 + ring * 115;
+            ctx.strokeStyle = ring === 0 ? '#14b8a6' : '#38bdf8';
+            ctx.lineWidth = 14; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.arc(fx.x, fx.y, rr, fx.angle + ring * 2, fx.angle + ring * 2 + Math.PI * 1.35); ctx.stroke();
+            ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(fx.x, fx.y, rr, fx.angle + ring * 2 + 0.1, fx.angle + ring * 2 + Math.PI * 1.25); ctx.stroke();
+          }
+        } else if (fx.kind === 'storm_slash') {
+          ctx.globalAlpha = Math.min(1, fx.life * 1.6);
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 10;
+          for (let k = 0; k < 4; k++) {
+            const a = (k / 4) * Math.PI + st.time * 4;
+            ctx.beginPath(); ctx.moveTo(fx.x - Math.cos(a) * 340, fx.y - Math.sin(a) * 340);
+            ctx.lineTo(fx.x + Math.cos(a) * 340, fx.y + Math.sin(a) * 340); ctx.stroke();
+          }
+        }
+        ctx.restore();
+      });
     }
 
     // =========================================================================
@@ -1266,9 +1761,14 @@
         btn.type = 'button'; btn.className = 'hero-card' + (eq ? ' sel' : '');
         const tag = eq ? '<span style="color:#6ee7b7;font-size:10.5px;">出戰中</span>' : (own ? '<span style="color:#7dd3fc;font-size:10.5px;">已擁有</span>' : `<span style="color:#fde68a;font-size:10.5px;">🪙 ${h.price}</span>`);
         const avHtml = h.avatar ? `<img class="char-av" src="${h.avatar}" alt="">` : `${h.icon} `;
-        btn.innerHTML = `<div class="hero-top"><span style="display:inline-flex;align-items:center;">${avHtml}${h.name}</span>${tag}</div><div class="hero-desc">${h.desc}</div>`;
+        const statsHtml = `<div class="hero-stats-row">
+          <span class="hstat atk">⚔️ ATK ${h.dmg}</span>
+          <span class="hstat ult">💥 大招 ×${h.ultMult || 8}</span>
+          <span class="hstat wep">🔧 ${h.weaponName || '專屬武器'}</span>
+        </div>`;
+        btn.innerHTML = `<div class="hero-top"><span style="display:inline-flex;align-items:center;">${avHtml}${h.name}</span>${tag}</div>${statsHtml}<div class="hero-desc">${h.ultSummary || h.desc}</div>`;
         btn.addEventListener('click', () => {
-          if (own) { save.equippedHero = h.id; persistSave(); SFX.coin(); showToast(`⚔️ 已切換英雄：【${h.name}】`); }
+          if (own) { save.equippedHero = h.id; persistSave(); SFX.coin(); showToast(`⚔️ 已切換英雄：【${h.name}】(${h.weaponName})`); }
           else if (save.coins >= h.price) {
             save.coins -= h.price; save.ownedHeroes.push(h.id); save.equippedHero = h.id; persistSave(); SFX.levelUp();
             const syn = getHeroSynergy();
