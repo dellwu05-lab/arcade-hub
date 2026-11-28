@@ -1648,10 +1648,10 @@
     <div class="sec-head">
       <h2>🕹️ 精選遊戲館</h2>
       <div class="filter-pills" id="filterPills">
-        <button class="fpill active" data-filter="all" type="button">全部遊戲 (9)</button>
+        <button class="fpill active" data-filter="all" type="button">全部遊戲 (8)</button>
         <button class="fpill" data-filter="action" type="button">動作 / 射擊 (4)</button>
         <button class="fpill" data-filter="arcade" type="button">益智 / 競速 (4)</button>
-        <button class="fpill" data-filter="sim" type="button">療癒 / 模擬 (1)</button>
+        <!-- 療癒 / 模擬（森友小島 3D 開發中，完成後重新開放） -->
       </div>
     </div>
 
@@ -1813,7 +1813,7 @@
 
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">💰 中獎金幣匯入目標：</div>
       <div class="spin-targets" id="spinTargets">
-        <button class="starget-btn active" data-target="all" type="button">🌐 9 款遊戲均分</button>
+        <button class="starget-btn active" data-target="all" type="button">🌐 8 款遊戲均分</button>
         <button class="starget-btn" data-target="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
         <button class="starget-btn" data-target="star_blaster_3d" type="button">🚀 射擊</button>
         <button class="starget-btn" data-target="neon_blocks_3d" type="button">🧩 方塊</button>
@@ -1822,7 +1822,6 @@
         <button class="starget-btn" data-target="brick_breaker_3d" type="button">🧱 破壁</button>
         <button class="starget-btn" data-target="hero_slash_3d" type="button">🗡️ 斬擊</button>
         <button class="starget-btn" data-target="neon_snake_3d" type="button">🐉 巨龍</button>
-        <button class="starget-btn" data-target="cozy_island_3d" type="button">🏝️ 森友小島</button>
       </div>
 
       <button class="btn-primary" id="btnDoSpin" type="button" style="width:100%;justify-content:center;padding:13px 18px;font-size:15px;">
@@ -1868,7 +1867,7 @@
 
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">💰 成就獎金匯入目標：</div>
       <div class="spin-targets" id="questTargets">
-        <button class="starget-btn active" data-target="all" type="button">🌐 9 款遊戲均分</button>
+        <button class="starget-btn active" data-target="all" type="button">🌐 8 款遊戲均分</button>
         <button class="starget-btn" data-target="canyon_parkour_3d" type="button">🏔️ 跑酷</button>
         <button class="starget-btn" data-target="star_blaster_3d" type="button">🚀 射擊</button>
         <button class="starget-btn" data-target="neon_blocks_3d" type="button">🧩 方塊</button>
@@ -1877,7 +1876,6 @@
         <button class="starget-btn" data-target="brick_breaker_3d" type="button">🧱 破壁</button>
         <button class="starget-btn" data-target="hero_slash_3d" type="button">🗡️ 斬擊</button>
         <button class="starget-btn" data-target="neon_snake_3d" type="button">🐉 巨龍</button>
-        <button class="starget-btn" data-target="cozy_island_3d" type="button">🏝️ 森友小島</button>
       </div>
 
       <div class="quests-list" id="questsList"></div>
@@ -1921,7 +1919,6 @@
         <button class="starget-btn" data-gid="brick_breaker_3d" type="button">🧱 破壁</button>
         <button class="starget-btn" data-gid="hero_slash_3d" type="button">🗡️ 斬擊</button>
         <button class="starget-btn" data-gid="neon_snake_3d" type="button">🐉 巨龍</button>
-        <button class="starget-btn" data-gid="cozy_island_3d" type="button">🏝️ 小島</button>
       </div>
       <div class="playlog-list" id="lbList"></div>
     </div>
@@ -2093,7 +2090,6 @@
         <button class="starget-btn" data-gid="brick_breaker_3d" type="button">🧱 破壁</button>
         <button class="starget-btn" data-gid="hero_slash_3d" type="button">🗡️ 斬擊</button>
         <button class="starget-btn" data-gid="neon_snake_3d" type="button">🐉 巨龍</button>
-        <button class="starget-btn" data-gid="cozy_island_3d" type="button">🏝️ 小島</button>
       </div>
 
       <div class="ach-top-bar" style="margin-bottom:6px;">
@@ -2271,7 +2267,7 @@
         icon: '🏝️',
         genre: '3D 療癒模擬 · 島嶼慢活',
         category: 'sim',
-        status: 'live',
+        status: 'dev',
         featured: false,
         url: './games/cozy-island-3d/index.html',
         coverClass: 'cover-island',
@@ -3757,7 +3753,7 @@
       const grid = document.getElementById('gamesGrid');
       grid.innerHTML = '';
 
-      const items = GAMES_REGISTRY.filter(g => activeFilter === 'all' || g.category === activeFilter);
+      const items = GAMES_REGISTRY.filter(g => g.status !== 'dev' && (activeFilter === 'all' || g.category === activeFilter));
       items.forEach((g) => {
         const isLive = g.status === 'live';
         const stats = isLive ? readStatsForGame(g.id) : null;
@@ -4375,8 +4371,7 @@
       { id: 'g_slash_2',   cat: 'game', rar: 'gold',   title: '⚔️ 極速拔刀劍聖', desc: '《全明星極速斬擊 3D》最高分達 12,000 分', target: 12000, reward: 260, titleBadge: '🗡️ 斬擊劍聖', getVal: s => gScore(s, 'hero_slash_3d'), fmt: v => v.toLocaleString() },
       { id: 'g_snake_1',   cat: 'game', rar: 'bronze', title: '🐉 霓虹幼龍覺醒', desc: '《全明星霓虹貪食蛇 3D》最高分達 2,000 分', target: 2000, reward: 100, getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
       { id: 'g_snake_2',   cat: 'game', rar: 'gold',   title: '👑 競技場巨龍霸主', desc: '《全明星霓虹貪食蛇 3D》最高分達 10,000 分', target: 10000, reward: 260, titleBadge: '🐉 巨龍霸主', getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_island_1',  cat: 'game', rar: 'bronze', title: '🏝️ 小島自然探險家', desc: '《森友小島 3D》收集達 5 種生物圖鑑', target: 5, reward: 110, getVal: s => gItems(s, 'cozy_island_3d'), fmt: v => `${v} 種` },
-      { id: 'g_island_2',  cat: 'game', rar: 'gold',   title: '🏛️ 博物館榮譽館長', desc: '《森友小島 3D》收集達 15 種生物圖鑑', target: 15, reward: 280, titleBadge: '🏝️ 島嶼館長', getVal: s => gItems(s, 'cozy_island_3d'), fmt: v => `${v} 種` },
+      // （森友小島 3D 開發完成開放後重新啟用）
 
       // --- 3. Play Count & Exploration (6) ---
       { id: 'p_play_1',  cat: 'play', rar: 'bronze',   title: '🎮 初次開玩！', desc: '於遊戲綜合區啟動任一款遊戲 1 次', target: 1, reward: 80, getVal: s => s.myPlays, fmt: v => `${v} 次` },
@@ -4384,7 +4379,7 @@
       { id: 'p_play_30', cat: 'play', rar: 'gold',     title: '🔥 街機狂熱者', desc: '累計遊玩綜合區遊戲達 30 次', target: 30, reward: 340, titleBadge: '🎮 街機狂熱者', getVal: s => s.myPlays, fmt: v => `${v} 次` },
       { id: 'p_exp_3',   cat: 'play', rar: 'silver',   title: '🧭 跨界探索家', desc: '親身體驗至少 3 款不同遊戲', target: 3, reward: 160, getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
       { id: 'p_exp_6',   cat: 'play', rar: 'gold',     title: '🌟 全館鑑賞家', desc: '親身體驗至少 6 款不同遊戲', target: 6, reward: 300, titleBadge: '🌟 全館鑑賞家', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
-      { id: 'p_exp_all', cat: 'play', rar: 'platinum', title: '👑 全站制霸大滿貫', desc: '玩遍全站全部 9 款遊戲！', target: 9, reward: 500, titleBadge: '👑 全站傳說', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
+      { id: 'p_exp_all', cat: 'play', rar: 'platinum', title: '👑 全站制霸大滿貫', desc: '玩遍全站全部 8 款遊戲！', target: 8, reward: 500, titleBadge: '👑 全站傳說', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
 
       // --- 4. Secret Achievements (4 — masked as ??? until reached!) ---
       { id: 's_google_sso', cat: 'secret', secret: true, rar: 'silver',   title: '🔐 雲端同步達人', desc: '完成一次 Google 帳號全站單一登入', target: 1, reward: 120, getVal: s => (s.isSignedIn ? 1 : 0), fmt: v => (v >= 1 ? '已登入' : '未登入') },

@@ -1418,7 +1418,7 @@ class CozyIslandApp {
       sellBtn.textContent = `🪙 售出 1 個 (+${def.sellPrice})`;
       sellBtn.addEventListener('click', () => {
         if (this.inventory.removeAtSlot(this.selectedBagSlot, 1)) {
-          this.save.bells += (window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(def.sellPrice, 'normal') : def.sellPrice);
+          this.save.bells += def.sellPrice;
           this.saveManager.scheduleSave();
           this.audio.playChime();
           this._refreshHudAll();

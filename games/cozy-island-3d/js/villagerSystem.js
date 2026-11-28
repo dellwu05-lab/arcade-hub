@@ -121,7 +121,7 @@ export class VillagerSystem {
     const returnBells = isFav ? 180 : 80;
 
     this.inventory.removeAtSlot(slotIdx, 1);
-    this.saveManager.data.bells += (window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(returnBells, 'bonus') : returnBells);
+    this.saveManager.data.bells += returnBells;
     this.saveManager.data.miles += isFav ? 35 : 20;
     const prog = this.addFriendship(vDef.id, xpGain, true);
 
@@ -216,7 +216,7 @@ export class VillagerSystem {
     }
 
     this.saveManager.data.dailyQuests.states[vDef.id] = 'done';
-    this.saveManager.data.bells += (window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(q.bells, 'bonus') : q.bells);
+    this.saveManager.data.bells += q.bells;
     this.saveManager.data.miles += q.miles;
     const prog = this.addFriendship(vDef.id, 30, false);
     const newlyUnlocked = this.unlockRareRecipe(vDef.rareRecipeId);

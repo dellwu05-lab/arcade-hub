@@ -83,7 +83,7 @@ export class EconomySystem {
     if (!slot) return { ok: false };
     const def = this.inventory.getDef(slot.itemId);
     if (!def) return { ok: false };
-    const gain = window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(this.getSellPrice(slot.itemId), 'normal') : this.getSellPrice(slot.itemId);
+    const gain = this.getSellPrice(slot.itemId);
     slot.count -= 1;
     if (slot.count <= 0) this.inventory.getSlots()[slotIdx] = null;
     this.saveManager.data.bells += gain;
@@ -106,7 +106,6 @@ export class EconomySystem {
       }
     }
     if (totalItems > 0) {
-      totalGain = window.__ARCADE_ECO__ ? window.__ARCADE_ECO__.scale(totalGain, 'normal') : totalGain;
       this.saveManager.data.bells += totalGain;
       this.saveManager.data.miles += 25;
       this.saveManager.scheduleSave();
