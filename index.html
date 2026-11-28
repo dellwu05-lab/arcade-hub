@@ -32,9 +32,16 @@
       overflow-x: hidden;
     }
 
+    html.in-game,
     body.in-game {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
       overflow: hidden;
-      height: 100dvh;
+      overscroll-behavior: none;
+      touch-action: none;
     }
 
     /* Ambient Neon Nebula Background */
@@ -800,11 +807,16 @@
     /* ================= FULLSCREEN GAME STAGE ================= */
     .game-stage {
       position: fixed;
-      inset: 0;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
       z-index: 60;
       background: #050811;
       display: none;
       flex-direction: column;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
     }
     .game-stage.active { display: flex; }
 
@@ -818,6 +830,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+    }
+    @media (max-height: 460px) and (orientation: landscape) {
+      .stage-topbar { height: 34px; gap: 6px; }
+      .stage-back-btn { padding: 3px 10px; font-size: 11.5px; }
+      .stage-center { font-size: 12px; }
     }
 
     .stage-back-btn {
@@ -881,7 +898,9 @@
 
     .game-frame {
       flex: 1;
+      min-height: 0;
       width: 100%;
+      height: 100%;
       border: none;
       background: #000;
       display: block;
@@ -2141,15 +2160,29 @@
     // =========================================================================
     // GAME LAUNCHER
     // =========================================================================
+    let savedHubScrollY = 0;
+    function pinInGameViewport() {
+      if (activeGame) window.scrollTo(0, 0);
+    }
+    window.addEventListener('orientationchange', () => {
+      if (activeGame) {
+        setTimeout(pinInGameViewport, 60);
+        setTimeout(pinInGameViewport, 240);
+      }
+    });
+
     function launchGame(gameId) {
       const game = GAMES_REGISTRY.find(g => g.id === gameId && g.status === 'live');
       if (!game) return;
+      savedHubScrollY = window.scrollY || 0;
       activeGame = game;
       document.getElementById('stageGameTitle').textContent = `${game.icon} ${game.title}`;
       const stage = document.getElementById('gameStage');
       const frame = document.getElementById('gameFrame');
       stage.classList.add('active');
+      document.documentElement.classList.add('in-game');
       document.body.classList.add('in-game');
+      window.scrollTo(0, 0);
       frame.onload = () => { try { frame.contentWindow && frame.contentWindow.focus(); } catch (e) {} };
       frame.src = game.url;
       setTimeout(() => { try { frame.focus(); frame.contentWindow && frame.contentWindow.focus(); } catch (e) {} }, 120);
@@ -2161,8 +2194,10 @@
       const stage = document.getElementById('gameStage');
       const frame = document.getElementById('gameFrame');
       stage.classList.remove('active');
+      document.documentElement.classList.remove('in-game');
       document.body.classList.remove('in-game');
       frame.src = 'about:blank';
+      window.scrollTo(0, savedHubScrollY || 0);
       auth = SSO.loadAuth();
       renderHubUI();
     }

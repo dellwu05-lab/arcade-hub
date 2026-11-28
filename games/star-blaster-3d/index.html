@@ -297,7 +297,7 @@
       .spd-btn { font-size: 9.5px !important; padding: 2px 4px !important; }
       .hud-btn.pause-btn { padding: 3.5px 6px !important; font-size: 10.5px !important; gap: 2px !important; }
       .overlay { padding: 86px 10px 14px !important; align-items: flex-start !important; }
-      .panel { max-height: calc(100dvh - 98px) !important; padding: 14px 12px !important; border-radius: 18px !important; }
+      .panel { max-height: calc(100% - 8px) !important; padding: 14px 12px !important; border-radius: 18px !important; }
       .panel h1 { font-size: 21px !important; margin: 6px 0 4px !important; }
       .status-strip, .bars-wrap, .buff-strip, .dash-cluster, .progress-wrap { top: 72px !important; }
       .toast {
@@ -311,6 +311,38 @@
       }
       .ult-btn, .nova-btn { min-width: 176px !important; padding: 8px 14px !important; font-size: 12.5px !important; border-radius: 14px !important; }
       .sprint-btn { padding: 8px 12px !important; font-size: 12px !important; border-radius: 14px !important; white-space: nowrap; }
+    }
+
+    /* Anti-Jitter Fixed Viewport Lock (iOS Chrome/Safari Landscape Stability) */
+    html, body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    .overlay { overscroll-behavior: contain; }
+    .panel { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    @media (max-height: 460px) and (orientation: landscape) {
+      .hud-top {
+        padding: 4px 8px !important; gap: 6px !important;
+        flex-direction: row !important; align-items: center !important;
+      }
+      .hud-cluster { width: auto !important; gap: 4px !important; flex-wrap: nowrap !important; }
+      .pill, .hud-btn { padding: 3px 7px !important; font-size: 11px !important; gap: 4px !important; }
+      .speed-group { padding: 2px 3px 2px 5px !important; }
+      .spd-btn { font-size: 10px !important; padding: 2px 5px !important; }
+      .hud-btn.pause-btn { padding: 3px 8px !important; font-size: 11px !important; }
+      .overlay { padding: 52px 12px 10px !important; align-items: flex-start !important; }
+      .panel { max-height: calc(100% - 10px) !important; padding: 12px 14px !important; }
+      .panel h1 { font-size: 20px !important; margin: 4px 0 !important; }
+      .status-strip, .bars-wrap, .buff-strip, .dash-cluster, .progress-wrap { top: 40px !important; }
+      .toast { top: 68px !important; font-size: 11.5px !important; padding: 5px 12px !important; }
+      .ult-bar, .nova-bar { bottom: 8px !important; }
+      .ult-btn, .nova-btn { min-width: 170px !important; padding: 6px 14px !important; font-size: 12px !important; }
+      .sprint-btn { padding: 7px 12px !important; font-size: 12px !important; }
     }
   </style>
 </head>
