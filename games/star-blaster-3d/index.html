@@ -794,7 +794,7 @@
     const state = {
       mode: 'menu', // 'menu' | 'playing' | 'upgrade' | 'paused' | 'over'
       score: 0, runCoins: 0, wave: 1, waveKillGoal: 12, waveKills: 0,
-      time: 0, shake: 0, novaCharge: 25, novaLockTimer: 0, spawnTimer: 0,
+      time: 0, shake: 0, novaCharge: 25, novaLockTimer: 0, spawnTimer: 0, feverStreak: 0, feverTimer: 0,
       combo: 0, comboTimer: 0, overdrive: 0, magnetBuff: 0,
       boss: null,
       keys: { l: false, r: false, u: false, d: false },
@@ -837,12 +837,18 @@
       const r = Math.random();
       const w = state.wave;
       let kind = 'scout';
-      if (r > 0.75 && w >= 2) kind = 'cruiser';
-      else if (r > 0.45) kind = 'asteroid';
+      if (r > 0.87 && w >= 2) kind = 'shielded';
+      else if (r > 0.74 && w >= 2) kind = 'seeker';
+      else if (r > 0.58 && w >= 2) kind = 'cruiser';
+      else if (r > 0.34) kind = 'asteroid';
 
       const x = 44 + Math.random() * (W - 88);
       if (kind === 'asteroid') {
         state.enemies.push({ kind, x, y: -36, vx: (Math.random() - 0.5) * 65, vy: 115 + w * 14, r: 22 + Math.random() * 12, hp: 22 + w * 9, maxHp: 22 + w * 9, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 3, fireCd: 99, score: 45, coins: 1 });
+      } else if (kind === 'seeker') {
+        state.enemies.push({ kind, x, y: -32, vx: 0, vy: 175 + w * 14, r: 17, hp: 16 + w * 6, maxHp: 16 + w * 6, rot: 0, vr: 0, fireCd: 99, score: 110, coins: 2 });
+      } else if (kind === 'shielded') {
+        state.enemies.push({ kind, x, y: -44, vx: (Math.random() - 0.5) * 45, vy: 68 + w * 7, r: 28, hp: 62 + w * 20, maxHp: 62 + w * 20, shieldHits: 2, rot: 0, vr: 0, fireCd: 1.4, score: 185, coins: 4 });
       } else if (kind === 'cruiser') {
         state.enemies.push({ kind, x, y: -42, vx: (Math.random() - 0.5) * 55, vy: 82 + w * 8, r: 26, hp: 52 + w * 18, maxHp: 52 + w * 18, rot: 0, vr: 0, fireCd: 1.1, score: 130, coins: 3 });
       } else {
@@ -1038,7 +1044,18 @@
       state.comboTimer = 3.2;
       const mult = Math.min(5, 1 + Math.floor(state.combo / 4) * 0.5);
       const pts = Math.round(e.score * mult);
-      state.score += pts;
+      const fMult = state.feverTimer > 0 ? 1.5 : 1.0;
+      state.score += Math.round(pts * fMult);
+      state.feverStreak = (state.feverStreak || 0) + 1;
+      if (state.feverStreak >= 15 && state.feverTimer <= 0) {
+        state.feverStreak = 0;
+        state.feverTimer = 6.0;
+        showToast('🔥 15 連殺！FEVER 狂熱模式 6s（射速 +35% · 分數 1.5x）！');
+      }
+      if (e.kind === 'shielded') {
+        const pk = ['shield', 'rapid', 'magnet'][Math.floor(Math.random() * 3)];
+        state.pickups.push({ x: e.x, y: e.y, vy: 75, kind: pk });
+      }
       state.waveKills++;
       addNovaCharge(2.4);
       SFX.explode(e.kind === 'cruiser');
@@ -1153,7 +1170,7 @@
       state.waveKillGoal = 12;
       const upg = save.upgrades || { dmg: 0, hp: 0, nova: 0 };
       const bonusHp = (upg.hp || 0) * 20 + syn.hpAdd;
-      state.novaCharge = 25; state.novaLockTimer = 0;
+      state.novaCharge = 25; state.novaLockTimer = 0; state.feverStreak = 0; state.feverTimer = 0;
       state.combo = 0; state.comboTimer = 0; state.overdrive = 0; state.magnetBuff = 0;
       state.freezeTimer = 0; state.ultFx = [];
       state.boss = null;
@@ -1222,6 +1239,7 @@
       const p = state.player;
       const ship = getShip();
       if (state.novaLockTimer > 0) state.novaLockTimer = Math.max(0, state.novaLockTimer - dt);
+      if (state.feverTimer > 0) state.feverTimer = Math.max(0, state.feverTimer - dt);
       addNovaCharge(dt * 0.9);
       if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
       if (state.comboTimer > 0) { state.comboTimer -= dt; if (state.comboTimer <= 0) state.combo = 0; }
@@ -1252,7 +1270,7 @@
       const baseAtk = ship.atk || 14;
       p.fireCd -= dt;
       if (p.fireCd <= 0) {
-        p.fireCd = ship.fireRate * p.fireMult * (isOd ? 0.55 : 1.0);
+        p.fireCd = ship.fireRate * p.fireMult * (isOd ? 0.55 : 1.0) * (state.feverTimer > 0 ? 0.65 : 1.0);
         const cnt = Math.min(7, p.spread + (isOd ? 2 : 0));
         for (let i = 0; i < cnt; i++) {
           const offset = cnt === 1 ? 0 : (i - (cnt - 1) / 2);
@@ -1334,7 +1352,7 @@
           for (let j = state.enemies.length - 1; j >= 0; j--) {
             const e = state.enemies[j];
             if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + 8) {
-              e.hp -= b.dmg;
+              const dmgTaken = (e.shieldHits > 0) ? (e.shieldHits--, Math.max(1, Math.round(b.dmg * 0.45))) : b.dmg; e.hp -= dmgTaken;
               addParticles(b.x, b.y, b.col, 3, 90);
               if (b.crit && e.hp > 0) spawnFloat(e.x, e.y - 12, `💥-${b.dmg}`, '#fde047', 12);
               SFX.hit();
@@ -1351,6 +1369,7 @@
       const tScale = state.freezeTimer > 0 ? 0.15 : 1.0;
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const e = state.enemies[i];
+        if (e.kind === 'seeker') { const dx = p.x - e.x; e.vx += Math.sign(dx) * 260 * dt; e.vx = Math.max(-180, Math.min(180, e.vx)); }
         e.x += e.vx * dt * tScale; e.y += e.vy * dt * tScale; e.rot += e.vr * dt * tScale;
         if (e.x < 24 || e.x > W - 24) e.vx *= -1;
         if (e.kind !== 'asteroid') {
@@ -1645,7 +1664,14 @@
           ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.stroke();
           ctx.restore();
         } else {
-          draw3DShip(e.x, e.y, 0, e.kind === 'cruiser' ? '#fb7185' : '#f59e0b', e.kind === 'cruiser' ? '#fda4af' : '#fde68a', e.kind === 'cruiser' ? 1.15 : 0.85, true);
+          const eCol = e.kind === 'shielded' ? '#06b6d4' : (e.kind === 'seeker' ? '#e879f9' : (e.kind === 'cruiser' ? '#fb7185' : '#f59e0b'));
+          const eHi  = e.kind === 'shielded' ? '#a5f3fc' : (e.kind === 'seeker' ? '#f5d0fe' : (e.kind === 'cruiser' ? '#fda4af' : '#fde68a'));
+          const eSc  = e.kind === 'shielded' ? 1.22 : (e.kind === 'cruiser' ? 1.15 : 0.85);
+          draw3DShip(e.x, e.y, 0, eCol, eHi, eSc, true);
+          if (e.shieldHits > 0) {
+            ctx.save(); ctx.strokeStyle = 'rgba(103, 232, 249, 0.85)'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+          }
         }
       }
 

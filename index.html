@@ -1206,6 +1206,34 @@
     }
     .stage-expand-pill:hover { opacity: 1; border-color: rgba(245, 158, 11, 0.7); }
     .game-stage.bar-collapsed .stage-expand-pill { display: inline-flex; }
+    .stage-quick-tip {
+      position: fixed;
+      bottom: max(18px, env(safe-area-inset-bottom, 0px) + 14px);
+      left: 50%;
+      transform: translate(-50%, 24px);
+      z-index: 75;
+      max-width: min(92vw, 520px);
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(9, 13, 24, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(56, 189, 248, 0.65);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+      color: #f8fafc;
+      font-size: 12.5px;
+      font-weight: 800;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .stage-quick-tip.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      pointer-events: auto;
+      cursor: pointer;
+    }
     @media (max-width: 900px), (max-height: 500px) {
       .stage-sso-tag { display: none !important; }
       #stageAcctName { display: none !important; }
@@ -1643,12 +1671,14 @@
           <span class="g-avatar sm" id="stageAvatar">👤</span>
           <span class="hide-xs" id="stageAcctName">訪客模式</span>
         </button>
+        <button class="stage-back-btn" id="btnStageTip" type="button" title="顯示 3 秒操作提示">❓</button>
         <button class="stage-back-btn" id="btnStageShare" type="button" title="生成並分享目前遊戲戰績卡">📸</button>
         <button class="stage-back-btn" id="btnStageFullscreen" type="button" title="切換全螢幕">⛶</button>
         <button class="stage-back-btn" id="btnCollapseStageBar" type="button" title="收合上方列，擴大遊玩畫面">▲</button>
       </div>
     </div>
     <button class="stage-expand-pill" id="btnExpandStageBar" type="button" title="展開綜合區選單">▼ 選單</button>
+    <div class="stage-quick-tip" id="stageQuickTip" title="點擊關閉提示"></div>
     <iframe class="game-frame" id="gameFrame" title="遊戲遊玩視窗" allow="autoplay; fullscreen"></iframe>
   </div>
 
@@ -3824,6 +3854,7 @@
       if (!game) return;
       recordGamePlay(gameId);
       if (typeof trackDailyProgress === 'function') trackDailyProgress('play', gameId);
+      if (typeof maybeShowStageQuickTip === 'function') maybeShowStageQuickTip(gameId, false);
       savedHubScrollY = window.scrollY || 0;
       activeGame = game;
       document.getElementById('stageGameTitle').textContent = `${game.icon} ${game.title}`;
@@ -5219,6 +5250,41 @@
       }
     }
 
+    const GAME_QUICK_TIPS = {
+      canyon_parkour_3d: '👆 點擊螢幕／空白鍵 跳躍（雙擊二段跳）· 右鍵／F 施放奧義',
+      star_blaster_3d:   '👆 拖曳／方向鍵 閃避彈幕（自動射擊）· 空白鍵 施放超新星',
+      canyon_drift_3d:   '👆 左右點擊／A・D 甩尾轉向 · 空白鍵 氮氣衝刺',
+      neon_blocks_3d:    '👆 方向鍵／下方按鈕 移動與旋轉 · 空白鍵 瞬間硬降',
+      hero_arena_3d:     '👆 拖曳／WASD 走位（武器自動攻擊）· 撿金色空投箱 · 右鍵／F 放奧義',
+      brick_breaker_3d:  '👆 拖曳／左右鍵 移動球板接球 · 右鍵／空白鍵 施放奧義',
+      hero_slash_3d:     '👆 滑動螢幕 斬切水果與寶箱（閃避炸彈！）· 右鍵／F 放奧義',
+      neon_snake_3d:     '👆 拖曳／滑鼠 引導巨龍吞噬能量球 · 長按加速 · 右鍵 放奧義',
+      cozy_island_3d:    '👆 拖曳／WASD 漫步小島 · 靠近生物、果樹或居民點擊互動'
+    };
+    let stageQuickTipTimer = null;
+
+    function maybeShowStageQuickTip(gameId, force = false) {
+      const el = document.getElementById('stageQuickTip');
+      const tip = GAME_QUICK_TIPS[gameId];
+      if (!el || !tip) return;
+      const seenKey = 'arcade_hub_seen_tips_v1';
+      let seen = {};
+      try { seen = JSON.parse(localStorage.getItem(seenKey) || '{}') || {}; } catch (e) {}
+      if (!force && seen[gameId]) return;
+      seen[gameId] = 1;
+      try { localStorage.setItem(seenKey, JSON.stringify(seen)); } catch (e) {}
+      el.textContent = tip;
+      el.classList.add('show');
+      if (stageQuickTipTimer) clearTimeout(stageQuickTipTimer);
+      stageQuickTipTimer = setTimeout(() => el.classList.remove('show'), 3800);
+    }
+
+    document.getElementById('btnStageTip').addEventListener('click', () => {
+      if (activeGame) maybeShowStageQuickTip(activeGame.id, true);
+    });
+    document.getElementById('stageQuickTip').addEventListener('click', () => {
+      document.getElementById('stageQuickTip').classList.remove('show');
+    });
     document.getElementById('btnStageShare').addEventListener('click', () => openShareCardModal(activeGame && activeGame.id));
     document.getElementById('btnCloseShareCard').addEventListener('click', () => document.getElementById('shareCardModal').classList.remove('open'));
     document.getElementById('shareCardModal').addEventListener('click', (e) => {

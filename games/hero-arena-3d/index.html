@@ -921,7 +921,7 @@
 
       st.mode = 'playing'; st.time = 0; st.wave = 1; st.kills = 0; st.score = 0; st.runCoins = 0;
       st.ultCharge = 25; st.ultLockTimer = 0; st.shake = 0; st.spawnCd = 0.25; st.bossTimer = 26;
-      st.freezeTimer = 0; st.rainbowTimer = 0;
+      st.freezeTimer = 0; st.rainbowTimer = 0; st.feverTimer = 0; st.crateTimer = 18; st.crates = [];
       st.enemies = []; st.projectiles = []; st.eBullets = []; st.gems = []; st.particles = []; st.bolts = []; st.waves = []; st.floats = []; st.ultFx = []; st.boss = null;
 
       st.player = {
@@ -937,7 +937,7 @@
         chainLv: hero.weapon === 'chain' ? 2 : 0, chainCd: 0.5,
         homingLv: hero.weapon === 'homing' ? 2 : 1, homingCd: 0.3,
         novaLv: hero.weapon === 'nova' ? 2 : 0, novaCd: 1.2,
-        magBuff: 0
+        magBuff: 0, heroShield: hero.id === 'gojo' ? 1 : 0, shieldCd: 18
       };
 
       document.getElementById('startOverlay').classList.add('hidden');
@@ -1057,12 +1057,24 @@
       const y = p.y + Math.sin(ang) * dist;
       const r = Math.random();
       const w = st.wave;
+      const isElite = w >= 2 && Math.random() < 0.15;
+      const pushEn = (obj) => {
+        if (isElite) {
+          obj.elite = true;
+          obj.r = Math.round(obj.r * 1.38);
+          obj.hp = Math.round(obj.hp * 2.4);
+          obj.maxHp = obj.hp;
+          obj.score = Math.round(obj.score * 3);
+          obj.xp = Math.round(obj.xp * 2.5);
+        }
+        st.enemies.push(obj);
+      };
       if (r < 0.55) {
-        st.enemies.push({ kind: 'slime', x, y, r: 16, hp: Math.round(30 + w * 16 + w * w * 2.5), maxHp: Math.round(30 + w * 16 + w * w * 2.5), spd: 98 + w * 10, dmg: 11 + w * 3, col: '#34d399', xp: 14, score: 35, flash: 0, hitCd: 0 });
+        pushEn({ kind: 'slime', x, y, r: 16, hp: Math.round(30 + w * 16 + w * w * 2.5), maxHp: Math.round(30 + w * 16 + w * w * 2.5), spd: 98 + w * 10, dmg: 11 + w * 3, col: '#34d399', xp: 14, score: 35, flash: 0, hitCd: 0 });
       } else if (r < 0.82) {
-        st.enemies.push({ kind: 'dasher', x, y, r: 15, hp: Math.round(24 + w * 13 + w * w * 2), maxHp: Math.round(24 + w * 13 + w * w * 2), spd: 152 + w * 13, dmg: 15 + w * 3, col: '#fb923c', xp: 18, score: 50, flash: 0, hitCd: 0 });
+        pushEn({ kind: 'dasher', x, y, r: 15, hp: Math.round(24 + w * 13 + w * w * 2), maxHp: Math.round(24 + w * 13 + w * w * 2), spd: 152 + w * 13, dmg: 15 + w * 3, col: '#fb923c', xp: 18, score: 50, flash: 0, hitCd: 0 });
       } else {
-        st.enemies.push({ kind: 'caster', x, y, r: 19, hp: 42 + w * 18, maxHp: 42 + w * 18, spd: 78 + w * 6, dmg: 12 + w * 2, col: '#c084fc', xp: 24, score: 75, flash: 0, hitCd: 0, fireCd: 1.6 });
+        pushEn({ kind: 'caster', x, y, r: 19, hp: 42 + w * 18, maxHp: 42 + w * 18, spd: 78 + w * 6, dmg: 12 + w * 2, col: '#c084fc', xp: 24, score: 75, flash: 0, hitCd: 0, fireCd: 1.6 });
       }
     }
 
@@ -1081,7 +1093,11 @@
     }
 
     function damageEnemy(e, idx, dmg, col = '#fff') {
-      e.hp -= dmg;
+      const hero = getHero();
+      let finalDmg = dmg;
+      if (st.feverTimer > 0) finalDmg *= 1.4;
+      if (hero.id === 'luffy' && st.player && st.player.hp < st.player.maxHp * 0.45) finalDmg *= 1.45;
+      e.hp -= finalDmg;
       e.flash = 0.12;
       SFX.hit();
       addFloat(e.x + (Math.random() - 0.5) * 14, e.y - 12, `${Math.round(dmg)}`, col, 12);
@@ -1093,7 +1109,18 @@
         addParticles(e.x, e.y, e.col, 10, 170);
         SFX.kill();
         st.gems.push({ x: e.x, y: e.y, kind: 'xp', val: e.xp });
-        if (Math.random() < 0.20) st.gems.push({ x: e.x + 8, y: e.y - 6, kind: 'coin', val: 1 });
+        if (e.elite) {
+          for (let k = 0; k < 3; k++) st.gems.push({ x: e.x + (k - 1) * 14, y: e.y - 6, kind: 'coin', val: 1 });
+          st.gems.push({ x: e.x, y: e.y + 10, kind: Math.random() < 0.55 ? 'heal' : 'magnet', val: 35 });
+          addFloat(e.x, e.y - 26, '👑 菁英擊殺!', '#fde047', 16);
+          if (getHero().id === 'rimuru' && st.player) st.player.hp = Math.min(st.player.maxHp, st.player.hp + Math.round(st.player.maxHp * 0.2));
+        } else if (Math.random() < 0.20) {
+          st.gems.push({ x: e.x + 8, y: e.y - 6, kind: 'coin', val: 1 });
+        }
+        if (getHero().id === 'tanjiro' && st.kills % 12 === 0 && st.player) {
+          st.player.hp = Math.min(st.player.maxHp, st.player.hp + 8);
+          addFloat(st.player.x, st.player.y - 30, '🌊 水之呼吸 +8 HP', '#38bdf8', 13);
+        }
         const bonusRoll = Math.random();
         if (bonusRoll < 0.025) st.gems.push({ x: e.x - 8, y: e.y, kind: 'heal', val: 35 });
         else if (bonusRoll < 0.042) st.gems.push({ x: e.x - 8, y: e.y, kind: 'magnet', val: 1 });
@@ -1306,6 +1333,55 @@
       if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
       if (p.magBuff > 0) p.magBuff = Math.max(0, p.magBuff - dt);
       if (st.ultLockTimer > 0) st.ultLockTimer = Math.max(0, st.ultLockTimer - dt);
+      if (st.feverTimer > 0) st.feverTimer = Math.max(0, st.feverTimer - dt);
+      if (hero.id === 'gojo' && p.heroShield < 1) {
+        p.shieldCd -= dt;
+        if (p.shieldCd <= 0) { p.heroShield = 1; p.shieldCd = 18; addFloat(p.x, p.y - 30, '♾️ 無下限護盾就緒!', '#c084fc', 14); }
+      }
+      st.crateTimer -= dt;
+      if (st.crateTimer <= 0 && st.crates.length < 2) {
+        st.crateTimer = 20;
+        const cAng = Math.random() * Math.PI * 2;
+        const cDist = 200 + Math.random() * 140;
+        st.crates.push({ x: p.x + Math.cos(cAng) * cDist, y: p.y + Math.sin(cAng) * cDist, life: 22 });
+        showToast('🎁 戰場空投補給箱已降落！快去撿取！');
+      }
+      for (let ci = st.crates.length - 1; ci >= 0; ci--) {
+        const cr = st.crates[ci];
+        cr.life -= dt;
+        if (Math.hypot(p.x - cr.x, p.y - cr.y) < p.r + 22) {
+          st.crates.splice(ci, 1);
+          SFX.levelUp();
+          addParticles(cr.x, cr.y, '#fde047', 18, 240);
+          const extraDora = hero.id === 'doraemon' ? 5 : 0;
+          const roll = Math.random();
+          if (roll < 0.36) {
+            st.feverTimer = 6.0;
+            addFloat(p.x, p.y - 34, '🔥 狂熱模式 6s (+40%傷害)!', '#f97316', 18);
+            showToast('🎁 空投補給：🔥 6 秒狂熱增傷！');
+          } else if (roll < 0.72) {
+            p.magBuff = Math.max(p.magBuff, 4.0);
+            const dropCnt = 8 + extraDora;
+            for (let k = 0; k < dropCnt; k++) {
+              const a = (k / dropCnt) * Math.PI * 2;
+              st.gems.push({ x: cr.x + Math.cos(a) * 32, y: cr.y + Math.sin(a) * 32, kind: 'coin', val: 1 });
+            }
+            addFloat(p.x, p.y - 34, `🪙 金幣雨 +${dropCnt}!`, '#fde047', 18);
+            showToast('🎁 空投補給：🧲 超級磁力＋金幣雨！');
+          } else {
+            const healAmt = Math.round(p.maxHp * 0.4);
+            p.hp = Math.min(p.maxHp, p.hp + healAmt);
+            p.invuln = Math.max(p.invuln, 2.5);
+            addFloat(p.x, p.y - 34, `❤️ 戰地急救 +${healAmt} HP!`, '#34d399', 18);
+            showToast('🎁 空投補給：❤️ 回復 40% 血量＋2.5s 無敵！');
+          }
+          if (extraDora > 0 && roll >= 0.72) {
+            for (let k = 0; k < extraDora; k++) st.gems.push({ x: cr.x + k * 8, y: cr.y, kind: 'coin', val: 1 });
+          }
+        } else if (cr.life <= 0) {
+          st.crates.splice(ci, 1);
+        }
+      }
       if (canGainUltCharge()) st.ultCharge = Math.min(100, st.ultCharge + dt * 0.9 * p.ultRate);
 
       // Player movement (WASD / Arrows / Drag Pointer)
@@ -1593,6 +1669,14 @@
 
     function hurtPlayer(dmg) {
       const p = st.player;
+      if (p.heroShield > 0) {
+        p.heroShield = 0;
+        p.invuln = 1.2;
+        SFX.levelUp();
+        addFloat(p.x, p.y - 28, '♾️ 無下限格擋!', '#c084fc', 17);
+        st.waves.push({ x: p.x, y: p.y, r: 24, maxR: 180, col: '#c084fc', alpha: 0.9 });
+        return;
+      }
       p.hp = Math.max(0, p.hp - Math.round(dmg));
       p.invuln = 0.65;
       st.shake = 0.3;
@@ -1645,6 +1729,18 @@
         ctx.restore();
       });
 
+      // Supply Crates
+      (st.crates || []).forEach((cr) => {
+        ctx.save();
+        const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.14;
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.85)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cr.x, cr.y, 22 * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.32)'; ctx.fill();
+        ctx.font = '22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🎁', cr.x, cr.y + 1);
+        ctx.restore();
+      });
+
       // Pickups
       st.gems.forEach((g) => {
         ctx.save();
@@ -1674,7 +1770,7 @@
           ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
         }
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = e.elite ? '#fde047' : 'rgba(255,255,255,0.45)'; ctx.lineWidth = e.elite ? 3.5 : 2; ctx.stroke();
         if (e.hp < e.maxHp) {
           ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(e.x - 14, e.y - e.r - 9, 28, 4);
           ctx.fillStyle = '#fb7185'; ctx.fillRect(e.x - 14, e.y - e.r - 9, 28 * Math.max(0, e.hp / e.maxHp), 4);
