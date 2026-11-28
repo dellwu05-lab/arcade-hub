@@ -1073,6 +1073,40 @@
     .audit-tag.wallet { background: rgba(250, 204, 21, 0.16); color: #fde047; border-color: rgba(250, 204, 21, 0.35); }
     .audit-summary { font-size: 12px; font-weight: 700; color: #f1f5f9; line-height: 1.4; }
 
+    /* P1 Celebration Confetti, Rival Surpassed Banner & Share Card Modal */
+    #confettiCanvas {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      z-index: 120; pointer-events: none; display: none;
+    }
+    .record-banner {
+      position: fixed; top: max(16px, env(safe-area-inset-top, 0px) + 12px); left: 50%;
+      transform: translate(-50%, -130%);
+      z-index: 115; display: flex; align-items: center; gap: 11px;
+      padding: 11px 14px; border-radius: 16px; max-width: min(94vw, 490px);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(88, 28, 135, 0.94));
+      border: 1.5px solid rgba(250, 204, 21, 0.78);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 24px rgba(250, 204, 21, 0.25);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+      opacity: 0; pointer-events: none;
+    }
+    .record-banner.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+    .record-banner-ico { font-size: 28px; flex-shrink: 0; }
+    .record-banner-body { flex: 1; min-width: 0; }
+    .record-banner-kicker { font-size: 10px; font-weight: 900; color: #fde047; letter-spacing: 0.7px; }
+    .record-banner-title { font-size: 13.5px; font-weight: 900; color: #fff; margin-top: 1px; }
+    .record-banner-sub { font-size: 11.5px; color: #e2e8f0; margin-top: 2px; }
+    .share-card-preview-wrap {
+      margin: 10px 0 14px; border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(250, 204, 21, 0.35);
+      background: #060913; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+    }
+    .share-card-canvas { width: 100%; height: auto; display: block; }
+    .share-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .cloud-sync-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 800; color: #7dd3fc; margin-left: 4px;
+    }
+
     /* ================= FULLSCREEN GAME STAGE ================= */
     .game-stage {
       position: fixed;
@@ -1556,6 +1590,7 @@
           <span class="g-avatar sm" id="stageAvatar">👤</span>
           <span class="hide-xs" id="stageAcctName">訪客模式</span>
         </button>
+        <button class="stage-back-btn" id="btnStageShare" type="button" title="生成並分享目前遊戲戰績卡">📸</button>
         <button class="stage-back-btn" id="btnStageFullscreen" type="button" title="切換全螢幕">⛶</button>
         <button class="stage-back-btn" id="btnCollapseStageBar" type="button" title="收合上方列，擴大遊玩畫面">▲</button>
       </div>
@@ -1917,6 +1952,42 @@
     </div>
   </div>
 
+  <!-- P1: Fullscreen Celebration Confetti & Record / Rival Surpassed Banner -->
+  <canvas id="confettiCanvas"></canvas>
+  <div class="record-banner" id="recordBanner">
+    <div class="record-banner-ico" id="recordBannerIco">🎉</div>
+    <div class="record-banner-body">
+      <div class="record-banner-kicker" id="recordBannerKicker">NEW PERSONAL BEST!</div>
+      <div class="record-banner-title" id="recordBannerTitle">刷新個人最高紀錄！</div>
+      <div class="record-banner-sub" id="recordBannerSub">快分享戰績卡給親友挑戰！</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <button class="admin-mini-btn apply" id="btnRecordBannerShare" type="button" style="padding:7px 10px;font-size:12px;">📸 分享</button>
+      <button class="close-btn" id="btnRecordBannerClose" type="button" style="width:28px;height:28px;font-size:13px;" aria-label="關閉">✕</button>
+    </div>
+  </div>
+
+  <!-- P1: Shareable Score Card Modal -->
+  <div class="modal-backdrop" id="shareCardModal">
+    <div class="auth-panel" style="max-width:580px;">
+      <div class="modal-head">
+        <div>
+          <h2>📸 戰績分享圖卡</h2>
+          <div class="modal-sub" id="shareCardSub">一鍵複製或下載高畫質戰績卡，直接貼到 LINE 群組向親友下戰帖！</div>
+        </div>
+        <button class="close-btn" id="btnCloseShareCard" type="button" aria-label="關閉">✕</button>
+      </div>
+      <div class="share-card-preview-wrap">
+        <canvas class="share-card-canvas" id="shareCardCanvas" width="1080" height="600"></canvas>
+      </div>
+      <div class="share-actions">
+        <button class="btn-primary" id="btnShareCardNative" type="button" style="padding:10px 18px;font-size:13px;">📤 分享 / 複製圖卡</button>
+        <button class="btn-secondary" id="btnDownloadShareCard" type="button" style="padding:10px 14px;font-size:13px;">⬇️ 下載 PNG</button>
+        <button class="btn-secondary" id="btnCopyChallengeText" type="button" style="padding:10px 14px;font-size:13px;">🔗 複製挑戰文案</button>
+      </div>
+    </div>
+  </div>
+
   <div class="hub-toast" id="hubToast"></div>
 
   <script>
@@ -2238,6 +2309,7 @@
       renderHubUI();
       renderAuthModal();
       checkPendingWalletGrants();
+      syncCloudSaveWithServer('signin');
       const liveCnt = GAMES_REGISTRY.filter(g => g.status === 'live').length;
       showToast(`✅ 已登入 ${userObj.name}！全站 ${liveCnt} 款遊戲皆已自動同步帳號`);
     }
@@ -3069,6 +3141,7 @@
         });
         pushSsoToActiveGame();
         renderHubUI();
+        scheduleCloudSaveUpload();
         showToast(`🎁 收到雲端金幣調整：${notes.join('、')}`);
       } catch (e) { /* ignore offline */ }
     }
@@ -3597,6 +3670,7 @@
             ${progressHtml}
             <div class="game-foot" style="justify-content:flex-end;">
               <div style="display:flex;align-items:center;gap:8px;">
+                <button class="btn-secondary btn-game-share" data-share-id="${g.id}" type="button" style="padding:8px 10px;font-size:12px;" title="生成並分享戰績圖卡">📸</button>
                 <button class="btn-secondary btn-game-lb" data-lb-id="${g.id}" type="button" style="padding:8px 12px;font-size:12px;">📊 分數榜</button>
                 <button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button">▶ 立即遊玩</button>
               </div>
@@ -3607,6 +3681,13 @@
         const launchBtn = card.querySelector('.btn-launch-game');
         if (launchBtn) {
           launchBtn.addEventListener('click', () => launchGame(g.id));
+        }
+        const shareBtn = card.querySelector('.btn-game-share');
+        if (shareBtn) {
+          shareBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            openShareCardModal(g.id);
+          });
         }
         const lbBtn = card.querySelector('.btn-game-lb');
         if (lbBtn) {
@@ -3664,6 +3745,7 @@
       window.scrollTo(0, savedHubScrollY || 0);
       auth = SSO.loadAuth();
       renderHubUI();
+      scheduleCloudSaveUpload();
     }
 
     // =========================================================================
@@ -3739,7 +3821,11 @@
       } else if (d.type === 'ARCADE_GAME_STATS' && d.gameId && d.stats) {
         const uid = d.uid || (auth.currentUser ? auth.currentUser.uid : 'guest');
         liveStatsCache[`${d.gameId}::${uid}`] = d.stats;
-        if (d.stats.bestScore > 0) cloudPostScore(d.gameId, d.stats.bestScore);
+        if (d.stats.bestScore > 0) {
+          checkRecordAndRivalSurpassed(d.gameId, d.stats.bestScore);
+          cloudPostScore(d.gameId, d.stats.bestScore);
+        }
+        scheduleCloudSaveUpload();
         if (!activeGame) renderHubUI();
       } else if (d.type === 'ARCADE_SSO_SYNC' && d.source !== 'arcade_hub' && d.auth) {
         auth = SSO.saveAuth(d.auth);
@@ -4478,6 +4564,7 @@
       syncEquippedTitleUI();
       renderHubUI();
       renderQuestsModal();
+      scheduleCloudSaveUpload();
       showToast(`🏆 領取成就【${q.title}】+${q.reward} 🪙${q.titleBadge ? ` ＋稱號「${q.titleBadge}」` : ''} → ${targetName}`);
     }
 
@@ -4518,6 +4605,7 @@
       const destTxt = boundCount > 0 && sharedInfo
         ? `專屬遊戲 + ${sharedInfo.targetName}`
         : (boundCount > 0 ? '各對應專屬遊戲' : (sharedInfo ? sharedInfo.targetName : ''));
+      scheduleCloudSaveUpload();
       showToast(`🏆 一鍵領取 ${readyList.length} 座成就！共 +${totalReward} 🪙 → ${destTxt}`);
     }
 
@@ -4609,14 +4697,441 @@
     document.getElementById('btnAdminSendGrant').addEventListener('click', adminSendCloudWalletGrant);
     document.getElementById('btnRefreshAudit').addEventListener('click', () => fetchAdminAuditLog(true));
 
+    // =========================================================================
+    // P0: CROSS-DEVICE CLOUD SAVE SYNC (Google Email -> Worker KV)
+    // =========================================================================
+    let cloudSaveUploadTimer = null;
+    let cloudSaveBusy = false;
+
+    function collectLocalCloudSaveSnapshot() {
+      const games = {};
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        const s = SSO.readGameSave(g.id, auth.currentUser);
+        if (s && typeof s === 'object') games[g.id] = s;
+      });
+      const qState = getQuestState();
+      let spinState = { totalSpins: 0, lastDate: '' };
+      try {
+        const raw = localStorage.getItem(getSpinKey());
+        if (raw) spinState = Object.assign(spinState, JSON.parse(raw));
+      } catch (e) {}
+      return {
+        updatedAt: Date.now(),
+        games,
+        hub: {
+          quests: {
+            claimed: Array.isArray(qState.claimed) ? qState.claimed : [],
+            notified: Array.isArray(qState.notified) ? qState.notified : [],
+            equippedTitle: qState.equippedTitle || ''
+          },
+          spin: {
+            totalSpins: Number(spinState.totalSpins) || 0,
+            lastDate: String(spinState.lastDate || '')
+          }
+        }
+      };
+    }
+
+    function applyCloudSaveToLocal(cloudSave) {
+      if (!cloudSave || typeof cloudSave !== 'object' || !auth.currentUser) return;
+      const games = cloudSave.games && typeof cloudSave.games === 'object' ? cloudSave.games : {};
+      Object.keys(games).forEach((gid) => {
+        if (games[gid] && typeof games[gid] === 'object') {
+          SSO.writeGameSave(gid, auth.currentUser, games[gid]);
+        }
+      });
+      if (cloudSave.hub && cloudSave.hub.quests) {
+        const curQ = getQuestState();
+        const cq = cloudSave.hub.quests;
+        saveQuestState({
+          claimed: Array.from(new Set([...(curQ.claimed || []), ...(cq.claimed || [])])),
+          notified: Array.from(new Set([...(curQ.notified || []), ...(cq.notified || [])])),
+          equippedTitle: cq.equippedTitle || curQ.equippedTitle || ''
+        });
+      }
+      if (cloudSave.hub && cloudSave.hub.spin) {
+        try {
+          const curS = JSON.parse(localStorage.getItem(getSpinKey()) || '{}');
+          const cs = cloudSave.hub.spin;
+          const mergedSpin = Object.assign({}, curS, {
+            totalSpins: Math.max(Number(curS.totalSpins) || 0, Number(cs.totalSpins) || 0),
+            lastDate: String(cs.lastDate || '') >= String(curS.lastDate || '') ? (cs.lastDate || curS.lastDate || '') : (curS.lastDate || '')
+          });
+          localStorage.setItem(getSpinKey(), JSON.stringify(mergedSpin));
+        } catch (e) {}
+      }
+    }
+
+    async function syncCloudSaveWithServer(reason = 'auto') {
+      if (!canUseCloudApi() || !auth.currentUser || !auth.currentUser.email || cloudSaveBusy) return;
+      cloudSaveBusy = true;
+      const email = String(auth.currentUser.email).trim().toLowerCase();
+      try {
+        const snap = collectLocalCloudSaveSnapshot();
+        const res = await fetch('/api/cloud-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, updatedAt: snap.updatedAt, games: snap.games, hub: snap.hub })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ok && data.save) {
+            applyCloudSaveToLocal(data.save);
+            initBestScoreBaseline();
+            pushSsoToActiveGame();
+            syncEquippedTitleUI();
+            renderHubUI();
+            if (reason === 'signin') {
+              showToast('☁️ 已從雲端同步您的跨裝置遊戲存檔與英雄收藏！');
+            }
+          }
+        }
+      } catch (e) { /* offline fallback */ } finally {
+        cloudSaveBusy = false;
+      }
+    }
+
+    function scheduleCloudSaveUpload() {
+      if (!canUseCloudApi() || !auth.currentUser || !auth.currentUser.email) return;
+      if (cloudSaveUploadTimer) clearTimeout(cloudSaveUploadTimer);
+      cloudSaveUploadTimer = setTimeout(() => {
+        cloudSaveUploadTimer = null;
+        syncCloudSaveWithServer('upload');
+      }, 1200);
+    }
+
+    // =========================================================================
+    // P1: NEW RECORD CONFETTI, RIVAL SURPASSED BANNER & SHAREABLE SCORE CARD
+    // =========================================================================
+    const prevBestScoresMap = {};
+    const rivalLeaderboardCache = {};
+    let recordBannerTimer = null;
+    let activeShareGameId = null;
+    let activeShareRivalNote = '';
+
+    function initBestScoreBaseline() {
+      GAMES_REGISTRY.filter(g => g.status === 'live').forEach((g) => {
+        const st = readStatsForGame(g.id);
+        prevBestScoresMap[g.id] = st ? (Number(st.bestScore) || 0) : 0;
+      });
+    }
+
+    async function prefetchAllLeaderboardsForRivals() {
+      if (!canUseCloudApi()) return;
+      try {
+        const res = await fetch('/api/leaderboard', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.ok && data.games) {
+          Object.keys(data.games).forEach((gid) => {
+            rivalLeaderboardCache[gid] = Array.isArray(data.games[gid]) ? data.games[gid] : [];
+          });
+        }
+      } catch (e) {}
+    }
+
+    function launchConfettiBurst() {
+      const cv = document.getElementById('confettiCanvas');
+      if (!cv) return;
+      const ctx = cv.getContext('2d');
+      cv.width = window.innerWidth;
+      cv.height = window.innerHeight;
+      cv.style.display = 'block';
+      const colors = ['#fde047', '#38bdf8', '#fb7185', '#34d399', '#c084fc', '#f97316'];
+      const parts = Array.from({ length: 75 }, () => {
+        const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.45;
+        const spd = 420 + Math.random() * 540;
+        return {
+          x: cv.width * (0.25 + Math.random() * 0.5),
+          y: cv.height * 0.55,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 120,
+          w: 7 + Math.random() * 7,
+          h: 4 + Math.random() * 5,
+          rot: Math.random() * Math.PI * 2,
+          vr: (Math.random() - 0.5) * 12,
+          col: colors[Math.floor(Math.random() * colors.length)],
+          life: 1.9 + Math.random() * 0.7
+        };
+      });
+      let last = performance.now();
+      function step(now) {
+        const dt = Math.min(0.04, (now - last) / 1000);
+        last = now;
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        let alive = 0;
+        parts.forEach((p) => {
+          if (p.life <= 0) return;
+          alive++;
+          p.life -= dt;
+          p.vy += 880 * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.rot += p.vr * dt;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.col;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        });
+        if (alive > 0) requestAnimationFrame(step);
+        else cv.style.display = 'none';
+      }
+      requestAnimationFrame(step);
+    }
+
+    function showRecordCelebrateBanner(gameId, score, rivalText) {
+      const g = GAMES_REGISTRY.find(x => x.id === gameId);
+      const banner = document.getElementById('recordBanner');
+      if (!banner || !g) return;
+      activeShareGameId = gameId;
+      activeShareRivalNote = rivalText || '';
+      document.getElementById('recordBannerIco').textContent = rivalText ? '🔥' : '🎉';
+      document.getElementById('recordBannerKicker').textContent = rivalText ? 'RIVAL SURPASSED · 超越排行榜對手！' : 'NEW PERSONAL BEST · 刷新個人最高紀錄！';
+      document.getElementById('recordBannerTitle').textContent = `${g.icon} ${g.title} · ${score.toLocaleString()} 分`;
+      document.getElementById('recordBannerSub').textContent = rivalText || '太神啦！立即生成戰績圖卡貼給親友炫耀！';
+      banner.classList.add('show');
+      if (recordBannerTimer) clearTimeout(recordBannerTimer);
+      recordBannerTimer = setTimeout(() => banner.classList.remove('show'), 7500);
+    }
+
+    function checkRecordAndRivalSurpassed(gameId, newScore) {
+      const prev = Number(prevBestScoresMap[gameId]) || 0;
+      const cur = Math.floor(Number(newScore) || 0);
+      if (cur <= prev || cur <= 0) return;
+      prevBestScoresMap[gameId] = cur;
+
+      // Check if we surpassed any rival on the cached global leaderboard
+      const meName = (auth.currentUser && auth.currentUser.name) || '訪客玩家';
+      const board = (rivalLeaderboardCache[gameId] || []).filter(e => e && e.name !== meName);
+      const passed = board
+        .filter(e => e.score >= prev && e.score < cur)
+        .sort((a, b) => b.score - a.score);
+
+      let rivalText = '';
+      if (passed.length > 0) {
+        const topPassed = passed[0];
+        const diff = cur - topPassed.score;
+        const higherCount = board.filter(e => e.score > cur).length;
+        rivalText = `🔥 剛超越【${topPassed.name}】(+${diff.toLocaleString()} 分) · 目前全球第 #${higherCount + 1} 名！`;
+      }
+
+      launchConfettiBurst();
+      [523, 659, 784, 1047].forEach((f, idx) => {
+        setTimeout(() => playSpinTone(f, 0.16, 'triangle', 0.08), idx * 70);
+      });
+      showRecordCelebrateBanner(gameId, cur, rivalText);
+    }
+
+    function renderShareCardCanvas(gameId, rivalNote = '') {
+      const cv = document.getElementById('shareCardCanvas');
+      const g = GAMES_REGISTRY.find(x => x.id === gameId);
+      if (!cv || !g) return;
+      const ctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      const st = readStatsForGame(gameId);
+      const me = getCurrentPlayerIdentity();
+      const qState = getQuestState();
+      const board = rivalLeaderboardCache[gameId] || [];
+      const higherCount = board.filter(e => e && e.name !== me.name && e.score > (st.bestScore || 0)).length;
+      const rankTxt = st.bestScore > 0 ? `#${higherCount + 1}` : '—';
+
+      // Rich neon arcade background
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, '#070b1a');
+      bg.addColorStop(0.55, '#171238');
+      bg.addColorStop(1, '#2d0c2e');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Decorative neon glows
+      const glow1 = ctx.createRadialGradient(180, 120, 10, 180, 120, 360);
+      glow1.addColorStop(0, 'rgba(56, 189, 248, 0.34)');
+      glow1.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, W, H);
+
+      const glow2 = ctx.createRadialGradient(W - 160, H - 120, 10, W - 160, H - 120, 380);
+      glow2.addColorStop(0, 'rgba(245, 158, 11, 0.36)');
+      glow2.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, W, H);
+
+      // Outer golden neon border
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(20, 20, W - 40, H - 40);
+
+      // Top Brand Header
+      ctx.fillStyle = '#fde047';
+      ctx.font = '900 24px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.fillText('🎮 ARCADE HUB · 戰績榮耀卡', 54, 76);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '700 20px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(new Date().toLocaleDateString('zh-TW'), W - 54, 76);
+      ctx.textAlign = 'left';
+
+      // Game Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 46px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.fillText(`${g.icon} ${g.title}`, 54, 150);
+
+      // Player Avatar Circle + Name + Equipped Title
+      ctx.fillStyle = me.color || '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(88, 224, 32, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '900 28px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((me.name || 'P').charAt(0).toUpperCase(), 88, 225);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '900 32px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.fillText(me.name || '訪客玩家', 136, 224);
+
+      if (qState.equippedTitle) {
+        ctx.fillStyle = '#fde047';
+        ctx.font = '800 21px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+        ctx.fillText(`👑 ${qState.equippedTitle}`, 136, 256);
+      } else {
+        ctx.fillStyle = '#7dd3fc';
+        ctx.font = '700 20px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+        ctx.fillText('全站 3D 街機挑戰者', 136, 256);
+      }
+
+      // Main Score Panel
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+      ctx.fillRect(54, 290, W - 108, 178);
+      ctx.strokeStyle = 'rgba(125, 211, 252, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(54, 290, W - 108, 178);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '800 22px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.fillText('🏆 最高戰績分數', 86, 336);
+
+      ctx.fillStyle = '#fde047';
+      ctx.font = '900 84px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.fillText((st.bestScore || 0).toLocaleString(), 84, 434);
+
+      // Right mini-stats inside score panel
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '900 34px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.fillText(`全球排名 ${rankTxt}`, W - 86, 354);
+      ctx.fillStyle = '#34d399';
+      ctx.font = '800 24px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+      ctx.fillText(`⭐ ${st.stars}/${st.maxStars} · ${g.itemLabel || '收藏'} ${st.charsUnlocked}/${st.charsTotal}`, W - 86, 398);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(`🪙 持有金幣 ${(st.coins || 0).toLocaleString()}`, W - 86, 438);
+      ctx.textAlign = 'left';
+
+      // Rival callout or Challenge Footer
+      if (rivalNote) {
+        ctx.fillStyle = '#fb7185';
+        ctx.font = '900 24px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+        ctx.fillText(rivalNote, 54, 514);
+      } else {
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '800 24px -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif';
+        ctx.fillText('🔥 誰敢來打破我的紀錄？打開連結馬上開玩！', 54, 514);
+      }
+
+      ctx.fillStyle = '#7dd3fc';
+      ctx.font = '700 20px monospace';
+      ctx.fillText('https://arcade-hub.dellwu05-29e.workers.dev', 54, 554);
+    }
+
+    function openShareCardModal(gameId, rivalNote = '') {
+      const targetId = gameId || (activeGame && activeGame.id) || 'hero_slash_3d';
+      activeShareGameId = targetId;
+      activeShareRivalNote = rivalNote || '';
+      renderShareCardCanvas(targetId, activeShareRivalNote);
+      document.getElementById('shareCardModal').classList.add('open');
+    }
+
+    function downloadShareCard() {
+      const cv = document.getElementById('shareCardCanvas');
+      if (!cv) return;
+      const a = document.createElement('a');
+      a.download = `arcade-hub-${activeShareGameId || 'score'}.png`;
+      a.href = cv.toDataURL('image/png');
+      a.click();
+      showToast('⬇️ 已下載高畫質戰績 PNG 圖卡！');
+    }
+
+    async function shareCardImage() {
+      const cv = document.getElementById('shareCardCanvas');
+      const g = GAMES_REGISTRY.find(x => x.id === activeShareGameId);
+      const st = readStatsForGame(activeShareGameId || 'hero_slash_3d');
+      if (!cv) return;
+      const challengeTxt = `🏆 我在《${g ? g.title : 'ARCADE HUB'}》打出 ${(st.bestScore || 0).toLocaleString()} 分！誰敢來挑戰？ https://arcade-hub.dellwu05-29e.workers.dev`;
+      try {
+        const blob = await new Promise(resolve => cv.toBlob(resolve, 'image/png'));
+        if (blob && navigator.share && navigator.canShare) {
+          const file = new File([blob], `arcade-hub-${activeShareGameId || 'score'}.png`, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: 'ARCADE HUB 戰績卡', text: challengeTxt, files: [file] });
+            return;
+          }
+        }
+        if (blob && navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showToast('📋 已複製戰績圖卡！直接到 LINE / 聊天室貼上即可');
+          return;
+        }
+      } catch (e) { /* fallback to download */ }
+      downloadShareCard();
+    }
+
+    async function copyChallengeText() {
+      const g = GAMES_REGISTRY.find(x => x.id === activeShareGameId);
+      const st = readStatsForGame(activeShareGameId || 'hero_slash_3d');
+      const me = getCurrentPlayerIdentity();
+      const txt = `🏆 ${me.name} 在《${g ? g.title : 'ARCADE HUB'}》打出 ${(st.bestScore || 0).toLocaleString()} 分！${activeShareRivalNote ? '\n' + activeShareRivalNote : ''}\n🔥 誰敢來挑戰？立即開玩：https://arcade-hub.dellwu05-29e.workers.dev`;
+      try {
+        await navigator.clipboard.writeText(txt);
+        showToast('🔗 已複製挑戰文案！直接貼到 LINE 群組下戰帖');
+      } catch (e) {
+        showToast('⚠️ 無法存取剪貼簿，請改用下載 PNG');
+      }
+    }
+
+    document.getElementById('btnStageShare').addEventListener('click', () => openShareCardModal(activeGame && activeGame.id));
+    document.getElementById('btnCloseShareCard').addEventListener('click', () => document.getElementById('shareCardModal').classList.remove('open'));
+    document.getElementById('shareCardModal').addEventListener('click', (e) => {
+      if (e.target.id === 'shareCardModal') document.getElementById('shareCardModal').classList.remove('open');
+    });
+    document.getElementById('btnShareCardNative').addEventListener('click', shareCardImage);
+    document.getElementById('btnDownloadShareCard').addEventListener('click', downloadShareCard);
+    document.getElementById('btnCopyChallengeText').addEventListener('click', copyChallengeText);
+    document.getElementById('btnRecordBannerShare').addEventListener('click', () => {
+      document.getElementById('recordBanner').classList.remove('show');
+      openShareCardModal(activeShareGameId, activeShareRivalNote);
+    });
+    document.getElementById('btnRecordBannerClose').addEventListener('click', () => {
+      document.getElementById('recordBanner').classList.remove('show');
+    });
+
     // Boot Hub
     renderHubUI();
+    initBestScoreBaseline();
     syncEquippedTitleUI();
     checkNewAchievementUnlocks(true);
     achBootDone = true;
     syncAllMyScoresToCloud();
     fetchCloudEconomy();
+    prefetchAllLeaderboardsForRivals();
     checkPendingWalletGrants();
+    syncCloudSaveWithServer('boot');
     if (isAdminUser()) fetchAdminCloudStats(false);
   })();
   </script>

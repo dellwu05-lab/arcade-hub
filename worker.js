@@ -49,8 +49,93 @@ if (!globalThis.__ARCADE_MEM) {
     scores: {},
     economy: null,
     grants: {},
-    audit: []
+    audit: [],
+    cloudSaves: {}
   };
+}
+if (!globalThis.__ARCADE_MEM.cloudSaves) globalThis.__ARCADE_MEM.cloudSaves = {};
+
+const MAX_NUM_FIELDS = ['bestScore', 'bestWave', 'bestLen', 'bestKills', 'bestSlices', 'bossesDefeated', 'maxStage', 'totalCoins', 'totalPlays', 'miles'];
+const UNION_ARR_FIELDS = ['ownedHeroes', 'ownedShips', 'ownedCars', 'ownedThemes', 'unlockedChars', 'unlockedStages', 'unlockedRecipes', 'claimed', 'notified'];
+
+function mergeGameSave(existing, incoming, incomingIsFresher) {
+  if (!existing || typeof existing !== 'object') return incoming && typeof incoming === 'object' ? Object.assign({}, incoming) : {};
+  if (!incoming || typeof incoming !== 'object') return Object.assign({}, existing);
+  const base = incomingIsFresher ? Object.assign({}, existing, incoming) : Object.assign({}, incoming, existing);
+
+  MAX_NUM_FIELDS.forEach((k) => {
+    const a = Number(existing[k]);
+    const b = Number(incoming[k]);
+    if (Number.isFinite(a) || Number.isFinite(b)) {
+      base[k] = Math.max(Number.isFinite(a) ? a : 0, Number.isFinite(b) ? b : 0);
+    }
+  });
+
+  UNION_ARR_FIELDS.forEach((k) => {
+    if (Array.isArray(existing[k]) || Array.isArray(incoming[k])) {
+      const set = new Set([...(Array.isArray(existing[k]) ? existing[k] : []), ...(Array.isArray(incoming[k]) ? incoming[k] : [])]);
+      base[k] = Array.from(set).slice(0, 120);
+    }
+  });
+
+  ['upgrades', 'stageStars'].forEach((mapKey) => {
+    if ((existing[mapKey] && typeof existing[mapKey] === 'object') || (incoming[mapKey] && typeof incoming[mapKey] === 'object')) {
+      const mergedMap = Object.assign({}, existing[mapKey] || {});
+      const incMap = incoming[mapKey] || {};
+      Object.keys(incMap).forEach((k) => {
+        mergedMap[k] = Math.max(Number(mergedMap[k]) || 0, Number(incMap[k]) || 0);
+      });
+      base[mapKey] = mergedMap;
+    }
+  });
+
+  return base;
+}
+
+function mergeCloudSaveDoc(existing, incoming) {
+  const now = Date.now();
+  if (!existing || typeof existing !== 'object') {
+    return {
+      updatedAt: Number(incoming && incoming.updatedAt) || now,
+      games: (incoming && incoming.games && typeof incoming.games === 'object') ? incoming.games : {},
+      hub: (incoming && incoming.hub && typeof incoming.hub === 'object') ? incoming.hub : {}
+    };
+  }
+  const exTs = Number(existing.updatedAt) || 0;
+  const inTs = Number(incoming && incoming.updatedAt) || now;
+  const incomingIsFresher = inTs >= exTs;
+
+  const games = {};
+  const allGameIds = new Set([
+    ...Object.keys(existing.games || {}),
+    ...Object.keys((incoming && incoming.games) || {})
+  ]);
+  allGameIds.forEach((gid) => {
+    const cleanId = cleanStr(gid, 40);
+    if (!cleanId) return;
+    games[cleanId] = mergeGameSave(existing.games && existing.games[cleanId], incoming && incoming.games && incoming.games[cleanId], incomingIsFresher);
+  });
+
+  const exHub = existing.hub || {};
+  const inHub = (incoming && incoming.hub) || {};
+  const exQ = exHub.quests || {};
+  const inQ = inHub.quests || {};
+  const exSpin = exHub.spin || {};
+  const inSpin = inHub.spin || {};
+
+  const hub = {
+    quests: {
+      claimed: Array.from(new Set([...(Array.isArray(exQ.claimed) ? exQ.claimed : []), ...(Array.isArray(inQ.claimed) ? inQ.claimed : [])])).slice(0, 120),
+      notified: Array.from(new Set([...(Array.isArray(exQ.notified) ? exQ.notified : []), ...(Array.isArray(inQ.notified) ? inQ.notified : [])])).slice(0, 120),
+      equippedTitle: (incomingIsFresher ? (inQ.equippedTitle || exQ.equippedTitle) : (exQ.equippedTitle || inQ.equippedTitle)) || ''
+    },
+    spin: {
+      totalSpins: Math.max(Number(exSpin.totalSpins) || 0, Number(inSpin.totalSpins) || 0),
+      lastDate: String(inSpin.lastDate || '') >= String(exSpin.lastDate || '') ? (inSpin.lastDate || exSpin.lastDate || '') : (exSpin.lastDate || '')
+    }
+  };
+
+  return { updatedAt: Math.max(exTs, inTs, now), games, hub };
 }
 
 function jsonRes(data, status = 200) {
@@ -483,6 +568,55 @@ export default {
       }
       const logs = await readStore(env, KV_AUDIT_KEY, 'audit', []);
       return jsonRes({ ok: true, storage, logs: Array.isArray(logs) ? logs : [] });
+    }
+
+    // 10. Cross-Device Cloud Save Sync (Per-Email KV storage with conflict-safe merge)
+    if (url.pathname === '/api/cloud-save' && request.method === 'GET') {
+      const email = cleanStr(url.searchParams.get('email') || '', 64).toLowerCase();
+      if (!email || !email.includes('@')) return jsonRes({ ok: false, error: 'invalid email' }, 400);
+      const kvKey = `arcade:cloud_save_v1:${email}`;
+      let save = null;
+      if (env && env.ARCADE_KV) {
+        try {
+          const raw = await env.ARCADE_KV.get(kvKey);
+          if (raw) save = JSON.parse(raw);
+        } catch { /* ignore */ }
+      } else {
+        save = globalThis.__ARCADE_MEM.cloudSaves[email] || null;
+      }
+      return jsonRes({ ok: true, storage, email, save });
+    }
+
+    if (url.pathname === '/api/cloud-save' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const email = cleanStr(body.email || '', 64).toLowerCase();
+        if (!email || !email.includes('@')) return jsonRes({ ok: false, error: 'invalid email' }, 400);
+        const kvKey = `arcade:cloud_save_v1:${email}`;
+        let existing = null;
+        if (env && env.ARCADE_KV) {
+          try {
+            const raw = await env.ARCADE_KV.get(kvKey);
+            if (raw) existing = JSON.parse(raw);
+          } catch { /* ignore */ }
+        } else {
+          existing = globalThis.__ARCADE_MEM.cloudSaves[email] || null;
+        }
+        const merged = mergeCloudSaveDoc(existing, {
+          updatedAt: Number(body.updatedAt) || Date.now(),
+          games: body.games && typeof body.games === 'object' ? body.games : {},
+          hub: body.hub && typeof body.hub === 'object' ? body.hub : {}
+        });
+        globalThis.__ARCADE_MEM.cloudSaves[email] = merged;
+        if (env && env.ARCADE_KV) {
+          try {
+            await env.ARCADE_KV.put(kvKey, JSON.stringify(merged));
+          } catch { /* ignore KV quota errors */ }
+        }
+        return jsonRes({ ok: true, storage, email, save: merged });
+      } catch {
+        return jsonRes({ ok: false, error: 'invalid payload' }, 400);
+      }
     }
 
     // Serve static assets for all non-API routes
