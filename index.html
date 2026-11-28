@@ -2196,7 +2196,7 @@
           <div style="font-size:12.5px;font-weight:900;color:#fde047;">🎁 今日全勤寶箱（完成 3/3 任務）</div>
           <div style="font-size:11px;color:#cbd5e1;" id="dailyBonusStatus">目前進度 0 / 3 項</div>
         </div>
-        <button class="quest-claim-btn" id="btnClaimDailyBonus" type="button" disabled>領取 +150 🪙</button>
+        <button class="quest-claim-btn" id="btnClaimDailyBonus" type="button" disabled>領取 +1500 🪙</button>
       </div>
     </div>
   </div>
@@ -4187,12 +4187,12 @@
     // DAILY LUCKY SPIN WHEEL
     // =========================================================================
     const SPIN_PRIZES = [
-      { label: '+60 🪙',  coins: 60,  col: '#0284c7', text: '#e0f2fe' },
-      { label: '+100 🪙', coins: 100, col: '#7c3aed', text: '#f3e8ff' },
-      { label: '+80 🪙',  coins: 80,  col: '#059669', text: '#d1fae5' },
-      { label: '+160 🪙', coins: 160, col: '#db2777', text: '#fce7f3' },
-      { label: '+120 🪙', coins: 120, col: '#d97706', text: '#fef3c7' },
-      { label: '👑 +300', coins: 300, col: '#ea580c', text: '#fef08a' }
+      { label: '+600 🪙', coins: 600,  col: '#0284c7', text: '#e0f2fe' },
+      { label: '+1000 🪙', coins: 1000, col: '#7c3aed', text: '#f3e8ff' },
+      { label: '+800 🪙', coins: 800,  col: '#059669', text: '#d1fae5' },
+      { label: '+1600 🪙', coins: 1600, col: '#db2777', text: '#fce7f3' },
+      { label: '+1200 🪙', coins: 1200, col: '#d97706', text: '#fef3c7' },
+      { label: '👑 +5000', coins: 5000, col: '#ea580c', text: '#fef08a' }
     ];
     let spinAngle = 0;
     let isSpinning = false;
@@ -4420,49 +4420,49 @@
 
     const HUB_QUESTS = [
       // --- 1. Cross-Game Milestones (10) ---
-      { id: 'q_heroes_10', cat: 'global', rar: 'bronze',   title: '🌟 初試啼聲：全站英雄圖鑑', desc: '全站累積解鎖達 10 位英雄／收集品', target: 10, reward: 150, getVal: s => s.sumItems, fmt: v => `${v} 位` },
-      { id: 'q_heroes_20', cat: 'global', rar: 'silver',   title: '👑 全明星集結令', desc: '全站累積解鎖達 20 位英雄／收集品', target: 20, reward: 300, titleBadge: '🌟 全明星收藏家', getVal: s => s.sumItems, fmt: v => `${v} 位` },
-      { id: 'q_heroes_50', cat: 'global', rar: 'platinum', title: '🏛️ 全明星神殿', desc: '全站累積解鎖達 50 位英雄／收集品', target: 50, reward: 600, titleBadge: '🏛️ 神殿大收藏家', getVal: s => s.sumItems, fmt: v => `${v} 位` },
-      { id: 'q_upg_10',    cat: 'global', rar: 'bronze',   title: '⚡ 工坊學徒', desc: '全站永久強化總等級累積達 Lv.10', target: 10, reward: 160, getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
-      { id: 'q_upg_30',    cat: 'global', rar: 'gold',     title: '🔥 極限鍛造大師', desc: '全站永久強化總等級累積達 Lv.30', target: 30, reward: 320, titleBadge: '🔥 鍛造大師', getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
-      { id: 'q_stars_15',  cat: 'global', rar: 'silver',   title: '⭐ 星海征服者', desc: '跨遊戲累積獲得 15 ★ 星等成就', target: 15, reward: 200, getVal: s => s.sumStars, fmt: v => `${v} ★` },
-      { id: 'q_stars_60',  cat: 'global', rar: 'platinum', title: '🌌 銀河制霸王', desc: '跨遊戲累積獲得 60 ★ 星等成就', target: 60, reward: 550, titleBadge: '🌌 銀河制霸王', getVal: s => s.sumStars, fmt: v => `${v} ★` },
-      { id: 'q_score_10k', cat: 'global', rar: 'gold',     title: '🏆 萬分破關傳說', desc: '任一款遊戲最高紀錄突破 10,000 分', target: 10000, reward: 240, getVal: s => s.topScore, fmt: v => v.toLocaleString() },
-      { id: 'q_spin_1',    cat: 'global', rar: 'bronze',   title: '🎡 每日好運打卡', desc: '完成至少 1 次全站每日幸運轉盤', target: 1, reward: 120, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
-      { id: 'q_coins_2k',  cat: 'global', rar: 'gold',     title: '💰 綜合區大富翁', desc: '全站累積持有金幣達 2,000 🪙', target: 2000, reward: 400, getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` },
+      { id: 'q_heroes_10', cat: 'global', rar: 'bronze',   title: '🌟 初試啼聲：全站英雄圖鑑', desc: '全站累積解鎖達 10 位英雄／收集品', target: 10, reward: 1500, getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_heroes_20', cat: 'global', rar: 'silver',   title: '👑 全明星集結令', desc: '全站累積解鎖達 20 位英雄／收集品', target: 20, reward: 3000, titleBadge: '🌟 全明星收藏家', getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_heroes_50', cat: 'global', rar: 'platinum', title: '🏛️ 全明星神殿', desc: '全站累積解鎖達 50 位英雄／收集品', target: 50, reward: 6000, titleBadge: '🏛️ 神殿大收藏家', getVal: s => s.sumItems, fmt: v => `${v} 位` },
+      { id: 'q_upg_10',    cat: 'global', rar: 'bronze',   title: '⚡ 工坊學徒', desc: '全站永久強化總等級累積達 Lv.10', target: 10, reward: 1600, getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
+      { id: 'q_upg_30',    cat: 'global', rar: 'gold',     title: '🔥 極限鍛造大師', desc: '全站永久強化總等級累積達 Lv.30', target: 30, reward: 3200, titleBadge: '🔥 鍛造大師', getVal: s => s.sumUpgrades, fmt: v => `Lv.${v}` },
+      { id: 'q_stars_15',  cat: 'global', rar: 'silver',   title: '⭐ 星海征服者', desc: '跨遊戲累積獲得 15 ★ 星等成就', target: 15, reward: 2000, getVal: s => s.sumStars, fmt: v => `${v} ★` },
+      { id: 'q_stars_60',  cat: 'global', rar: 'platinum', title: '🌌 銀河制霸王', desc: '跨遊戲累積獲得 60 ★ 星等成就', target: 60, reward: 5500, titleBadge: '🌌 銀河制霸王', getVal: s => s.sumStars, fmt: v => `${v} ★` },
+      { id: 'q_score_10k', cat: 'global', rar: 'gold',     title: '🏆 萬分破關傳說', desc: '任一款遊戲最高紀錄突破 10,000 分', target: 10000, reward: 2400, getVal: s => s.topScore, fmt: v => v.toLocaleString() },
+      { id: 'q_spin_1',    cat: 'global', rar: 'bronze',   title: '🎡 每日好運打卡', desc: '完成至少 1 次全站每日幸運轉盤', target: 1, reward: 1200, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
+      { id: 'q_coins_2k',  cat: 'global', rar: 'gold',     title: '💰 綜合區大富翁', desc: '全站累積持有金幣達 20,000 🪙', target: 20000, reward: 4000, getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` },
 
       // --- 2. Per-Game Dedicated Achievements (18 — 2 per game across all 9 live games) ---
-      { id: 'g_parkour_1', cat: 'game', rar: 'bronze', title: '🏃 峽谷初跑者', desc: '《無盡峽谷 3D》單局最高分達 1,500 分', target: 1500, reward: 100, getVal: s => gScore(s, 'canyon_parkour_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_parkour_2', cat: 'game', rar: 'gold',   title: '🏔️ 峽谷傳說跑者', desc: '《無盡峽谷 3D》單局最高分達 10,000 分', target: 10000, reward: 260, titleBadge: '🏃 峽谷飛毛腿', getVal: s => gScore(s, 'canyon_parkour_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_star_1',    cat: 'game', rar: 'bronze', title: '🚀 銀河王牌駕駛', desc: '《星際彈幕射擊 3D》最高分達 3,000 分', target: 3000, reward: 100, getVal: s => gScore(s, 'star_blaster_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_star_2',    cat: 'game', rar: 'gold',   title: '🛸 星系艦隊司令', desc: '《星際彈幕射擊 3D》最高分達 15,000 分', target: 15000, reward: 280, titleBadge: '🚀 星際司令', getVal: s => gScore(s, 'star_blaster_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_drift_1',   cat: 'game', rar: 'bronze', title: '🏎️ 彎道飄移新星', desc: '《峽谷極速漂移 3D》最高分達 2,000 分', target: 2000, reward: 100, getVal: s => gScore(s, 'canyon_drift_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_drift_2',   cat: 'game', rar: 'gold',   title: '🏁 峽谷秋名山車神', desc: '《峽谷極速漂移 3D》最高分達 10,000 分', target: 10000, reward: 260, titleBadge: '🏎️ 峽谷車神', getVal: s => gScore(s, 'canyon_drift_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_blocks_1',  cat: 'game', rar: 'bronze', title: '🧊 霓虹消行巧手', desc: '《霓虹立體方塊》最高分達 2,000 分', target: 2000, reward: 100, getVal: s => gScore(s, 'neon_blocks_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_blocks_2',  cat: 'game', rar: 'gold',   title: '💎 方塊極速宗師', desc: '《霓虹立體方塊》最高分達 12,000 分', target: 12000, reward: 260, titleBadge: '🧊 方塊宗師', getVal: s => gScore(s, 'neon_blocks_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_arena_1',   cat: 'game', rar: 'bronze', title: '⚔️ 無雙競技初陣', desc: '《全明星無雙競技場 3D》最高分達 3,000 分', target: 3000, reward: 100, getVal: s => gScore(s, 'hero_arena_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_arena_2',   cat: 'game', rar: 'gold',   title: '🔥 一騎當千武神', desc: '《全明星無雙競技場 3D》最高分達 15,000 分', target: 15000, reward: 280, titleBadge: '⚔️ 無雙武神', getVal: s => gScore(s, 'hero_arena_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_brick_1',   cat: 'game', rar: 'bronze', title: '🧱 能量破壁新手', desc: '《全明星打磚塊 3D》最高分達 2,500 分', target: 2500, reward: 100, getVal: s => gScore(s, 'brick_breaker_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_brick_2',   cat: 'game', rar: 'gold',   title: '⚡ 霓虹破壁之王', desc: '《全明星打磚塊 3D》最高分達 12,000 分', target: 12000, reward: 260, titleBadge: '🧱 破壁之王', getVal: s => gScore(s, 'brick_breaker_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_slash_1',   cat: 'game', rar: 'bronze', title: '🗡️ 一刀流見習生', desc: '《全明星極速斬擊 3D》最高分達 2,500 分', target: 2500, reward: 100, getVal: s => gScore(s, 'hero_slash_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_slash_2',   cat: 'game', rar: 'gold',   title: '⚔️ 極速拔刀劍聖', desc: '《全明星極速斬擊 3D》最高分達 12,000 分', target: 12000, reward: 260, titleBadge: '🗡️ 斬擊劍聖', getVal: s => gScore(s, 'hero_slash_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_snake_1',   cat: 'game', rar: 'bronze', title: '🐉 霓虹幼龍覺醒', desc: '《全明星霓虹貪食蛇 3D》最高分達 2,000 分', target: 2000, reward: 100, getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
-      { id: 'g_snake_2',   cat: 'game', rar: 'gold',   title: '👑 競技場巨龍霸主', desc: '《全明星霓虹貪食蛇 3D》最高分達 10,000 分', target: 10000, reward: 260, titleBadge: '🐉 巨龍霸主', getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_parkour_1', cat: 'game', rar: 'bronze', title: '🏃 峽谷初跑者', desc: '《無盡峽谷 3D》單局最高分達 1,500 分', target: 1500, reward: 1000, getVal: s => gScore(s, 'canyon_parkour_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_parkour_2', cat: 'game', rar: 'gold',   title: '🏔️ 峽谷傳說跑者', desc: '《無盡峽谷 3D》單局最高分達 10,000 分', target: 10000, reward: 2600, titleBadge: '🏃 峽谷飛毛腿', getVal: s => gScore(s, 'canyon_parkour_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_star_1',    cat: 'game', rar: 'bronze', title: '🚀 銀河王牌駕駛', desc: '《星際彈幕射擊 3D》最高分達 3,000 分', target: 3000, reward: 1000, getVal: s => gScore(s, 'star_blaster_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_star_2',    cat: 'game', rar: 'gold',   title: '🛸 星系艦隊司令', desc: '《星際彈幕射擊 3D》最高分達 15,000 分', target: 15000, reward: 2800, titleBadge: '🚀 星際司令', getVal: s => gScore(s, 'star_blaster_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_drift_1',   cat: 'game', rar: 'bronze', title: '🏎️ 彎道飄移新星', desc: '《峽谷極速漂移 3D》最高分達 2,000 分', target: 2000, reward: 1000, getVal: s => gScore(s, 'canyon_drift_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_drift_2',   cat: 'game', rar: 'gold',   title: '🏁 峽谷秋名山車神', desc: '《峽谷極速漂移 3D》最高分達 10,000 分', target: 10000, reward: 2600, titleBadge: '🏎️ 峽谷車神', getVal: s => gScore(s, 'canyon_drift_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_blocks_1',  cat: 'game', rar: 'bronze', title: '🧊 霓虹消行巧手', desc: '《霓虹立體方塊》最高分達 2,000 分', target: 2000, reward: 1000, getVal: s => gScore(s, 'neon_blocks_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_blocks_2',  cat: 'game', rar: 'gold',   title: '💎 方塊極速宗師', desc: '《霓虹立體方塊》最高分達 12,000 分', target: 12000, reward: 2600, titleBadge: '🧊 方塊宗師', getVal: s => gScore(s, 'neon_blocks_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_arena_1',   cat: 'game', rar: 'bronze', title: '⚔️ 無雙競技初陣', desc: '《全明星無雙競技場 3D》最高分達 3,000 分', target: 3000, reward: 1000, getVal: s => gScore(s, 'hero_arena_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_arena_2',   cat: 'game', rar: 'gold',   title: '🔥 一騎當千武神', desc: '《全明星無雙競技場 3D》最高分達 15,000 分', target: 15000, reward: 2800, titleBadge: '⚔️ 無雙武神', getVal: s => gScore(s, 'hero_arena_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_brick_1',   cat: 'game', rar: 'bronze', title: '🧱 能量破壁新手', desc: '《全明星打磚塊 3D》最高分達 2,500 分', target: 2500, reward: 1000, getVal: s => gScore(s, 'brick_breaker_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_brick_2',   cat: 'game', rar: 'gold',   title: '⚡ 霓虹破壁之王', desc: '《全明星打磚塊 3D》最高分達 12,000 分', target: 12000, reward: 2600, titleBadge: '🧱 破壁之王', getVal: s => gScore(s, 'brick_breaker_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_slash_1',   cat: 'game', rar: 'bronze', title: '🗡️ 一刀流見習生', desc: '《全明星極速斬擊 3D》最高分達 2,500 分', target: 2500, reward: 1000, getVal: s => gScore(s, 'hero_slash_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_slash_2',   cat: 'game', rar: 'gold',   title: '⚔️ 極速拔刀劍聖', desc: '《全明星極速斬擊 3D》最高分達 12,000 分', target: 12000, reward: 2600, titleBadge: '🗡️ 斬擊劍聖', getVal: s => gScore(s, 'hero_slash_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_snake_1',   cat: 'game', rar: 'bronze', title: '🐉 霓虹幼龍覺醒', desc: '《全明星霓虹貪食蛇 3D》最高分達 2,000 分', target: 2000, reward: 1000, getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
+      { id: 'g_snake_2',   cat: 'game', rar: 'gold',   title: '👑 競技場巨龍霸主', desc: '《全明星霓虹貪食蛇 3D》最高分達 10,000 分', target: 10000, reward: 2600, titleBadge: '🐉 巨龍霸主', getVal: s => gScore(s, 'neon_snake_3d'), fmt: v => v.toLocaleString() },
       // （森友小島 3D 開發完成開放後重新啟用）
 
       // --- 3. Play Count & Exploration (6) ---
-      { id: 'p_play_1',  cat: 'play', rar: 'bronze',   title: '🎮 初次開玩！', desc: '於遊戲綜合區啟動任一款遊戲 1 次', target: 1, reward: 80, getVal: s => s.myPlays, fmt: v => `${v} 次` },
-      { id: 'p_play_10', cat: 'play', rar: 'silver',   title: '🕹️ 街機廳常客', desc: '累計遊玩綜合區遊戲達 10 次', target: 10, reward: 180, getVal: s => s.myPlays, fmt: v => `${v} 次` },
-      { id: 'p_play_30', cat: 'play', rar: 'gold',     title: '🔥 街機狂熱者', desc: '累計遊玩綜合區遊戲達 30 次', target: 30, reward: 340, titleBadge: '🎮 街機狂熱者', getVal: s => s.myPlays, fmt: v => `${v} 次` },
-      { id: 'p_exp_3',   cat: 'play', rar: 'silver',   title: '🧭 跨界探索家', desc: '親身體驗至少 3 款不同遊戲', target: 3, reward: 160, getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
-      { id: 'p_exp_6',   cat: 'play', rar: 'gold',     title: '🌟 全館鑑賞家', desc: '親身體驗至少 6 款不同遊戲', target: 6, reward: 300, titleBadge: '🌟 全館鑑賞家', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
-      { id: 'p_exp_all', cat: 'play', rar: 'platinum', title: '👑 全站制霸大滿貫', desc: '玩遍全站全部 8 款遊戲！', target: 8, reward: 500, titleBadge: '👑 全站傳說', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
+      { id: 'p_play_1',  cat: 'play', rar: 'bronze',   title: '🎮 初次開玩！', desc: '於遊戲綜合區啟動任一款遊戲 1 次', target: 1, reward: 800, getVal: s => s.myPlays, fmt: v => `${v} 次` },
+      { id: 'p_play_10', cat: 'play', rar: 'silver',   title: '🕹️ 街機廳常客', desc: '累計遊玩綜合區遊戲達 10 次', target: 10, reward: 1800, getVal: s => s.myPlays, fmt: v => `${v} 次` },
+      { id: 'p_play_30', cat: 'play', rar: 'gold',     title: '🔥 街機狂熱者', desc: '累計遊玩綜合區遊戲達 30 次', target: 30, reward: 3400, titleBadge: '🎮 街機狂熱者', getVal: s => s.myPlays, fmt: v => `${v} 次` },
+      { id: 'p_exp_3',   cat: 'play', rar: 'silver',   title: '🧭 跨界探索家', desc: '親身體驗至少 3 款不同遊戲', target: 3, reward: 1600, getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
+      { id: 'p_exp_6',   cat: 'play', rar: 'gold',     title: '🌟 全館鑑賞家', desc: '親身體驗至少 6 款不同遊戲', target: 6, reward: 3000, titleBadge: '🌟 全館鑑賞家', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
+      { id: 'p_exp_all', cat: 'play', rar: 'platinum', title: '👑 全站制霸大滿貫', desc: '玩遍全站全部 8 款遊戲！', target: 8, reward: 5000, titleBadge: '👑 全站傳說', getVal: s => s.myDistinctGames, fmt: v => `${v} 款` },
 
       // --- 4. Secret Achievements (4 — masked as ??? until reached!) ---
-      { id: 's_google_sso', cat: 'secret', secret: true, rar: 'silver',   title: '🔐 雲端同步達人', desc: '完成一次 Google 帳號全站單一登入', target: 1, reward: 120, getVal: s => (s.isSignedIn ? 1 : 0), fmt: v => (v >= 1 ? '已登入' : '未登入') },
-      { id: 's_spin_3',     cat: 'secret', secret: true, rar: 'silver',   title: '🍀 轉盤幸運之星', desc: '累計轉動每日幸運轉盤達 3 次', target: 3, reward: 160, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
-      { id: 's_rich_5k',    cat: 'secret', secret: true, rar: 'gold',     title: '💎 黃金金庫大亨', desc: '全站累積持有金幣突破 5,000 🪙', target: 5000, reward: 380, titleBadge: '💎 黃金大亨', getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` },
-      { id: 's_ach_20',     cat: 'secret', secret: true, rar: 'platinum', title: '🏆 傳奇白金獵人', desc: '累計領取達 20 座全站成就獎盃', target: 20, reward: 550, titleBadge: '🏆 白金獵人', getVal: s => s.claimedCount, fmt: v => `${v} 座` }
+      { id: 's_google_sso', cat: 'secret', secret: true, rar: 'silver',   title: '🔐 雲端同步達人', desc: '完成一次 Google 帳號全站單一登入', target: 1, reward: 1200, getVal: s => (s.isSignedIn ? 1 : 0), fmt: v => (v >= 1 ? '已登入' : '未登入') },
+      { id: 's_spin_3',     cat: 'secret', secret: true, rar: 'silver',   title: '🍀 轉盤幸運之星', desc: '累計轉動每日幸運轉盤達 3 次', target: 3, reward: 1600, getVal: s => s.totalSpins, fmt: v => `${v} 次` },
+      { id: 's_rich_5k',    cat: 'secret', secret: true, rar: 'gold',     title: '💎 黃金金庫大亨', desc: '全站累積持有金幣突破 50,000 🪙', target: 50000, reward: 3800, titleBadge: '💎 黃金大亨', getVal: s => s.sumCoins, fmt: v => `${v.toLocaleString()} 🪙` },
+      { id: 's_ach_20',     cat: 'secret', secret: true, rar: 'platinum', title: '🏆 傳奇白金獵人', desc: '累計領取達 20 座全站成就獎盃', target: 20, reward: 5500, titleBadge: '🏆 白金獵人', getVal: s => s.claimedCount, fmt: v => `${v} 座` }
     ];
     let questTarget = 'all';
     let activeAchCat = 'all';
@@ -5375,16 +5375,16 @@
     // =========================================================================
     // P2: DAILY 7-DAY CHECK-IN & 3 RANDOM DAILY MISSIONS
     // =========================================================================
-    const CHECKIN_REWARDS = [50, 80, 120, 150, 200, 260, 500];
+    const CHECKIN_REWARDS = [500, 800, 1200, 1500, 2000, 2600, 5000];
     const DAILY_MISSION_POOL = [
-      { id: 'dm_play_1',  title: '🎮 熱身開玩', desc: '今日啟動任意一款遊戲 1 次', target: 1, reward: 60, getVal: s => s.plays || 0, fmt: v => `${v} 次` },
-      { id: 'dm_play_3',  title: '🕹️ 連戰三局', desc: '今日累計遊玩綜合區遊戲達 3 次', target: 3, reward: 120, getVal: s => s.plays || 0, fmt: v => `${v} 次` },
-      { id: 'dm_diff_2',  title: '🧭 雙重體驗', desc: '今日體驗 2 款不同的 3D 遊戲', target: 2, reward: 100, getVal: s => (s.games ? s.games.length : 0), fmt: v => `${v} 款` },
-      { id: 'dm_spin_1',  title: '🎡 每日好手氣', desc: '今日轉動 1 次幸運轉盤', target: 1, reward: 80, getVal: s => s.spins || 0, fmt: v => `${v} 次` },
-      { id: 'dm_score_1k', title: '⭐ 小試身手', desc: '今日任一遊戲單局達到 1,500 分', target: 1500, reward: 100, getVal: s => s.topScore || 0, fmt: v => v.toLocaleString() },
-      { id: 'dm_score_4k', title: '🔥 高手本色', desc: '今日任一遊戲單局達到 4,000 分', target: 4000, reward: 150, getVal: s => s.topScore || 0, fmt: v => v.toLocaleString() },
-      { id: 'dm_share_1', title: '📸 炫耀戰績', desc: '今日開啟或分享 1 次戰績圖卡', target: 1, reward: 80, getVal: s => s.shares || 0, fmt: v => `${v} 次` },
-      { id: 'dm_lb_1',    title: '📊 觀戰排行', desc: '今日查看 1 次全球分數排行榜', target: 1, reward: 60, getVal: s => s.lbViews || 0, fmt: v => `${v} 次` }
+      { id: 'dm_play_1',  title: '🎮 熱身開玩', desc: '今日啟動任意一款遊戲 1 次', target: 1, reward: 600, getVal: s => s.plays || 0, fmt: v => `${v} 次` },
+      { id: 'dm_play_3',  title: '🕹️ 連戰三局', desc: '今日累計遊玩綜合區遊戲達 3 次', target: 3, reward: 1200, getVal: s => s.plays || 0, fmt: v => `${v} 次` },
+      { id: 'dm_diff_2',  title: '🧭 雙重體驗', desc: '今日體驗 2 款不同的 3D 遊戲', target: 2, reward: 1000, getVal: s => (s.games ? s.games.length : 0), fmt: v => `${v} 款` },
+      { id: 'dm_spin_1',  title: '🎡 每日好手氣', desc: '今日轉動 1 次幸運轉盤', target: 1, reward: 800, getVal: s => s.spins || 0, fmt: v => `${v} 次` },
+      { id: 'dm_score_1k', title: '⭐ 小試身手', desc: '今日任一遊戲單局達到 1,500 分', target: 1500, reward: 1000, getVal: s => s.topScore || 0, fmt: v => v.toLocaleString() },
+      { id: 'dm_score_4k', title: '🔥 高手本色', desc: '今日任一遊戲單局達到 4,000 分', target: 4000, reward: 1500, getVal: s => s.topScore || 0, fmt: v => v.toLocaleString() },
+      { id: 'dm_share_1', title: '📸 炫耀戰績', desc: '今日開啟或分享 1 次戰績圖卡', target: 1, reward: 800, getVal: s => s.shares || 0, fmt: v => `${v} 次` },
+      { id: 'dm_lb_1',    title: '📊 觀戰排行', desc: '今日查看 1 次全球分數排行榜', target: 1, reward: 600, getVal: s => s.lbViews || 0, fmt: v => `${v} 次` }
     ];
     let dailyRewardTarget = 'all';
 
@@ -5546,7 +5546,7 @@
       if (st.bonusClaimed || !missions.every(m => m.getVal(st.stats) >= m.target)) return;
       st.bonusClaimed = true;
       saveDailyState(st);
-      const dest = awardDailyCoins(150);
+      const dest = awardDailyCoins(1500);
       launchConfettiBurst();
       [523, 659, 784, 1047, 1318].forEach((f, idx) => setTimeout(() => playSpinTone(f, 0.18, 'triangle', 0.08), idx * 55));
       pushSsoToActiveGame();
@@ -5554,7 +5554,7 @@
       renderDailyModal();
       updateDailyDotUI();
       scheduleCloudSaveUpload();
-      showToast(`🎁 領取今日全勤寶箱 +150 🪙 → ${dest}`);
+      showToast(`🎁 領取今日全勤寶箱 +1500 🪙 → ${dest}`);
     }
 
     function renderDailyModal() {
@@ -5622,7 +5622,7 @@
         ? '✅ 今日全勤寶箱已領取！'
         : `目前進度 ${doneCnt} / 3 項${doneCnt === 3 ? '（可領取！）' : ''}`;
       bonusBtn.disabled = st.bonusClaimed || doneCnt < 3;
-      bonusBtn.textContent = st.bonusClaimed ? '✓ 已領取' : '領取 +150 🪙';
+      bonusBtn.textContent = st.bonusClaimed ? '✓ 已領取' : '領取 +1500 🪙';
     }
 
     function openDailyModal() {
