@@ -804,6 +804,105 @@
     }
     .sso-sync-hint.guest { color: var(--muted); }
 
+    /* Per-Game Play Count & Players Roster */
+    .game-players-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.56);
+      border: 1px solid rgba(167, 139, 250, 0.22);
+    }
+    .gpb-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #c4b5fd;
+    }
+    .gpb-detail-btn {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(167, 139, 250, 0.42);
+      background: rgba(139, 92, 246, 0.16);
+      color: #ddd6fe;
+      font-size: 10.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.14s ease;
+    }
+    .gpb-detail-btn:hover { background: rgba(139, 92, 246, 0.34); }
+    .gpb-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+    }
+    .player-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2.5px 8px 2.5px 3px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .player-chip-av {
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9.5px;
+      font-weight: 900;
+      color: #fff;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .player-chip-av img { width: 100%; height: 100%; object-fit: cover; }
+    .player-chip-cnt { color: #fde047; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .gpb-empty { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+    .playlog-summary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .playlog-stat {
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+    .playlog-stat .l { font-size: 11px; color: var(--muted); }
+    .playlog-stat .v { font-size: 20px; font-weight: 900; color: #c4b5fd; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .playlog-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+    .playlog-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 11px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .playlog-rank { font-size: 13px; font-weight: 900; color: #fde047; min-width: 24px; text-align: center; }
+    .playlog-info { flex: 1; min-width: 0; text-align: left; }
+    .playlog-name { font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .playlog-meta { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+    .playlog-bar-track { height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); margin-top: 5px; overflow: hidden; }
+    .playlog-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #8b5cf6, #38bdf8); }
+    .playlog-count { font-size: 14px; font-weight: 900; color: #fde047; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
     /* ================= FULLSCREEN GAME STAGE ================= */
     .game-stage {
       position: fixed;
@@ -1471,6 +1570,24 @@
     </div>
   </div>
 
+  <!-- ================= PLAY COUNT & PLAYERS MODAL ================= -->
+  <div class="modal-backdrop" id="playLogModal">
+    <div class="auth-panel" style="max-width:460px;">
+      <div class="modal-head">
+        <div>
+          <h2 id="playLogTitle">🎮 遊玩紀錄明細</h2>
+          <div class="modal-sub" id="playLogSub">統計此遊戲的總遊玩次數與各遊玩者排行</div>
+        </div>
+        <button class="close-btn" id="btnClosePlayLog" type="button" aria-label="關閉">✕</button>
+      </div>
+      <div class="playlog-summary">
+        <div class="playlog-stat"><div class="l">總遊玩次數</div><div class="v" id="playLogTotal">0 次</div></div>
+        <div class="playlog-stat"><div class="l">累計遊玩者</div><div class="v" id="playLogPlayersCnt" style="color:#7dd3fc;">0 位</div></div>
+      </div>
+      <div class="playlog-list" id="playLogList"></div>
+    </div>
+  </div>
+
   <div class="hub-toast" id="hubToast"></div>
 
   <script>
@@ -1969,7 +2086,10 @@
       }
 
       const snap = computeGlobalSnapshot();
-      document.getElementById('statLiveGames').textContent = `${snap.liveCount} 款`;
+      const sitePlay = getTotalPlayStats();
+      document.getElementById('statLiveGames').textContent = sitePlay.totalPlays > 0
+        ? `${snap.liveCount} 款 · 🎮 ${sitePlay.totalPlays} 次`
+        : `${snap.liveCount} 款`;
       document.getElementById('statTotalCoins').textContent = snap.sumCoins.toLocaleString();
       document.getElementById('statBestScore').textContent = snap.topScore.toLocaleString();
       document.getElementById('statStarsChars').textContent = `${snap.sumItems}/${snap.sumTotalItems} 英雄 · ⚡Lv.${snap.sumUpgrades}`;
@@ -2120,6 +2240,148 @@
       return `<svg class="cover-art-svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>`;
     }
 
+    // =========================================================================
+    // PER-GAME PLAY COUNT & PLAYERS ROSTER (arcade_hub_play_log_v1)
+    // =========================================================================
+    const PLAY_LOG_KEY = 'arcade_hub_play_log_v1';
+
+    function loadPlayLog() {
+      try {
+        const raw = localStorage.getItem(PLAY_LOG_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function savePlayLog(log) {
+      try {
+        localStorage.setItem(PLAY_LOG_KEY, JSON.stringify(log));
+      } catch (e) { /* storage fallback */ }
+    }
+
+    function getCurrentPlayerIdentity() {
+      const u = auth.currentUser;
+      if (u && u.uid) {
+        return {
+          uid: u.uid,
+          name: u.name || (u.email ? u.email.split('@')[0] : 'Google 玩家'),
+          email: u.email || '',
+          picture: u.picture || '',
+          color: u.color || SSO.pickAvatarColor(u.email || u.name || u.uid)
+        };
+      }
+      return { uid: 'guest', name: '訪客玩家', email: '', picture: '', color: '#64748b' };
+    }
+
+    function recordGamePlay(gameId) {
+      const log = loadPlayLog();
+      if (!log[gameId] || typeof log[gameId] !== 'object') {
+        log[gameId] = { totalPlays: 0, lastPlayedAt: 0, players: {} };
+      }
+      const entry = log[gameId];
+      if (!entry.players || typeof entry.players !== 'object') entry.players = {};
+      const me = getCurrentPlayerIdentity();
+      const now = Date.now();
+      entry.totalPlays = (Number(entry.totalPlays) || 0) + 1;
+      entry.lastPlayedAt = now;
+      const prev = entry.players[me.uid] || { uid: me.uid, count: 0 };
+      entry.players[me.uid] = {
+        uid: me.uid,
+        name: me.name,
+        email: me.email,
+        picture: me.picture,
+        color: me.color,
+        count: (Number(prev.count) || 0) + 1,
+        lastPlayedAt: now
+      };
+      savePlayLog(log);
+      return entry;
+    }
+
+    function getGamePlaySummary(gameId) {
+      const log = loadPlayLog();
+      const entry = log[gameId];
+      if (!entry || typeof entry !== 'object') {
+        return { totalPlays: 0, lastPlayedAt: 0, players: [] };
+      }
+      const players = Object.values(entry.players || {})
+        .filter(p => p && p.count > 0)
+        .sort((a, b) => (b.count - a.count) || ((b.lastPlayedAt || 0) - (a.lastPlayedAt || 0)));
+      return {
+        totalPlays: Number(entry.totalPlays) || players.reduce((s, p) => s + (Number(p.count) || 0), 0),
+        lastPlayedAt: Number(entry.lastPlayedAt) || 0,
+        players
+      };
+    }
+
+    function getTotalPlayStats() {
+      const log = loadPlayLog();
+      let totalPlays = 0;
+      const uniqueUids = new Set();
+      Object.values(log).forEach((entry) => {
+        if (!entry || typeof entry !== 'object') return;
+        totalPlays += Number(entry.totalPlays) || 0;
+        Object.keys(entry.players || {}).forEach(uid => uniqueUids.add(uid));
+      });
+      return { totalPlays, uniquePlayers: uniqueUids.size };
+    }
+
+    function formatRelativeTime(ts) {
+      if (!ts) return '';
+      const diff = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+      if (diff < 60) return '剛剛';
+      if (diff < 3600) return `${Math.floor(diff / 60)} 分鐘前`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} 小時前`;
+      const d = new Date(ts);
+      return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function renderMiniPlayerAvatarHtml(p) {
+      if (p.picture && /^https?:\/\//i.test(p.picture)) {
+        return `<span class="player-chip-av" style="background:${escapeHtml(p.color || '#4285f4')};"><img src="${escapeHtml(p.picture)}" referrerpolicy="no-referrer" alt="" /></span>`;
+      }
+      const init = p.uid === 'guest' ? '👤' : escapeHtml((p.name || 'G')[0].toUpperCase());
+      return `<span class="player-chip-av" style="background:${escapeHtml(p.color || '#64748b')};">${init}</span>`;
+    }
+
+    function openPlayLogModal(gameId) {
+      const g = GAMES_REGISTRY.find(x => x.id === gameId);
+      if (!g) return;
+      const summary = getGamePlaySummary(gameId);
+      document.getElementById('playLogTitle').textContent = `${g.icon} ${g.title} · 遊玩紀錄`;
+      document.getElementById('playLogSub').textContent = summary.lastPlayedAt
+        ? `最近遊玩：${formatRelativeTime(summary.lastPlayedAt)} · 依遊玩次數排序`
+        : '尚無遊玩紀錄，點擊「立即遊玩」開始累積次數！';
+      document.getElementById('playLogTotal').textContent = `${summary.totalPlays.toLocaleString()} 次`;
+      document.getElementById('playLogPlayersCnt').textContent = `${summary.players.length} 位`;
+      const list = document.getElementById('playLogList');
+      list.innerHTML = '';
+      if (!summary.players.length) {
+        list.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--muted);font-size:13px;">🎮 目前還沒有人玩過這款遊戲，成為第一位挑戰者吧！</div>';
+      } else {
+        summary.players.forEach((pl, idx) => {
+          const pct = summary.totalPlays > 0 ? Math.round((pl.count / summary.totalPlays) * 100) : 0;
+          const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+          const row = document.createElement('div');
+          row.className = 'playlog-row';
+          row.innerHTML = `
+            <div class="playlog-rank">${medal}</div>
+            ${renderMiniPlayerAvatarHtml(pl).replace('player-chip-av', 'g-avatar sm')}
+            <div class="playlog-info">
+              <div class="playlog-name">${escapeHtml(pl.name)}${pl.email ? ` <span style="font-size:10.5px;color:var(--muted);font-weight:600;">(${escapeHtml(pl.email)})</span>` : ''}</div>
+              <div class="playlog-meta">佔比 ${pct}% · 最近遊玩 ${formatRelativeTime(pl.lastPlayedAt)}</div>
+              <div class="playlog-bar-track"><div class="playlog-bar-fill" style="width:${Math.max(6, pct)}%;"></div></div>
+            </div>
+            <div class="playlog-count">${pl.count} 次</div>
+          `;
+          list.appendChild(row);
+        });
+      }
+      document.getElementById('playLogModal').classList.add('open');
+    }
+
     function renderGamesGrid() {
       const grid = document.getElementById('gamesGrid');
       grid.innerHTML = '';
@@ -2128,6 +2390,7 @@
       items.forEach((g) => {
         const isLive = g.status === 'live';
         const stats = isLive ? readStatsForGame(g.id) : null;
+        const playInfo = isLive ? getGamePlaySummary(g.id) : null;
         const extraHeroes = stats ? Math.max(0, (stats.charsUnlocked || 1) - 1) : 0;
         const synPct = g.id === 'star_blaster_3d' ? extraHeroes * 8 : extraHeroes * 10;
         const card = document.createElement('article');
@@ -2135,6 +2398,7 @@
 
         const badgesHtml = `
           <span class="cbadge ${isLive ? 'live' : 'soon'}">${isLive ? '● LIVE 可遊玩' : '⏳ 即將推出'}</span>
+          ${isLive && playInfo ? `<span class="cbadge tech" style="color:#c4b5fd;border-color:rgba(167,139,250,0.5);">🎮 ${playInfo.totalPlays} 次 · ${playInfo.players.length} 人</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#86efac;border-color:rgba(134,239,172,0.5);">🌟 英雄羈絆 +${synPct}%</span>` : ''}
           ${isLive && stats ? `<span class="cbadge tech" style="color:#fde047;border-color:rgba(251,191,36,0.45);">⚡ 強化 Lv.${stats.upgradeLevel || 0}/${stats.upgradeMax || 15}</span>` : ''}
           ${g.badges.map(b => `<span class="cbadge tech">${escapeHtml(b)}</span>`).join('')}
@@ -2148,6 +2412,36 @@
             <div class="gp-item"><div class="gp-v" style="color:#7dd3fc;">${stats.charsUnlocked}/${stats.charsTotal}</div><div class="gp-l">${escapeHtml(g.itemLabel || '收藏')}</div></div>
           </div>
         ` : '';
+
+        let playersBarHtml = '';
+        if (isLive && playInfo) {
+          if (playInfo.totalPlays > 0) {
+            const topChips = playInfo.players.slice(0, 4).map(pl =>
+              `<span class="player-chip">${renderMiniPlayerAvatarHtml(pl)}<span>${escapeHtml(pl.name)}</span><span class="player-chip-cnt">×${pl.count}</span></span>`
+            ).join('');
+            const moreChip = playInfo.players.length > 4
+              ? `<span class="player-chip" style="padding:2.5px 8px;color:#c4b5fd;">+${playInfo.players.length - 4} 位</span>`
+              : '';
+            playersBarHtml = `
+              <div class="game-players-bar">
+                <div class="gpb-head">
+                  <span>🎮 遊玩次數：${playInfo.totalPlays} 次（${playInfo.players.length} 位遊玩者）</span>
+                  <button class="gpb-detail-btn" data-playlog-id="${g.id}" type="button">📋 明細</button>
+                </div>
+                <div class="gpb-chips">${topChips}${moreChip}</div>
+              </div>
+            `;
+          } else {
+            playersBarHtml = `
+              <div class="game-players-bar">
+                <div class="gpb-head">
+                  <span>🎮 遊玩次數：0 次</span>
+                  <span class="gpb-empty">成為第一位遊玩者！</span>
+                </div>
+              </div>
+            `;
+          }
+        }
 
         const ssoNoteHtml = auth.currentUser
           ? `<div class="sso-sync-hint">✓ 自動帶入 ${escapeHtml(auth.currentUser.name)}</div>`
@@ -2171,6 +2465,7 @@
               </div>
             </div>
             ${progressHtml}
+            ${playersBarHtml}
             <div class="game-foot">
               ${ssoNoteHtml}
               <button class="btn-primary btn-launch-game" data-game-id="${g.id}" type="button">▶ 立即遊玩</button>
@@ -2181,6 +2476,13 @@
         const launchBtn = card.querySelector('.btn-launch-game');
         if (launchBtn) {
           launchBtn.addEventListener('click', () => launchGame(g.id));
+        }
+        const detailBtn = card.querySelector('.gpb-detail-btn');
+        if (detailBtn) {
+          detailBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            openPlayLogModal(g.id);
+          });
         }
 
         grid.appendChild(card);
@@ -2204,6 +2506,7 @@
     function launchGame(gameId) {
       const game = GAMES_REGISTRY.find(g => g.id === gameId && g.status === 'live');
       if (!game) return;
+      recordGamePlay(gameId);
       savedHubScrollY = window.scrollY || 0;
       activeGame = game;
       document.getElementById('stageGameTitle').textContent = `${game.icon} ${game.title}`;
@@ -2318,6 +2621,8 @@
       if (e.key === SSO.SSO_STORAGE_KEY && e.newValue) {
         auth = SSO.loadAuth();
         pushSsoToActiveGame();
+        renderHubUI();
+      } else if (e.key === PLAY_LOG_KEY) {
         renderHubUI();
       }
     });
@@ -2818,6 +3123,12 @@
     document.getElementById('btnCloseQuests').addEventListener('click', closeQuestsModal);
     document.getElementById('questsModal').addEventListener('click', (e) => {
       if (e.target.id === 'questsModal') closeQuestsModal();
+    });
+    document.getElementById('btnClosePlayLog').addEventListener('click', () => {
+      document.getElementById('playLogModal').classList.remove('open');
+    });
+    document.getElementById('playLogModal').addEventListener('click', (e) => {
+      if (e.target.id === 'playLogModal') document.getElementById('playLogModal').classList.remove('open');
     });
     document.getElementById('questTargets').addEventListener('click', (e) => {
       const btn = e.target.closest('.starget-btn');
