@@ -270,6 +270,18 @@
       border-color: #fde047 !important; background: rgba(245, 158, 11, 0.32) !important;
       color: #fef08a !important; box-shadow: 0 0 16px rgba(250, 204, 21, 0.5);
     }
+    .enemy-guide-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 6px; font-size: 11.5px; font-weight: 800; color: #cbd5e1; }
+    .enemy-guide-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; text-align: left; }
+    .eg-card {
+      padding: 6px 8px; border-radius: 10px; background: rgba(15, 23, 42, 0.68);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-left-width: 3px;
+      font-size: 10.5px; line-height: 1.35;
+    }
+    .eg-top { display: flex; align-items: center; justify-content: space-between; font-weight: 900; color: #f8fafc; margin-bottom: 2px; }
+    .eg-time { font-size: 9.5px; font-weight: 800; padding: 1px 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: #fde68a; }
+    .eg-desc { color: #94a3b8; font-size: 10px; }
+    .eg-drop { color: #86efac; font-size: 10px; font-weight: 800; margin-top: 2px; }
+    @media (max-width: 600px) { .enemy-guide-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -344,6 +356,30 @@
 
         <div class="perm-upg-head"><span>🔧 龍體能量永久進化（點擊升級）</span><span id="permUpgLvl" style="color:#fde047;">總等級 Lv.0/15</span></div>
         <div class="perm-upg-grid" id="permUpgGrid"></div>
+
+        <div class="enemy-guide-head"><span>📖 競技場特殊敵蛇圖鑑（隨時間解鎖 · 雷達色點追蹤）</span><span style="color:#7dd3fc;">共 6 種敵蛇</span></div>
+        <div class="enemy-guide-grid" id="enemyGuide">
+          <div class="eg-card" style="border-left-color:#fde047;">
+            <div class="eg-top"><span>💰 黃金藏寶蛇</span><span class="eg-time">0s 登場</span></div>
+            <div class="eg-desc">見人高速逃竄，全身閃耀金光。</div>
+            <div class="eg-drop">🎁 掉大量金幣＋🧲 磁鐵球</div>
+          </div>
+          <div class="eg-card" style="border-left-color:#ef4444;">
+            <div class="eg-top"><span>⚡ 獵殺衝刺蛇</span><span class="eg-time">12s 解鎖</span></div>
+            <div class="eg-desc">紅光預警鎖定後高速包夾突進。</div>
+            <div class="eg-drop">🎁 反殺瞬間回滿 100% 渦輪</div>
+          </div>
+          <div class="eg-card" style="border-left-color:#84cc16;">
+            <div class="eg-top"><span>🧪 遠程彈幕蛇</span><span class="eg-time">22s 解鎖</span></div>
+            <div class="eg-desc">中距離噴射毒彈（命中扣長緩速不暴斃）。</div>
+            <div class="eg-drop">🎁 額外金幣＋高分獎勵</div>
+          </div>
+          <div class="eg-card" style="border-left-color:#38bdf8;">
+            <div class="eg-top"><span>🛡️ 裝甲護盾蛇</span><span class="eg-time">32s 解鎖</span></div>
+            <div class="eg-desc">3 層減傷護盾；可轟碎或側身攔截斬首。</div>
+            <div class="eg-drop">🎁 獲得 3 秒無敵護盾＋高分</div>
+          </div>
+        </div>
 
         <p class="sub" style="font-size:11.5px;margin-bottom:12px;">
           操控：滑鼠指向 / 手機拖曳 / WASD 方向鍵｜按住左鍵或 Shift 加速｜<strong>龍魂奧義（開局滿氣！）：點擊下方鈕 / 右鍵 / Space / F</strong>
@@ -547,8 +583,9 @@
 
     const st = {
       mode: 'menu', time: 0, score: 0, runCoins: 0, kills: 0, maxLen: 16,
-      ultCharge: 100, shake: 0, boost: 100, sprinting: false, invuln: 0, magBuff: 0,
-      player: null, bots: [], orbs: [], particles: [], waves: [], floats: []
+      ultCharge: 100, shake: 0, boost: 100, sprinting: false, invuln: 0, magBuff: 0, slowDebuff: 0,
+      unlockedTypes: {},
+      player: null, bots: [], orbs: [], enemyShots: [], particles: [], waves: [], floats: []
     };
 
     const keys = {};
@@ -604,10 +641,28 @@
     const ORB_COLS = ['#38bdf8', '#34d399', '#f472b6', '#a855f7', '#fb923c', '#fde047'];
     const BOT_COLS = ['#f43f5e', '#fb923c', '#38bdf8', '#c084fc', '#2dd4bf', '#facc15'];
 
-    function createSnake(x, y, ang, segs, col, glow, isBoss = false) {
+    const ENEMY_TYPES = {
+      normal:   { name: '霓虹蛇',     icon: '🐍', r: 14, spd: 175, minSeg: 14, maxSeg: 24, pts: 220, coins: 3,  radarCol: '#f472b6' },
+      treasure: { name: '黃金藏寶蛇', icon: '💰', col: '#f59e0b', glow: '#fef08a', r: 15, spd: 235, minSeg: 16, maxSeg: 20, pts: 520, coins: 12, radarCol: '#fde047' },
+      hunter:   { name: '獵殺衝刺蛇', icon: '⚡', col: '#ef4444', glow: '#fb923c', r: 15, spd: 192, dashSpd: 335, minSeg: 16, maxSeg: 22, pts: 360, coins: 5,  radarCol: '#ef4444' },
+      spitter:  { name: '遠程彈幕蛇', icon: '🧪', col: '#22c55e', glow: '#a3e635', r: 15, spd: 168, minSeg: 16, maxSeg: 22, pts: 420, coins: 6,  radarCol: '#84cc16' },
+      armored:  { name: '裝甲護盾蛇', icon: '🛡️', col: '#0284c7', glow: '#7dd3fc', r: 18, spd: 155, minSeg: 22, maxSeg: 28, shieldHp: 3, pts: 560, coins: 8,  radarCol: '#38bdf8' },
+      boss:     { name: '巨型魔王蛇', icon: '👑', col: '#e11d48', glow: '#fde047', r: 22, spd: 195, minSeg: 44, maxSeg: 44, pts: 800, coins: 18, radarCol: '#f43f5e' }
+    };
+
+    function createSnake(x, y, ang, segs, col, glow, kind = 'normal') {
+      const k = typeof kind === 'boolean' ? (kind ? 'boss' : 'normal') : kind;
+      const spec = ENEMY_TYPES[k] || ENEMY_TYPES.normal;
       const pts = [];
       for (let i = 0; i < segs; i++) pts.push({ x: x - Math.cos(ang) * i * 9, y: y - Math.sin(ang) * i * 9 });
-      return { x, y, ang, targetLen: segs, pts, col, glow, r: isBoss ? 22 : 14, isBoss, aiTimer: 0, dead: false };
+      return {
+        x, y, ang, targetLen: segs, pts, col, glow,
+        r: spec.r || 14, kind: k, isBoss: k === 'boss',
+        aiTimer: 0, dead: false,
+        telegraph: 0, dashTimer: 0, dashCd: 1.4 + Math.random() * 1.2, dashAng: ang,
+        shootCd: 1.5 + Math.random() * 1.1, chargeGlow: 0,
+        shieldHp: spec.shieldHp || 0, maxShield: spec.shieldHp || 0, shieldFlash: 0
+      };
     }
 
     function spawnOrbs(count) {
@@ -624,13 +679,38 @@
       }
     }
 
-    function spawnBot(isBoss = false) {
-      const a = Math.random() * Math.PI * 2, d = 340 + Math.random() * (WORLD_R - 460);
-      const bx = Math.cos(a) * d, by = Math.sin(a) * d;
-      const col = isBoss ? '#e11d48' : BOT_COLS[Math.floor(Math.random() * BOT_COLS.length)];
-      const segs = isBoss ? 44 : (14 + Math.floor(Math.random() * 14));
-      st.bots.push(createSnake(bx, by, Math.random() * Math.PI * 2, segs, col, isBoss ? '#fde047' : '#ffffff', isBoss));
-      if (isBoss) showToast('👑 巨型魔王蛇現身競技場！切斷牠的路徑或放奧義擊潰牠！');
+    function countBotsByKind(kind) {
+      let c = 0;
+      for (let i = 0; i < st.bots.length; i++) if (!st.bots[i].dead && st.bots[i].kind === kind) c++;
+      return c;
+    }
+
+    function pickBotKind() {
+      const pool = ['normal', 'normal', 'normal'];
+      if (countBotsByKind('treasure') < 1) pool.push('treasure');
+      if (st.time >= 12 && countBotsByKind('hunter') < 2) pool.push('hunter', 'hunter');
+      if (st.time >= 22 && countBotsByKind('spitter') < 2) pool.push('spitter', 'spitter');
+      if (st.time >= 32 && countBotsByKind('armored') < 2) pool.push('armored', 'armored');
+      if (st.time >= 35 && countBotsByKind('boss') < 1 && Math.random() < 0.22) return 'boss';
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function spawnBot(forceKind = null) {
+      const kind = forceKind === true ? 'boss' : (forceKind === false || !forceKind ? pickBotKind() : forceKind);
+      const spec = ENEMY_TYPES[kind] || ENEMY_TYPES.normal;
+      // Spawn at a fair distance from player so special enemies don't pop right on top of player's face
+      let bx = 0, by = 0;
+      for (let tries = 0; tries < 8; tries++) {
+        const a = Math.random() * Math.PI * 2;
+        const d = 320 + Math.random() * (WORLD_R - 460);
+        bx = Math.cos(a) * d; by = Math.sin(a) * d;
+        if (!st.player || Math.hypot(bx - st.player.x, by - st.player.y) > 360) break;
+      }
+      const col = spec.col || BOT_COLS[Math.floor(Math.random() * BOT_COLS.length)];
+      const glow = spec.glow || '#ffffff';
+      const segs = spec.minSeg + Math.floor(Math.random() * (spec.maxSeg - spec.minSeg + 1));
+      st.bots.push(createSnake(bx, by, Math.random() * Math.PI * 2, segs, col, glow, kind));
+      if (kind === 'boss') showToast('👑 巨型魔王蛇現身競技場！切斷牠的路徑或放奧義擊潰牠！');
     }
 
     function getCoinMult() {
@@ -639,31 +719,52 @@
       return hero.coinMult * (1 + (u.ult || 0) * 0.08) * syn.coinMult;
     }
 
-    function killBot(bot) {
+    function killBot(bot, tacticTag = '') {
       if (bot.dead) return;
       bot.dead = true;
       st.kills++;
       const syn = getHeroSynergy();
-      const pts = Math.round((bot.isBoss ? 800 : 220) * syn.scoreMult);
+      const spec = ENEMY_TYPES[bot.kind] || ENEMY_TYPES.normal;
+      const pts = Math.round(spec.pts * syn.scoreMult);
       st.score += pts;
       SFX.kill();
-      addParticles(bot.x, bot.y, bot.col, bot.isBoss ? 34 : 18, 280);
+      addParticles(bot.x, bot.y, bot.col, bot.isBoss ? 34 : 22, 280);
 
       // Burst dead rival snake into glowing feast orbs & bonus coins!
-      const step = Math.max(2, Math.floor(bot.pts.length / 10));
-      for (let i = 0; i < bot.pts.length && st.orbs.length < 240; i += step) {
+      const step = bot.kind === 'treasure' ? 2 : Math.max(2, Math.floor(bot.pts.length / 10));
+      for (let i = 0; i < bot.pts.length && st.orbs.length < 250; i += step) {
         const pt = bot.pts[i];
-        st.orbs.push({ x: pt.x + (Math.random() - 0.5) * 18, y: pt.y + (Math.random() - 0.5) * 18, kind: i % (step * 3) === 0 ? 'coin' : 'energy', r: 8.5, col: i % (step * 3) === 0 ? '#fbbf24' : bot.col, val: 2 });
+        const isCoin = bot.kind === 'treasure' ? (i % 2 === 0) : (bot.kind === 'spitter' ? (i % (step * 2) === 0) : (i % (step * 3) === 0));
+        st.orbs.push({
+          x: pt.x + (Math.random() - 0.5) * 18, y: pt.y + (Math.random() - 0.5) * 18,
+          kind: isCoin ? 'coin' : 'energy', r: isCoin ? 9.5 : 8,
+          col: isCoin ? '#fbbf24' : bot.col, val: bot.kind === 'treasure' && isCoin ? 2 : 2
+        });
       }
-      if (bot.isBoss) {
+
+      const c = Math.max(2, Math.round(spec.coins * getCoinMult()));
+      st.runCoins += c;
+
+      if (bot.kind === 'boss') {
         save.bossesDefeated++;
-        const c = Math.max(12, Math.round(18 * getCoinMult()));
-        st.runCoins += c;
         addFloat(bot.x, bot.y, `👑 擊潰魔王蛇! +${pts} +${c}🪙`, '#fde047', 21);
         showToast(`🏆 擊潰巨型魔王蛇！+${pts} 分 +${c} 金幣！`);
+      } else if (bot.kind === 'treasure') {
+        st.orbs.push({ x: bot.x, y: bot.y, kind: 'magnet', r: 12, col: '#c084fc', val: 1 });
+        addParticles(bot.x, bot.y, '#fde047', 26, 320);
+        addFloat(bot.x, bot.y, `💰 藏寶蛇大爆金! +${c}🪙 +🧲`, '#fde047', 20);
+        showToast(`💰 捕獲黃金藏寶蛇！爆出滿地金幣＋🧲 磁鐵球！`);
+      } else if (bot.kind === 'armored') {
+        st.invuln = Math.max(st.invuln, 3.0);
+        addParticles(bot.x, bot.y, '#38bdf8', 24, 300);
+        addFloat(bot.x, bot.y, `🛡️ ${tacticTag || '擊破裝甲蛇'}! +3s無敵盾 +${c}🪙`, '#7dd3fc', 19);
+        showToast(`🛡️ 擊破裝甲護盾蛇！獲得 3 秒無敵能量盾＋${c} 🪙！`);
+      } else if (bot.kind === 'hunter') {
+        st.boost = 100;
+        addFloat(bot.x, bot.y, `⚡ 反殺獵殺蛇! 渦輪100% +${c}🪙`, '#fb923c', 18);
+      } else if (bot.kind === 'spitter') {
+        addFloat(bot.x, bot.y, `🧪 殲滅彈幕蛇! +${pts} +${c}🪙`, '#a3e635', 18);
       } else {
-        const c = Math.max(2, Math.round(3 * getCoinMult()));
-        st.runCoins += c;
         addFloat(bot.x, bot.y, `💥 擊殺敵蛇 +${pts} +${c}🪙`, '#6ee7b7', 17);
       }
     }
@@ -765,9 +866,18 @@
       showToast(`${hero.icon} 奧義解放：【${hero.ultName}】！半徑 ${blastR} 震爆全場敵蛇！`);
 
       for (const b of st.bots) {
-        if (!b.dead && Math.hypot(b.x - p.x, b.y - p.y) < blastR) killBot(b);
+        if (!b.dead && Math.hypot(b.x - p.x, b.y - p.y) < blastR) killBot(b, '奧義擊破');
       }
       st.bots = st.bots.filter(b => !b.dead);
+      if (st.enemyShots) {
+        for (let i = st.enemyShots.length - 1; i >= 0; i--) {
+          const es = st.enemyShots[i];
+          if (Math.hypot(es.x - p.x, es.y - p.y) < blastR) {
+            addParticles(es.x, es.y, '#a3e635', 6, 160);
+            st.enemyShots.splice(i, 1);
+          }
+        }
+      }
       updateHudUI();
     }
 
@@ -776,13 +886,15 @@
       SFX.ensure(); SFX.startBgm();
       const hero = getHero();
       st.mode = 'playing'; st.time = 0; st.score = 0; st.runCoins = 0; st.kills = 0; st.maxLen = 16;
-      st.ultCharge = 100; st.shake = 0; st.boost = 100; st.sprinting = false; st.invuln = 2.0; st.magBuff = 0;
+      st.ultCharge = 100; st.shake = 0; st.boost = 100; st.sprinting = false; st.invuln = 2.0; st.magBuff = 0; st.slowDebuff = 0;
+      st.unlockedTypes = {};
       st.fireCd = 0.35;
-      st.bots = []; st.orbs = []; st.shots = []; st.ultFx = []; st.particles = []; st.waves = []; st.floats = [];
-      st.player = createSnake(0, 0, -Math.PI / 2, 16, hero.color, hero.glow, false);
+      st.bots = []; st.orbs = []; st.shots = []; st.enemyShots = []; st.ultFx = []; st.particles = []; st.waves = []; st.floats = [];
+      st.player = createSnake(0, 0, -Math.PI / 2, 16, hero.color, hero.glow, 'normal');
       st.player.r = 16;
       spawnOrbs(150);
-      for (let i = 0; i < 6; i++) spawnBot(false);
+      for (let i = 0; i < 5; i++) spawnBot('normal');
+      spawnBot('treasure');
 
       document.getElementById('startOverlay').classList.add('hidden');
       document.getElementById('overOverlay').classList.add('hidden');
@@ -790,7 +902,7 @@
       document.getElementById('barsWrap').classList.remove('hidden');
       document.getElementById('ultBar').classList.remove('hidden');
       updateHudUI();
-      showToast(`${hero.icon} 【${hero.name}】游入戰場！龍息武器：${hero.weaponName || '能量彈'}！`);
+      showToast(`${hero.icon} 【${hero.name}】游入戰場！看右下雷達追擊 💰 黃金藏寶蛇！`);
     }
 
     function triggerGameOver() {
@@ -824,7 +936,7 @@
       }
       // Follow-the-leader fixed spacing (9px per segment)
       sn.pts[0].x = sn.x; sn.pts[0].y = sn.y;
-      const segGap = sn.isBoss ? 12 : 9;
+      const segGap = sn.isBoss ? 12 : (sn.kind === 'armored' ? 10.5 : 9);
       for (let i = 1; i < sn.pts.length; i++) {
         const prev = sn.pts[i - 1], cur = sn.pts[i];
         const dx = cur.x - prev.x, dy = cur.y - prev.y;
@@ -855,6 +967,7 @@
       if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 1.8);
       if (st.invuln > 0) st.invuln = Math.max(0, st.invuln - dt);
       if (st.magBuff > 0) st.magBuff = Math.max(0, st.magBuff - dt);
+      if (st.slowDebuff > 0) st.slowDebuff = Math.max(0, st.slowDebuff - dt);
       st.ultCharge = Math.min(100, st.ultCharge + dt * 0.34 * (1 + (u.ult || 0) * 0.14));
 
       // Player steering (WASD / Arrows / Pointer)
@@ -873,7 +986,8 @@
       const boosting = st.sprinting && st.boost > 6;
       if (boosting) st.boost = Math.max(0, st.boost - dt * 34);
       else st.boost = Math.min(100, st.boost + dt * 20);
-      const baseSpd = hero.spd * (1 + (u.spd || 0) * 0.07) * syn.spdMult;
+      const slowMult = st.slowDebuff > 0 ? 0.72 : 1.0;
+      const baseSpd = hero.spd * (1 + (u.spd || 0) * 0.07) * syn.spdMult * slowMult;
       stepSnake(p, boosting ? baseSpd * 1.58 : baseSpd, dt);
       if (boosting && Math.random() < dt * 18) addParticles(p.pts[p.pts.length - 1].x, p.pts[p.pts.length - 1].y, hero.glow, 1, 80);
 
@@ -889,30 +1003,92 @@
         });
       }
 
-      // Update Hero Weapon Shots vs AI Rival / Boss Serpents
+      // Update Hero Weapon Shots vs Enemy Venom Orbs & AI Rival / Special / Boss Serpents
       if (st.shots) {
         for (let i = st.shots.length - 1; i >= 0; i--) {
           const sh = st.shots[i];
           sh.x += sh.vx * dt; sh.y += sh.vy * dt; sh.life -= dt;
           let hit = false;
-          for (const b of st.bots) {
-            if (b.dead) continue;
-            if (Math.hypot(sh.x - b.x, sh.y - b.y) < b.r + 16) {
-              const segCut = Math.max(2, Math.round(sh.dmg / 9));
-              b.targetLen = Math.max(0, b.targetLen - segCut);
-              while (b.pts.length > Math.max(4, Math.floor(b.targetLen))) {
-                const tail = b.pts.pop();
-                if (st.orbs.length < 240) st.orbs.push({ x: tail.x, y: tail.y, r: 7, val: 2, kind: 'xp', col: b.glow });
+          // Player weapon shots can also shoot down Spitter venom orbs!
+          if (st.enemyShots) {
+            for (let j = st.enemyShots.length - 1; j >= 0; j--) {
+              const es = st.enemyShots[j];
+              if (Math.hypot(sh.x - es.x, sh.y - es.y) < es.r + 14) {
+                st.enemyShots.splice(j, 1);
+                addParticles(es.x, es.y, '#a3e635', 8, 170);
+                addFloat(es.x, es.y - 12, '✨ 擊落毒彈 +25', '#bef264', 13);
+                st.score += 25;
+                hit = true;
+                break;
               }
-              addParticles(sh.x, sh.y, sh.col, 8, 180);
-              addFloat(b.x, b.y - 18, `-${Math.round(sh.dmg)}`, '#fde047', 14);
-              st.score += Math.round(sh.dmg * 0.6);
-              hit = true;
-              if (b.targetLen <= 8) killBot(b);
-              break;
+            }
+          }
+          if (!hit) {
+            for (const b of st.bots) {
+              if (b.dead) continue;
+              if (Math.hypot(sh.x - b.x, sh.y - b.y) < b.r + 16) {
+                if (b.kind === 'armored' && b.shieldHp > 0) {
+                  b.shieldHp--;
+                  b.shieldFlash = 0.22;
+                  addParticles(sh.x, sh.y, '#38bdf8', 10, 210);
+                  if (b.shieldHp > 0) {
+                    addFloat(b.x, b.y - 22, `🛡️ 破盾中 ${b.shieldHp}/${b.maxShield}`, '#7dd3fc', 14);
+                  } else {
+                    addFloat(b.x, b.y - 22, '💥 裝甲護盾擊碎！', '#fde047', 16);
+                    addParticles(b.x, b.y, '#7dd3fc', 18, 280);
+                  }
+                  st.score += Math.round(sh.dmg * 0.4);
+                  hit = true;
+                  break;
+                }
+                const segCut = Math.max(2, Math.round(sh.dmg / 9));
+                b.targetLen = Math.max(0, b.targetLen - segCut);
+                while (b.pts.length > Math.max(4, Math.floor(b.targetLen))) {
+                  const tail = b.pts.pop();
+                  if (st.orbs.length < 250) st.orbs.push({ x: tail.x, y: tail.y, r: 7, val: 2, kind: 'xp', col: b.glow });
+                }
+                addParticles(sh.x, sh.y, sh.col, 8, 180);
+                addFloat(b.x, b.y - 18, `-${Math.round(sh.dmg)}`, '#fde047', 14);
+                st.score += Math.round(sh.dmg * 0.6);
+                hit = true;
+                if (b.targetLen <= 8) killBot(b);
+                break;
+              }
             }
           }
           if (hit || sh.life <= 0) st.shots.splice(i, 1);
+        }
+      }
+
+      // Update Enemy Venom Orbs (Spitter Projectiles — non-lethal length loss + brief slow + 0.6s invuln!)
+      if (st.enemyShots) {
+        for (let i = st.enemyShots.length - 1; i >= 0; i--) {
+          const es = st.enemyShots[i];
+          es.x += es.vx * dt; es.y += es.vy * dt; es.life -= dt;
+          if (Math.random() < dt * 16) addParticles(es.x, es.y, '#84cc16', 1, 60);
+          if (Math.hypot(es.x - p.x, es.y - p.y) < p.r + es.r) {
+            st.enemyShots.splice(i, 1);
+            if (st.invuln > 0) {
+              addParticles(es.x, es.y, '#38bdf8', 10, 180);
+              addFloat(p.x, p.y - 24, '🛡️ 護盾擋下毒彈！', '#7dd3fc', 15);
+            } else {
+              const oldLen = p.targetLen;
+              p.targetLen = Math.max(8, p.targetLen - 4);
+              const lost = Math.max(0, Math.floor(oldLen) - Math.floor(p.targetLen));
+              while (p.pts.length > Math.max(8, Math.floor(p.targetLen))) {
+                const tail = p.pts.pop();
+                if (st.orbs.length < 250) st.orbs.push({ x: tail.x, y: tail.y, kind: 'energy', r: 7.5, col: '#a3e635', val: 1 });
+              }
+              st.slowDebuff = 1.2;
+              st.invuln = Math.max(st.invuln, 0.6);
+              st.shake = 0.28;
+              SFX.eat();
+              addParticles(p.x, p.y, '#84cc16', 16, 240);
+              addFloat(p.x, p.y - 26, lost > 0 ? `🧪 劇毒命中！長度-${lost} 緩速！` : '🧪 劇毒緩速！', '#bef264', 17);
+            }
+            continue;
+          }
+          if (es.life <= 0 || Math.hypot(es.x, es.y) > WORLD_R + 40) st.enemyShots.splice(i, 1);
         }
       }
 
@@ -922,38 +1098,147 @@
           const fx = st.ultFx[i]; fx.life -= dt;
           if (fx.kind === 'purple_orb') {
             fx.x += fx.vx * dt; fx.y += fx.vy * dt;
-            for (const b of st.bots) { if (!b.dead && Math.hypot(b.x - fx.x, b.y - fx.y) < fx.r + 50) killBot(b); }
+            for (const b of st.bots) { if (!b.dead && Math.hypot(b.x - fx.x, b.y - fx.y) < fx.r + 50) killBot(b, '奧義擊破'); }
           } else if (fx.kind === 'blast_ring') { fx.r += (fx.maxR - fx.r) * Math.min(1, dt * 6); }
           else if (fx.kind === 'water_dragon') { fx.x = p.x; fx.y = p.y; fx.angle += dt * 7; }
           if (fx.life <= 0) st.ultFx.splice(i, 1);
         }
       }
 
-      // Maintain orbs & AI rival snakes (including Boss Serpent every ~28s)
-      if (st.orbs.length < 140) spawnOrbs(20);
-      if (st.bots.length < 7) spawnBot(st.time > 20 && !st.bots.some(b => b.isBoss) && Math.random() < 0.25);
+      // Progressive Special Enemy Unlocks (12s Hunter -> 22s Spitter -> 32s Armored -> 35s+ Boss)
+      if (st.time >= 12 && !st.unlockedTypes.hunter) {
+        st.unlockedTypes.hunter = true;
+        spawnBot('hunter');
+        showToast('⚡ 【獵殺衝刺蛇】解鎖登場！注意紅光鎖定，反殺回滿渦輪！');
+      }
+      if (st.time >= 22 && !st.unlockedTypes.spitter) {
+        st.unlockedTypes.spitter = true;
+        spawnBot('spitter');
+        showToast('🧪 【遠程彈幕蛇】解鎖登場！閃避或擊落霓虹毒彈！');
+      }
+      if (st.time >= 32 && !st.unlockedTypes.armored) {
+        st.unlockedTypes.armored = true;
+        spawnBot('armored');
+        showToast('🛡️ 【裝甲護盾蛇】解鎖登場！破盾或側身攔截拿 3s 無敵盾！');
+      }
 
-      // Update AI Bots & Collisions
+      // Maintain orbs & AI rival snakes
+      if (st.orbs.length < 140) spawnOrbs(20);
+      if (st.bots.length < 8) spawnBot();
+
+      // Update AI Bots & Specialized Archetype Behaviors
       for (let i = st.bots.length - 1; i >= 0; i--) {
         const b = st.bots[i];
         if (b.dead) continue;
-        b.aiTimer -= dt;
-        if (b.aiTimer <= 0) {
-          b.aiTimer = 0.6 + Math.random() * 1.0;
-          if (Math.hypot(b.x, b.y) > WORLD_R - 220) b.targetAng = Math.atan2(-b.y, -b.x);
-          else b.targetAng = b.ang + (Math.random() - 0.5) * 1.6;
-        }
-        b.ang = steerAngle(b.ang, b.targetAng || b.ang, dt * 3.6);
-        stepSnake(b, b.isBoss ? 195 : 175, dt);
+        if (b.shieldFlash > 0) b.shieldFlash -= dt;
+        const spec = ENEMY_TYPES[b.kind] || ENEMY_TYPES.normal;
+        const distP = Math.hypot(p.x - b.x, p.y - b.y);
+        const angToP = Math.atan2(p.y - b.y, p.x - b.x);
+        let moveSpd = spec.spd || 175;
+        let turnRate = 3.6;
 
+        if (b.kind === 'treasure') {
+          // Flee from player while leaving sparkling golden dust!
+          if (Math.random() < dt * 10) addParticles(b.x, b.y, '#fde047', 1, 55);
+          if (distP < 480) {
+            let fleeAng = Math.atan2(b.y - p.y, b.x - p.x);
+            if (Math.hypot(b.x, b.y) > WORLD_R - 260) fleeAng = Math.atan2(-b.y, -b.x) + 0.65;
+            b.targetAng = fleeAng;
+            turnRate = 5.4;
+          } else {
+            b.aiTimer -= dt;
+            if (b.aiTimer <= 0) {
+              b.aiTimer = 0.8 + Math.random() * 0.9;
+              b.targetAng = Math.hypot(b.x, b.y) > WORLD_R - 240 ? Math.atan2(-b.y, -b.x) : b.ang + (Math.random() - 0.5) * 1.4;
+            }
+          }
+        } else if (b.kind === 'hunter') {
+          // Stalk -> Red lock-on telegraph (0.65s) -> High-speed dash lunge (0.85s)!
+          if (b.dashCd > 0) b.dashCd -= dt;
+          if (b.dashTimer > 0) {
+            b.dashTimer -= dt;
+            b.targetAng = b.dashAng;
+            moveSpd = spec.dashSpd || 335;
+            turnRate = 1.6;
+            if (Math.random() < dt * 22) addParticles(b.x, b.y, '#fb923c', 1, 90);
+          } else if (b.telegraph > 0) {
+            b.telegraph -= dt;
+            const leadX = p.x + Math.cos(p.ang) * 70, leadY = p.y + Math.sin(p.ang) * 70;
+            b.dashAng = Math.atan2(leadY - b.y, leadX - b.x);
+            b.targetAng = b.dashAng;
+            moveSpd = 105;
+            turnRate = 6.5;
+            if (b.telegraph <= 0) {
+              b.dashTimer = 0.85;
+              b.dashCd = 2.8;
+              addParticles(b.x, b.y, '#ef4444', 10, 200);
+            }
+          } else if (distP < 520 && b.dashCd <= 0) {
+            b.telegraph = 0.65;
+            b.dashAng = angToP;
+          } else {
+            b.targetAng = Math.hypot(b.x, b.y) > WORLD_R - 220 ? Math.atan2(-b.y, -b.x) : (distP < 700 ? angToP : b.ang + Math.sin(st.time + i) * 0.5);
+            turnRate = 4.2;
+          }
+        } else if (b.kind === 'spitter') {
+          // Maintain mid-range & spit glowing neon venom orbs
+          b.shootCd -= dt;
+          if (b.shootCd <= 0.35 && b.shootCd > 0 && distP < 560) b.chargeGlow = 1;
+          else b.chargeGlow = Math.max(0, (b.chargeGlow || 0) - dt * 4);
+          if (b.shootCd <= 0 && distP < 560 && st.enemyShots.length < 16) {
+            b.shootCd = 2.4 + Math.random() * 0.5;
+            b.chargeGlow = 0;
+            st.enemyShots.push({
+              x: b.x + Math.cos(angToP) * (b.r + 6), y: b.y + Math.sin(angToP) * (b.r + 6),
+              vx: Math.cos(angToP) * 310, vy: Math.sin(angToP) * 310,
+              r: 10, life: 2.6
+            });
+            addParticles(b.x, b.y, '#84cc16', 6, 130);
+          }
+          if (Math.hypot(b.x, b.y) > WORLD_R - 240) {
+            b.targetAng = Math.atan2(-b.y, -b.x);
+          } else if (distP > 390) {
+            b.targetAng = angToP;
+          } else if (distP < 220) {
+            b.targetAng = angToP + Math.PI;
+          } else {
+            b.targetAng = angToP + Math.PI * 0.48;
+          }
+          turnRate = 4.4;
+        } else if (b.kind === 'armored') {
+          // Steady tank patrol, slowly steering toward player territory
+          b.aiTimer -= dt;
+          if (b.aiTimer <= 0) {
+            b.aiTimer = 0.7 + Math.random() * 0.8;
+            if (Math.hypot(b.x, b.y) > WORLD_R - 240) b.targetAng = Math.atan2(-b.y, -b.x);
+            else b.targetAng = distP < 520 ? angToP + (Math.random() - 0.5) * 0.5 : b.ang + (Math.random() - 0.5) * 1.2;
+          }
+          turnRate = 2.9;
+        } else {
+          // Normal & Boss wandering AI
+          b.aiTimer -= dt;
+          if (b.aiTimer <= 0) {
+            b.aiTimer = 0.6 + Math.random() * 1.0;
+            if (Math.hypot(b.x, b.y) > WORLD_R - 220) b.targetAng = Math.atan2(-b.y, -b.x);
+            else b.targetAng = b.ang + (Math.random() - 0.5) * 1.6;
+          }
+        }
+
+        b.ang = steerAngle(b.ang, b.targetAng !== undefined ? b.targetAng : b.ang, dt * turnRate);
+        stepSnake(b, moveSpd, dt);
+
+        // Enemy head crashes into player's body -> Instant Tactical Takedown (even bypasses Armored Shield!)
         let botKilled = false;
         for (let k = 2; k < p.pts.length; k += 2) {
           if (Math.hypot(b.x - p.pts[k].x, b.y - p.pts[k].y) < b.r + 12) {
-            killBot(b); botKilled = true; break;
+            killBot(b, b.kind === 'armored' ? '攔截斬首' : '');
+            botKilled = true;
+            break;
           }
         }
         if (botKilled) continue;
 
+        // Player head crashes into enemy body -> Instant Game Over (unless invulnerable shield active)
         if (st.invuln <= 0) {
           for (let k = 0; k < b.pts.length; k += 2) {
             if (Math.hypot(p.x - b.pts[k].x, p.y - b.pts[k].y) < p.r + b.r * 0.72) {
@@ -1010,17 +1295,68 @@
     // 5. RENDER NEON SERPENT ARENA
     // =========================================================================
     function drawSnake(sn, isPlayer, img) {
+      // Hunter dash lock-on telegraph laser!
+      if (!isPlayer && sn.kind === 'hunter' && sn.telegraph > 0) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.78)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 7]);
+        ctx.beginPath();
+        ctx.moveTo(sn.x, sn.y);
+        ctx.lineTo(sn.x + Math.cos(sn.dashAng) * 260, sn.y + Math.sin(sn.dashAng) * 260);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(251, 146, 60, 0.85)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(sn.x, sn.y, sn.r + 12 + Math.sin(st.time * 24) * 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       for (let i = sn.pts.length - 1; i >= 1; i--) {
         const pt = sn.pts[i];
         const taper = 0.55 + 0.45 * (1 - i / sn.pts.length);
         const rad = sn.r * taper;
         ctx.fillStyle = i % 2 === 0 ? sn.col : sn.glow;
         ctx.beginPath(); ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2); ctx.fill();
+        if (!isPlayer && sn.kind === 'armored' && i % 3 === 0) {
+          ctx.strokeStyle = sn.shieldHp > 0 ? '#7dd3fc' : 'rgba(148,163,184,0.45)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
       }
+
       ctx.save();
-      if (isPlayer && st.invuln > 0 && Math.floor(st.time * 14) % 2 === 0) ctx.globalAlpha = 0.65;
-      ctx.strokeStyle = isPlayer ? '#fde047' : (sn.isBoss ? '#fde047' : '#ffffff');
-      ctx.lineWidth = isPlayer || sn.isBoss ? 3.5 : 2;
+      if (isPlayer && st.invuln > 0 && Math.floor(st.time * 14) % 2 === 0) ctx.globalAlpha = 0.68;
+
+      // Special Outer Auras (Treasure gold pulse / Spitter charge / Armored shield / Player shield or poison slow)
+      if (!isPlayer && sn.kind === 'treasure') {
+        ctx.strokeStyle = 'rgba(253, 224, 71, 0.75)'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r + 8 + Math.sin(st.time * 10) * 3, 0, Math.PI * 2); ctx.stroke();
+      } else if (!isPlayer && sn.kind === 'spitter' && sn.chargeGlow > 0) {
+        ctx.strokeStyle = 'rgba(163, 230, 53, 0.9)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r + 9, 0, Math.PI * 2); ctx.stroke();
+      } else if (!isPlayer && sn.kind === 'armored' && sn.shieldHp > 0) {
+        ctx.fillStyle = sn.shieldFlash > 0 ? 'rgba(255,255,255,0.42)' : 'rgba(56, 189, 248, 0.18)';
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r + 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else if (!isPlayer && sn.kind === 'hunter' && sn.dashTimer > 0) {
+        ctx.strokeStyle = '#fb923c'; ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r + 7, 0, Math.PI * 2); ctx.stroke();
+      } else if (isPlayer && st.invuln > 0) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r + 9, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (isPlayer && st.slowDebuff > 0) {
+        ctx.strokeStyle = 'rgba(163, 230, 53, 0.9)'; ctx.lineWidth = 3;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r + 6, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      ctx.strokeStyle = isPlayer ? '#fde047' : (sn.isBoss || sn.kind === 'treasure' ? '#fde047' : (sn.kind === 'armored' ? '#7dd3fc' : '#ffffff'));
+      ctx.lineWidth = isPlayer || sn.isBoss || sn.kind === 'armored' ? 3.5 : 2;
       ctx.shadowColor = sn.col; ctx.shadowBlur = 18;
       ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r + 2, 0, Math.PI * 2); ctx.stroke();
       ctx.shadowBlur = 0;
@@ -1033,9 +1369,10 @@
       } else {
         ctx.fillStyle = sn.col;
         ctx.beginPath(); ctx.arc(sn.x, sn.y, sn.r, 0, Math.PI * 2); ctx.fill();
-        if (sn.isBoss) {
-          ctx.font = '20px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('👑', sn.x, sn.y + 1);
+        const badgeIcon = sn.kind === 'boss' ? '👑' : (sn.kind === 'treasure' ? '💰' : (sn.kind === 'hunter' ? '⚡' : (sn.kind === 'spitter' ? '🧪' : (sn.kind === 'armored' ? '🛡️' : ''))));
+        if (badgeIcon) {
+          ctx.font = `${sn.isBoss ? 20 : 15}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(badgeIcon, sn.x, sn.y + 1);
         } else {
           const ex = Math.cos(sn.ang) * 5, ey = Math.sin(sn.ang) * 5;
           const px = -Math.sin(sn.ang) * 5, py = Math.cos(sn.ang) * 5;
@@ -1043,6 +1380,15 @@
           ctx.beginPath(); ctx.arc(sn.x + ex + px, sn.y + ey + py, 3.5, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(sn.x + ex - px, sn.y + ey - py, 3.5, 0, Math.PI * 2); ctx.fill();
         }
+      }
+
+      // Armored Shield HP Pill Badge
+      if (!isPlayer && sn.kind === 'armored' && sn.shieldHp > 0) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.beginPath(); ctx.roundRect(sn.x - 22, sn.y + sn.r + 6, 44, 15, 6); ctx.fill();
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.fillStyle = '#7dd3fc'; ctx.font = '900 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(`🛡 ${sn.shieldHp}/${sn.maxShield}`, sn.x, sn.y + sn.r + 13.5);
       }
       ctx.restore();
     }
@@ -1164,10 +1510,23 @@
         }
       }
 
-      // Rival Bots, Player Dragon, Hero Weapon Breath Shots & Ult VFX
+      // Rival Bots, Player Dragon, Hero Weapon Breath Shots, Spitter Venom Orbs & Ult VFX
       for (const b of st.bots) drawSnake(b, false, null);
       if (st.player) drawSnake(st.player, true, avatarCache[getHero().id]);
       if (st.shots) { for (const sh of st.shots) drawSnakeWeaponShot(ctx, sh, st.time); }
+      if (st.enemyShots) {
+        for (const es of st.enemyShots) {
+          ctx.save();
+          ctx.shadowColor = '#84cc16'; ctx.shadowBlur = 14;
+          ctx.fillStyle = '#a3e635';
+          ctx.beginPath(); ctx.arc(es.x, es.y, es.r, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#14532d';
+          ctx.beginPath(); ctx.arc(es.x, es.y, es.r * 0.45, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#ecfccb'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(es.x, es.y, es.r, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+      }
       if (st.ultFx && st.ultFx.length) renderSnakeUltFx(ctx);
 
       for (const pt of st.particles) {
@@ -1181,6 +1540,67 @@
         ctx.fillStyle = f.col; ctx.fillText(f.txt, f.x, f.y); ctx.restore();
       }
       ctx.restore();
+
+      // Color-Coded Tactical Mini-Radar (Bottom-Right)
+      if ((st.mode === 'playing' || st.mode === 'paused') && st.player) {
+        const rr = W < 600 ? 44 : 56;
+        const rx = W - rr - 18, ry = H - rr - 34;
+        const scale = (rr - 6) / WORLD_R;
+        ctx.save();
+        ctx.fillStyle = 'rgba(6, 13, 28, 0.80)';
+        ctx.beginPath(); ctx.arc(rx, ry, rr, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)'; ctx.lineWidth = 1.8; ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(rx, ry, rr * 0.5, 0, Math.PI * 2);
+        ctx.moveTo(rx - rr, ry); ctx.lineTo(rx + rr, ry);
+        ctx.moveTo(rx, ry - rr); ctx.lineTo(rx, ry + rr);
+        ctx.stroke();
+
+        // Enemy blips color-coded by archetype
+        for (const b of st.bots) {
+          if (b.dead) continue;
+          const bx = rx + b.x * scale, by = ry + b.y * scale;
+          const spec = ENEMY_TYPES[b.kind] || ENEMY_TYPES.normal;
+          const dotR = b.kind === 'boss' ? 5.2 : (b.kind === 'normal' ? 2.6 : 3.8);
+          ctx.fillStyle = spec.radarCol || '#f472b6';
+          ctx.beginPath(); ctx.arc(bx, by, dotR, 0, Math.PI * 2); ctx.fill();
+          if (b.kind === 'treasure') {
+            ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.arc(bx, by, dotR + 2 + Math.sin(st.time * 9) * 1.2, 0, Math.PI * 2); ctx.stroke();
+          } else if (b.kind === 'armored') {
+            ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 1.2; ctx.stroke();
+          } else if (b.kind === 'boss') {
+            ctx.strokeStyle = '#fde047'; ctx.lineWidth = 1.6; ctx.stroke();
+          }
+        }
+
+        // Player blip (bright emerald dot + heading tick)
+        const px = rx + st.player.x * scale, py = ry + st.player.y * scale;
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+
+        // Compact legend pill below radar
+        ctx.fillStyle = 'rgba(6, 13, 28, 0.82)';
+        ctx.beginPath(); ctx.roundRect(rx - rr - 4, ry + rr + 6, (rr + 4) * 2, 18, 9); ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'; ctx.lineWidth = 1; ctx.stroke();
+        const legend = [
+          { col: '#fde047', t: '💰' },
+          { col: '#ef4444', t: '⚡' },
+          { col: '#84cc16', t: '🧪' },
+          { col: '#38bdf8', t: '🛡' },
+          { col: '#f43f5e', t: '👑' }
+        ];
+        const stepX = ((rr + 4) * 2 - 12) / legend.length;
+        ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        legend.forEach((lg, idx) => {
+          const lx = rx - rr + 4 + stepX * (idx + 0.5);
+          ctx.fillStyle = lg.col;
+          ctx.fillText(lg.t, lx, ry + rr + 15.5);
+        });
+        ctx.restore();
+      }
     }
 
     // =========================================================================
