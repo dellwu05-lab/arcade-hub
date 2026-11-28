@@ -246,6 +246,35 @@
     .ult-cutin-txt { transform: skewX(8deg); text-align: left; }
     .ult-cutin-sub { font-size: 11px; font-weight: 900; color: #fef08a; letter-spacing: 1.5px; }
     .ult-cutin-title { font-size: 22px; font-weight: 900; color: #fff; text-shadow: 0 3px 14px rgba(0, 0, 0, 0.85); }
+
+    /* Game Speed Capsule & Clear Pause Button */
+    .speed-group {
+      pointer-events: auto; display: inline-flex; align-items: center; gap: 2px;
+      padding: 3px 4px 3px 7px; border-radius: 999px;
+      background: rgba(12, 10, 28, 0.86); border: 1px solid var(--border, rgba(255,255,255,0.16));
+      backdrop-filter: blur(10px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .speed-group .spd-ico { font-size: 11px; margin-right: 2px; color: #fde047; line-height: 1; }
+    .spd-btn {
+      border: none; background: transparent; color: #cbd5e1;
+      font-size: 11px; font-weight: 900; padding: 3px 7px; border-radius: 999px;
+      cursor: pointer; transition: all 0.14s ease; font-variant-numeric: tabular-nums;
+      line-height: 1.25; font-family: inherit;
+    }
+    .spd-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+    .spd-btn.on {
+      color: #0b1120; background: linear-gradient(135deg, #38bdf8, #818cf8);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+    }
+    .spd-btn.on.fast {
+      color: #1c0a00; background: linear-gradient(135deg, #fde047, #fb923c);
+      box-shadow: 0 0 12px rgba(251, 146, 60, 0.55);
+    }
+    .hud-btn.pause-btn { gap: 5px; padding: 6px 11px; white-space: nowrap; }
+    .hud-btn.pause-btn.paused-on {
+      border-color: #fde047 !important; background: rgba(245, 158, 11, 0.32) !important;
+      color: #fef08a !important; box-shadow: 0 0 16px rgba(250, 204, 21, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -267,7 +296,8 @@
         <div class="pill"><span>SCORE</span><span id="hudScore" style="color:#38bdf8;">00000</span></div>
         <button class="hud-btn" id="btnBgm" type="button" title="背景音樂 (B)">🎵</button>
         <button class="hud-btn" id="btnMute" type="button" title="靜音 (M)">🔊</button>
-        <button class="hud-btn" id="btnPause" type="button" title="暫停 (P)">⏸</button>
+        <div class="speed-group" id="speedGroup" title="切換遊戲速度 (快捷鍵 [ / ])"><span class="spd-ico">⚡</span><button class="spd-btn on" data-spd="1" type="button">1x</button><button class="spd-btn" data-spd="1.25" type="button">1.25x</button><button class="spd-btn" data-spd="1.5" type="button">1.5x</button><button class="spd-btn" data-spd="1.8" type="button">1.8x</button></div>
+        <button class="hud-btn pause-btn" id="btnPause" type="button" title="暫停 / 繼續 (P / Esc)">⏸ 暫停</button>
       </div>
     </div>
 
@@ -338,8 +368,9 @@
         <h2>收刀喘息</h2>
         <p class="sub">按 P 繼續揮斬，或返回大廳更換英雄與鍛造刀鋒。</p>
         <div class="btn-row">
-          <button class="btn-primary" id="btnResume" type="button">繼續斬擊</button>
-          <button class="btn-secondary" id="btnMenu" type="button">返回大廳</button>
+          <button class="btn-primary" id="btnResume" type="button">▶ 繼續斬擊</button>
+          <button class="btn-secondary" id="btnPauseRestart" type="button">🔄 重新拔刀</button>
+          <button class="btn-secondary" id="btnMenu" type="button">🏠 返回大廳</button>
         </div>
       </div>
     </div>
@@ -1359,10 +1390,48 @@
       document.getElementById('btnUlt').classList.toggle('ready', pct >= 100);
     }
 
-    function togglePause() {
-      if (st.mode === 'playing') { st.mode = 'paused'; document.getElementById('pauseOverlay').classList.remove('hidden'); }
-      else if (st.mode === 'paused') { st.mode = 'playing'; document.getElementById('pauseOverlay').classList.add('hidden'); }
+    const SPEED_STEPS = [1, 1.25, 1.5, 1.8];
+    let gameSpeed = 1;
+    function setGameSpeed(spd) {
+      gameSpeed = spd;
+      document.querySelectorAll('#speedGroup .spd-btn').forEach((b) => {
+        const v = parseFloat(b.dataset.spd);
+        b.classList.toggle('on', Math.abs(v - spd) < 0.001);
+        b.classList.toggle('fast', Math.abs(v - spd) < 0.001 && v > 1);
+      });
+      showToast(`⚡ 斬擊速度切換為 ${spd}x！`);
     }
+    document.querySelectorAll('#speedGroup .spd-btn').forEach((b) => b.addEventListener('click', () => setGameSpeed(parseFloat(b.dataset.spd))));
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'BracketLeft' || e.code === 'BracketRight') {
+        const idx = SPEED_STEPS.indexOf(gameSpeed);
+        const next = Math.max(0, Math.min(SPEED_STEPS.length - 1, idx + (e.code === 'BracketRight' ? 1 : -1)));
+        if (next !== idx) setGameSpeed(SPEED_STEPS[next]);
+      }
+    });
+    function syncPauseBtn() {
+      const btn = document.getElementById('btnPause');
+      if (!btn) return;
+      const p = st.mode === 'paused';
+      btn.textContent = p ? '▶ 繼續' : '⏸ 暫停';
+      btn.classList.toggle('paused-on', p);
+    }
+    function togglePause() {
+      if (st.mode === 'playing') {
+        st.mode = 'paused';
+        st.pointerDown = false;
+        document.getElementById('pauseOverlay').classList.remove('hidden');
+        syncPauseBtn();
+      } else if (st.mode === 'paused') {
+        st.mode = 'playing';
+        document.getElementById('pauseOverlay').classList.add('hidden');
+        syncPauseBtn();
+      } else if (st.mode === 'menu') {
+        showToast('ℹ️ 開始斬擊後即可隨時暫停（快捷鍵 P / Esc）');
+      }
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden && st.mode === 'playing') togglePause(); });
+    document.getElementById('btnPauseRestart').addEventListener('click', () => { startGame(); syncPauseBtn(); });
     function toggleMute() {
       SFX.muted = !SFX.muted;
       document.getElementById('btnMute').textContent = SFX.muted ? '🔇' : '🔊';
@@ -1386,6 +1455,7 @@
       document.getElementById(id).addEventListener('click', () => {
         st.mode = 'menu';
         document.getElementById('pauseOverlay').classList.add('hidden');
+        syncPauseBtn();
         document.getElementById('overOverlay').classList.add('hidden');
         document.getElementById('statusStrip').classList.add('hidden');
         document.getElementById('ultBar').classList.add('hidden');
@@ -1427,7 +1497,16 @@
       const dt = Math.min(0.035, Math.max(0, (now - last) / 1000));
       last = now;
       try {
-        update(dt);
+        if (st.mode === 'playing') {
+          let rem = dt * gameSpeed;
+          while (rem > 0.0001 && st.mode === 'playing') {
+            const step = Math.min(0.025, rem);
+            update(step);
+            rem -= step;
+          }
+        } else {
+          update(dt);
+        }
         render();
       } catch (err) {
         console.error('HeroSlash loop error:', err);
